@@ -21,7 +21,7 @@ require "$Bin/wiki.pl";
 $::daemon   = 'wikid';
 $::name     = 'Peer';
 $::port     = 1729;
-$::ver      = '3.1.15'; # 2009-05-30
+$::ver      = '3.1.16'; # 2009-05-30
 $::dir      = $Bin;
 $::log      = "$::dir/$::daemon.log";
 $motd       = "Hail Earthlings! $::daemon-$::ver is in the heeeeeouse! (rock)";
@@ -192,7 +192,6 @@ sub serverProcessMessage {
 	my $http = '200 OK';
 	my $respond = 1;
 	my $date = strftime "%a, %d %b %Y %H:%M:%S %Z", localtime;
-	my $data = '';
 	my $response = 'done';
 
 	# Extract info from the HTTP request
@@ -203,13 +202,14 @@ sub serverProcessMessage {
 	if ( $ct =~ /^cmd/ ? ( $msg =~ /Authorization: Basic (\w+)/ and decode_base64( $1 ) eq "$::name:$::password" ) : 1 ) {
 
 		# Call event handler for received event if one exists
-		$data  = $title =~ /^(.+?)\?(.+)$/s ? $2 : '';
-		$title = $1 if $data;
-		my $wiki  = $data =~ /'wgScript'\s*=>\s*\'(.+?)'/ ? $1 : '';
-		my $event = "on$title";
-		if ( $wiki and defined &$event ) {
-			logAdd( "Processing \"$title\" hook from $wiki" );
-			&$event( $wiki, $data );
+		$::data   = $title =~ /^(.+?)\?(.+)$/s ? $2 : '';
+		$title    = $1 if $::data;
+		$::script = $::data =~ /'wgScript'\s*=>\s*\'(.+?)'/   ? $1 : '';
+		$::site   = $::data =~ /'wgSitename'\s*=>\s*\'(.+?)'/ ? $1 : '';
+		$::event  = "on$title";
+		if ( $::script and defined &$::event ) {
+			logAdd( "Processing \"$title\" hook from $::site" );
+			&$::event;
 		} else { logAdd( "Unknown event \"$title\" received!" ) }			
 
 	} else { $http = "401 Authorization Required\r\nWWW-Authenticate: Basic realm=\"private\"" }
@@ -307,35 +307,34 @@ sub ircHandleConnections {
 
 #---------------------------------------------------------------------------------------------------------#
 # EVENTS
+# $::script, $::site, $::event, $::data available
+
+sub onUserLoginComplete {
+	print $::ircsock "PRIVMSG $ircchannel :$1 logged in to $site\n" if $::data =~ /'mName'\s*=>\s*'(.+?)'/s;
+}
 
 sub onPrefsPasswordAudit {
-	my $wiki = shift;
-	my $data = shift;
-	if ( $data =~ /'mName'\s*=>\s*'(.+?)'.+?\)\),.+?=>\s*'(.+?)'.+success/s ) {
+	if ( $::data =~ /'mName'\s*=>\s*'(.+?)'.+?\)\),.+?=>\s*'(.+?)'.+success/s ) {
 		my( $user, $pass ) = ( $1, $2 );
 		doUpdateAccount( $user, $pass );
 	}
 }
 
 sub onAddNewAccount {
-	my $wiki = shift;
-	my $data = shift;
-	if ( $data =~ /'mName'\s*=>\s*'(.+?)'.+'wpPassword'\s*=>\s*'(.+?)'/s ) {
+	if ( $::data =~ /'mName'\s*=>\s*'(.+?)'.+'wpPassword'\s*=>\s*'(.+?)'/s ) {
 		my( $user, $pass ) = ( $1, $2 );
 		doUpdateAccount( $user, $pass );
 	}
 }
 
 sub onRevisionInsertComplete {
-	my $wiki  = shift;
-	my $data  = shift;
-	my $minor = $data   =~ /'mMinorEdit'\s*=>\s*1/       ? return : '';
-	my $id      = $data =~ /'mId'\s*=>\s*([0-9]+)/       ? $1 : '';
-	my $page    = $data =~ /'mPage'\s*=>\s*([0-9]+)/     ? $1 : '';
-	my $user    = $data =~ /'mUserText'\s*=>\s*'(.+?)'/  ? $1 : '';
-	my $parent  = $data =~ /'mParentId'\s*=>\s*([0-9]+)/ ? $1 : '';
-	my $comment = $data =~ /'mComment'\s*=>\s*'(.+?)'/   ? $1 : '';
-	my $title   = $data =~ /'title'\s*=>\s*'(.+?)'/      ? $1 : '';
+	my $minor   = $::data =~ /'mMinorEdit'\s*=>\s*1/       ? return : '';
+	my $id      = $::data =~ /'mId'\s*=>\s*([0-9]+)/       ? $1 : '';
+	my $page    = $::data =~ /'mPage'\s*=>\s*([0-9]+)/     ? $1 : '';
+	my $user    = $::data =~ /'mUserText'\s*=>\s*'(.+?)'/  ? $1 : '';
+	my $parent  = $::data =~ /'mParentId'\s*=>\s*([0-9]+)/ ? $1 : '';
+	my $comment = $::data =~ /'mComment'\s*=>\s*'(.+?)'/   ? $1 : '';
+	my $title   = $::data =~ /'title'\s*=>\s*'(.+?)'/      ? $1 : '';
 	if ( $page and $user ) {
 		if ( lc $user ne lc $wikiuser ) {
 			my $action = $parent ? 'changed' : 'created';
