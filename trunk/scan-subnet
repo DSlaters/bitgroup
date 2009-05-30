@@ -1,0 +1,5 @@
+#!/usr/bin/perl
+for ( qx( ifconfig ) =~ /inet addr:([0-9.]+)\.[0-9]+\s+Bcast:/g ) {
+	@i = qx( nmap -nsL -O $_.0/24 ) =~ /^Host ([0-9.]+) not scanned.MAC Address: (.{17}).+?\((.+?).$/sgm;
+	print "".(shift @i)."\t[".(shift @i)."] ".(shift @i)."\n" while $#i >= 0;
+}

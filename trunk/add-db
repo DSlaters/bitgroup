@@ -1,0 +1,88 @@
+#!/usr/bin/perl
+# - Licenced under LGPL (http://www.gnu.org/copyleft/lesser.html)
+# - Author: http://www.organicdesign.co.nz/nad
+# - Started: 2007-08-25 {{perl}}{{Category:OD2}}
+use DBI;
+
+$user = 'bender';
+$pwd  = 'g5T45$8';
+$tmp  = '/tmp/replicate-db';
+
+# Display usage info and die if too few or no parameters supplied
+die "\nReplicate a mediawiki SQL database dump to many databases and prefixes.
+
+Usage:
+	replicate-db TEMPLATE DB1.PREFIX1 [DB2.]PREFIX2 [DB3.]PREFIX3...
+Where,
+	TEMPLATE is the name of the *.sql file or db.prefix to use as the template.
+
+	DB*.PREFIX* are the databases to replicate the template into and the table prefixes to use (prefixes are mandatory).
+
+Notes:
+- The database dump being used as a template should only contain one wiki.
+- It should not include create or drop database statements.
+- The destination databases must already exist
+- The destination tables will be replaced if they exist
+- The DB part is optional for all but the first and means to continue using the previous database.\n"
+	unless $#ARGV > 0 and $ARGV[1] =~ /^\w+\.\w+$/;
+
+# Read in the template SQL
+$prefix = '';
+$template = shift @ARGV;
+if ($template !~ /\.sql$/i) {
+
+	# Template is a database, so needs to be exported to tmp file first
+	$template =~ /^(\w+)\.(\w+)$/;
+	($db,$prefix) = ($1,qr($2));
+	$dbh = DBI->connect("dbi:mysql:$db",$user,$pwd)
+		or die "\nCan't connect to database '$db': ",$DBI::errstr,"\n";
+
+        # Obtain list of tables with selected prefix
+        @tbl = ();
+        $sth = $dbh->prepare('SHOW TABLES');
+        $sth->execute() or die "\nCould not select tables: ",$DBI::errstr,"\n";
+        while (@data = $sth->fetchrow_array()) { push @tbl,$data[0] if $data[0] =~ /^$prefix/ }
+        die "\nNo tables found with matching prefix\n" if $#tbl < 0;
+        $tbl = join ' ', @tbl;
+
+	# Export tables to tmp file and read into $template 
+	unlink $tmp;
+	qx(mysqldump -u $user --password='$pwd' $db $tbl > $tmp);
+	$template = $tmp;
+
+	}
+
+# Read in the template file to $sql
+open FH,'<',$template or die "\nCould not read template file '$template'\n";
+sysread FH,$sql,-s $template;
+close FH;
+
+# Find the prefix (if not already set) being used in the template and prepare for use in replacement regexp
+if ($prefix eq '') {
+	die "\nThe template file supplied is not a valid wiki dump\n"
+		unless $sql =~ /^CREATE TABLE `(\w*)recentchanges`/m;
+	$prefix = qr($1);
+	}
+
+# Main replication loop
+for (@ARGV) {
+
+	# Determine the database and prefix to replicate template into
+	if (/^(\w+)\.(\w+)$/) { ($db,$pre) = ($1,$2) } else { $pre = $_ }
+	$pre .= '_' unless $pre =~ /_$/;
+
+	# Make a duplicate of the template modified to the current prefix
+	$data = $sql;
+	$data =~ s/$prefix/$pre/g;
+
+	# Write the duplicate into a tmp file
+	unlink $tmp;
+	if (open FH,'>',$tmp) {	print FH $data; close FH }
+	else { print "Could not write data for wiki $db.$pre to '$tmp'\n" }
+
+	# Pipe the file into MySQL and remove the tmp file
+	qx(mysql -u $user --password='$pwd' $db < $tmp);
+	if ($!) { print "Error creating wiki $db.$pre: $!\n" }
+	else    { print "Wiki $db.$pre created.\n" }
+	}
+
