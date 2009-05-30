@@ -1,0 +1,3 @@
+#!/bin/sh
+du -sh /home/*/Maildir|sed 's|/home/||'|sed 's|/Maildir||'
+
