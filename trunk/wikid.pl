@@ -15,11 +15,12 @@ use Net::SCP::Expect;
 use IO::Socket;
 use IO::Select;
 use MIME::Base64;
+use Sys::Hostname;
 require "$Bin/wiki.pl";
 
 # Daemon parameters
 $::daemon   = 'wikid';
-$::name     = qx( hostname );
+$::name     = hostname;
 $::port     = 1729;
 $::ver      = '3.1.17'; # 2009-05-31
 $::dir      = $Bin;
