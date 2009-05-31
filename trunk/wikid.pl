@@ -19,9 +19,9 @@ require "$Bin/wiki.pl";
 
 # Daemon parameters
 $::daemon   = 'wikid';
-$::name     = 'Peer';
+$::name     = qx( hostname );
 $::port     = 1729;
-$::ver      = '3.1.16'; # 2009-05-30
+$::ver      = '3.1.17'; # 2009-05-31
 $::dir      = $Bin;
 $::log      = "$::dir/$::daemon.log";
 $motd       = "Hail Earthlings! $::daemon-$::ver is in the heeeeeouse! (rock)";
