@@ -22,7 +22,7 @@ require "$Bin/wiki.pl";
 $::daemon   = 'wikid';
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.1.17'; # 2009-05-31
+$::ver      = '3.1.18'; # 2009-06-01
 $::dir      = $Bin;
 $::log      = "$::dir/$::daemon.log";
 $motd       = "Hail Earthlings! $::daemon-$::ver is in the heeeeeouse! (rock)";
@@ -39,14 +39,15 @@ $ircpass    = '*****';
 
 # Override default with config file
 require "$Bin/$::daemon.conf";
-$::name = $name if $name;
-$::port = $port if $port;
+$::name   = $name if $name;
+$::port   = $port if $port;
 $wikiuser = $::name unless $wikiuser;
 $ircuser  = $::name unless $ircuser;
+$ircuser  = 'bad-name' unless length $ircuser < 10;
 
 # Run as a daemon (see daemonise.pl article for more details and references regarding perl daemons)
 open STDIN, '/dev/null';
-open STDOUT, ">>$::log";
+#open STDOUT, ">>$::log";
 open STDERR, ">>$::log";
 defined ( my $pid = fork ) or die "Can't fork: $!";
 exit if $pid;
@@ -61,7 +62,7 @@ if ( $ARGV[0] eq '--install' ) {
 	chmod 0755, "/etc/init.d/$::daemon.sh";
 	logAdd( "$::daemon.sh added to /etc/init.d" );
 }
- 
+
 # Remove the named service and exit
 if ( $ARGV[0] eq '--remove' ) {
 	unlink "/etc/rc$_.d/S99$::daemon" for 2..5;
@@ -292,12 +293,8 @@ sub ircHandleConnections {
 						$ts = $1 if $ts =~ /(\d\d:\d\d:\d\d)/;
 						logAdd( "[IRC/$nick] $text" ) if $ircserver eq '127.0.0.1';
 
-						# Respond if message is known
-						if ( $text =~ /(^|\W)$ircuser(\W|$)/i ) {
-							$msg = "Yo $nick, you talking to me?";
-							print $handle "PRIVMSG $ircchannel :$msg\n";
-							print "($ts) $ircuser: $msg\n";
-						}
+						# Respond to known messages
+						&doInfo if $text =~ /(^|\W)($ircuser|$::daemon) info/i;
 					}
 				}
 			}
@@ -406,3 +403,7 @@ sub doUpdateAccount {
 	print $::ircsock "PRIVMSG $ircchannel :Done.\n";
 }
 
+# Output information about self
+sub doInfo {
+	print $::ircsock "PRIVMSG $ircchannel :I'm a $::daemon version $::ver listening on port $::port.\n";
+}
