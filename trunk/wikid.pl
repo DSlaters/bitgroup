@@ -16,13 +16,24 @@ use IO::Socket;
 use IO::Select;
 use MIME::Base64;
 use Sys::Hostname;
+use DBI;
 require "$Bin/wiki.pl";
+
+# Connect to DB
+my $dbh = DBI->connect('DBI:mysql:'.$::dbname, lc $::dbuser, $::dbpass) or die DBI->errstr;
+my $sth = $dbh->prepare('SELECT page_id FROM '.$::dbpfix.'page WHERE page_title = "Zhconversiontable"');
+$sth->execute();
+my @row = $sth->fetchrow_array;
+$sth->finish;
+my $sth = $dbh->prepare('SELECT page_namespace,page_title,page_is_redirect FROM '.$::dbpfix.'page WHERE page_id=?');
+
+
 
 # Daemon parameters
 $::daemon   = 'wikid';
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.1.18'; # 2009-06-01
+$::ver      = '3.2.1'; # 2009-06-01
 $::dir      = $Bin;
 $::log      = "$::dir/$::daemon.log";
 $motd       = "Hail Earthlings! $::daemon-$::ver is in the heeeeeouse! (rock)";
@@ -30,6 +41,9 @@ $motd       = "Hail Earthlings! $::daemon-$::ver is in the heeeeeouse! (rock)";
 # Wiki
 $wiki       = 'http://localhost/wiki/index.php';
 $wikipass   = '*****';
+$wikidb     = 
+$wikidbuser = 
+$wikidbpass = 
 
 # IRC server
 $ircserver  = 'irc.organicdesign.co.nz';
@@ -294,7 +308,7 @@ sub ircHandleConnections {
 						logAdd( "[IRC/$nick] $text" ) if $ircserver eq '127.0.0.1';
 
 						# Respond to known messages
-						&doInfo if $text =~ /(^|\W)($ircuser|$::daemon) info/i;
+						&doInfo if $text =~ /^($ircuser|$::daemon) info/i;
 					}
 				}
 			}
