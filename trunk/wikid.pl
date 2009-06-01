@@ -20,14 +20,12 @@ use DBI;
 require "$Bin/wiki.pl";
 
 # Connect to DB
-my $dbh = DBI->connect('DBI:mysql:'.$::dbname, lc $::dbuser, $::dbpass) or die DBI->errstr;
-my $sth = $dbh->prepare('SELECT page_id FROM '.$::dbpfix.'page WHERE page_title = "Zhconversiontable"');
-$sth->execute();
-my @row = $sth->fetchrow_array;
-$sth->finish;
-my $sth = $dbh->prepare('SELECT page_namespace,page_title,page_is_redirect FROM '.$::dbpfix.'page WHERE page_id=?');
-
-
+#my $dbh = DBI->connect('DBI:mysql:'.$::dbname, lc $::dbuser, $::dbpass) or die DBI->errstr;
+#my $sth = $dbh->prepare('SELECT page_id FROM '.$::dbpfix.'page WHERE page_title = "Zhconversiontable"');
+#$sth->execute();
+#my @row = $sth->fetchrow_array;
+#$sth->finish;
+#my $sth = $dbh->prepare('SELECT page_namespace,page_title,page_is_redirect FROM '.$::dbpfix.'page WHERE page_id=?');
 
 # Daemon parameters
 $::daemon   = 'wikid';
@@ -41,9 +39,9 @@ $motd       = "Hail Earthlings! $::daemon-$::ver is in the heeeeeouse! (rock)";
 # Wiki
 $wiki       = 'http://localhost/wiki/index.php';
 $wikipass   = '*****';
-$wikidb     = 
-$wikidbuser = 
-$wikidbpass = 
+#$wikidb     = 
+#$wikidbuser = 
+#$wikidbpass = 
 
 # IRC server
 $ircserver  = 'irc.organicdesign.co.nz';
