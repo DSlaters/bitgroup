@@ -99,7 +99,7 @@ serverInitialise();
 ircInitialise();
 wikiLogin( $wiki, $wikiuser, $wikipass );
 $::db = DBI->connect( "DBI:mysql:$::dbname", $dbuser, $dbpass );
-logAdd defined $::db ? "Connected '$dbuser' to '$::dbname" : DBI->errstr;
+logAdd( defined $::db ? "Connected '$dbuser' to '$::dbname" : DBI->errstr );
 print $::ircsock "PRIVMSG $ircchannel :$motd\n";
 
 # Initialise watched files list
