@@ -32,7 +32,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.2.6'; # 2009-06-02
+$::ver      = '3.2.7'; # 2009-06-02
 $::dir      = $Bin;
 $::log      = "$::dir/$::daemon.log";
 my $motd    = "Hail Earthlings! $::daemon-$::ver is in the heeeeeouse! (rock)";
@@ -45,14 +45,12 @@ if ( -e '/var/www/domains/localhost/LocalSettings.php' ) {
 	$short    = $1 if $ls =~ /\$wgShortName\s*=\s*['"](.+?)["']/;
 }
 
-# Get DB user/pass from wiia.php and attempt connection
+# Get DB user/pass from wiia.php
 if ( -e '/var/www/extensions/wikia.php' ) {
 	my $wikia = readFile( '/var/www/extensions/wikia.php' );
 	my $dbuser = $1 if $wikia =~ /\$wgDBuser\s*=\s*['"](.+?)["']/;
 	my $dbpass = $1 if $wikia =~ /\$wgDBpassword\s*=\s*['"](.+?)["']/;
-	$::db = DBI->connect( "DBI:mysql:$::dbname", $dbuser, $dbpass )
-		or die "Can't connect '$dbuser' to '$dbname' database! (mysqlerr: ".DBI->errstr.")";
-} else { die "wikia.php not found!" }
+}
 
 # IRC server
 $ircserver  = 'irc.organicdesign.co.nz';
@@ -71,7 +69,7 @@ $ircuser  = 'bad-name' unless length $ircuser < 10;
 
 # Run as a daemon (see daemonise.pl article for more details and references regarding perl daemons)
 open STDIN, '/dev/null';
-#open STDOUT, ">>$::log";
+open STDOUT, ">>$::log";
 open STDERR, ">>$::log";
 defined ( my $pid = fork ) or die "Can't fork: $!";
 exit if $pid;
@@ -95,11 +93,12 @@ if ( $ARGV[0] eq '--remove' ) {
 	exit(0);
 }
 
-# Initialise daemon and services
+# Initialise services, logins and connections
 %::streams = ();
 serverInitialise();
 ircInitialise();
 wikiLogin( $wiki, $wikiuser, $wikipass );
+logAdd $::db = DBI->connect( "DBI:mysql:$::dbname", $dbuser, $dbpass ) ? "Connected '$dbuser' to '$::dbname" : DBI->errstr;
 print $::ircsock "PRIVMSG $ircchannel :$motd\n";
 
 # Initialise watched files list
