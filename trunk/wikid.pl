@@ -32,7 +32,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.2.7'; # 2009-06-02
+$::ver      = '3.2.8'; # 2009-06-02
 $::dir      = $Bin;
 $::log      = "$::dir/$::daemon.log";
 my $motd    = "Hail Earthlings! $::daemon-$::ver is in the heeeeeouse! (rock)";
@@ -343,6 +343,7 @@ sub onFileChanged {
 	my $newsize = shift;
 	my $text    = '';
 	my $msg     = '';
+	my @userfilter = ( 'root', 'nobody' );
 
 	# Read in difference
 	if ( $newsize > $oldsize and open FH, '<', $file ) {
@@ -353,10 +354,10 @@ sub onFileChanged {
 	}
 	
 	# User SSH start
-	$msg = "$1 shelled in to $::host" if $text =~ /session opened for user (\w+) by/ && $1 ne 'root';
+	$msg = "$1 shelled in to $::host" if $text =~ /session opened for user (\w+) by/ && !grep $_ eq $1, @userfilter;
 
 	# User SSH stop
-	$msg = "$1 shelled out of $::host" if $text =~ /session closed for user (\w+)/ && $1 ne 'root';
+	$msg = "$1 shelled out of $::host" if $text =~ /session closed for user (\w+)/ && !grep $_ eq $1, @userfilter;
 
 	# Su to root
 	$msg = "$1 is now root on $::host" if $text =~ /Successful su for root by (\w+)/;
