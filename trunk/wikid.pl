@@ -98,7 +98,8 @@ if ( $ARGV[0] eq '--remove' ) {
 serverInitialise();
 ircInitialise();
 wikiLogin( $wiki, $wikiuser, $wikipass );
-logAdd $::db = DBI->connect( "DBI:mysql:$::dbname", $dbuser, $dbpass ) ? "Connected '$dbuser' to '$::dbname" : DBI->errstr;
+$::db = DBI->connect( "DBI:mysql:$::dbname", $dbuser, $dbpass );
+logAdd defined $::db ? "Connected '$dbuser' to '$::dbname" : DBI->errstr;
 print $::ircsock "PRIVMSG $ircchannel :$motd\n";
 
 # Initialise watched files list
