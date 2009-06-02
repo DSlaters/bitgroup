@@ -32,17 +32,27 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.2.5'; # 2009-06-02
+$::ver      = '3.2.6'; # 2009-06-02
 $::dir      = $Bin;
 $::log      = "$::dir/$::daemon.log";
-$motd       = "Hail Earthlings! $::daemon-$::ver is in the heeeeeouse! (rock)";
+my $motd    = "Hail Earthlings! $::daemon-$::ver is in the heeeeeouse! (rock)";
 
-# Wiki
-$wiki       = 'http://localhost/wiki/index.php';
-$wikipass   = '*****';
-#$wikidb     = 
-#$wikidbuser = 
-#$wikidbpass = 
+# Wiki - try and determine wikidb from wiki's localsettings.php
+if ( -e '/var/www/domains/localhost/LocalSettings.php' ) {
+	my $ls = readFile( '/var/www/domains/localhost/LocalSettings.php' );
+	$::dbname = $1 if $ls =~ /\$wgDBname\s*=\s*['"](.+?)["']/;
+	$::dbpre  = $1 if $ls =~ /\$wgDBprefix\s*=\s*['"](.+?)["']/;
+	$short    = $1 if $ls =~ /\$wgShortName\s*=\s*['"](.+?)["']/;
+}
+
+# Get DB user/pass from wiia.php and attempt connection
+if ( -e '/var/www/extensions/wikia.php' ) {
+	my $wikia = readFile( '/var/www/extensions/wikia.php' );
+	my $dbuser = $1 if $wikia =~ /\$wgDBuser\s*=\s*['"](.+?)["']/;
+	my $dbpass = $1 if $wikia =~ /\$wgDBpassword\s*=\s*['"](.+?)["']/;
+	$::db = DBI->connect( "DBI:mysql:$::dbname", $dbuser, $dbpass )
+		or die "Can't connect '$dbuser' to '$dbname' database! (mysqlerr: ".DBI->errstr.")";
+} else { die "wikia.php not found!" }
 
 # IRC server
 $ircserver  = 'irc.organicdesign.co.nz';
