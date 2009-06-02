@@ -32,7 +32,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.2.4'; # 2009-06-02
+$::ver      = '3.2.5'; # 2009-06-02
 $::dir      = $Bin;
 $::log      = "$::dir/$::daemon.log";
 $motd       = "Hail Earthlings! $::daemon-$::ver is in the heeeeeouse! (rock)";
@@ -343,7 +343,7 @@ sub onFileChanged {
 	}
 	
 	# User SSH start
-	$msg = "$1 shelled in to $::host" if $text =~ /session opened for user (\w+) by/;
+	$msg = "$1 shelled in to $::host" if $text =~ /session opened for user (\w+) by/ && $1 ne 'root';
 
 	# User SSH stop
 	$msg = "$1 shelled out of $::host" if $text =~ /session closed for user (\w+)/ && $1 ne 'root';
