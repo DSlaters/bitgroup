@@ -29,9 +29,10 @@ require "$Bin/wiki.pl";
 
 # Daemon parameters
 $::daemon   = 'wikid';
+$::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.2.1'; # 2009-06-01
+$::ver      = '3.2.4'; # 2009-06-02
 $::dir      = $Bin;
 $::log      = "$::dir/$::daemon.log";
 $motd       = "Hail Earthlings! $::daemon-$::ver is in the heeeeeouse! (rock)";
@@ -50,6 +51,7 @@ $ircchannel = '#organicdesign';
 $ircpass    = '*****';
 
 # Override default with config file
+# TODO: config should come from shared record index
 require "$Bin/$::daemon.conf";
 $::name   = $name if $name;
 $::port   = $port if $port;
@@ -90,18 +92,27 @@ ircInitialise();
 wikiLogin( $wiki, $wikiuser, $wikipass );
 print $::ircsock "PRIVMSG $ircchannel :$motd\n";
 
+# Initialise watched files list
+# TODO: this list should be drawn from shared record index
+my @files = ( '/var/log/auth.log' );
+my %files = ();
+for ( @files ) {
+	my @stat = stat $_;
+	$files{$_} = $stat[7];
+}
+
 #---------------------------------------------------------------------------------------------------------#
 # MAIN SERVER & CRON LOOP
-my @cron = ();
+my $i = 0;
 while( 1 ) {
 
-	# Check if any of the cron items match the current localtime
-	my $date = scalar localtime;
-	for my $i ( @cron ) {
-		if ( $i =~ /^\*\s*\/(.+?)\/\s*:\s*(\S+)\s*(.+)?/ ) {
-			my( $rule, $func, $args ) = ( $1, $2, $3 );
-			spawn( $func, split /\s*,\s*/, $args ) if $date =~ /$rule/;
-		}
+	# Check one of the files in the list for size change each iteration
+	my $file = $files[ $i = $i < $#files ? $i + 1 : 0 ];
+	my @stat = stat $file;
+	my $size = $stat[7];
+	if ( $size != $files{$file} ) {
+		onFileChanged( $file, $files{$file}, $size );
+		$files{$file} = $size;
 	}
 
 	# Handle current socket connections
@@ -294,8 +305,8 @@ sub ircHandleConnections {
 					}
 
 					# Extract info and tidy
-					( $nick, $type, $chan ) = split( / /, $_ );
-					( $nick, $host ) = split( /!/, $nick );
+					my( $nick, $type, $chan ) = split( / /, $_ );
+					my( $nick, $host ) = split( /!/, $nick );
 					$nick =~ s/://;
 					$text =~ s/[:\r\n]+//;
 
@@ -314,9 +325,41 @@ sub ircHandleConnections {
 	}
 }
 
+#---------------------------------------------------------------------------------------------------------#
+# FILE EVENTS
+sub onFileChanged {
+	my $file    = shift;
+	my $oldsize = shift;
+	my $newsize = shift;
+	my $text    = '';
+	my $msg     = '';
+
+	# Read in difference
+	if ( $newsize > $oldsize and open FH, '<', $file ) {
+		binmode FH;
+		seek FH, $oldsize, 0;
+		sysread FH, $text, $newsize - $oldsize;
+		close FH;
+	}
+	
+	# User SSH start
+	$msg = "$1 shelled in to $::host" if $text =~ /session opened for user (\w+) by/;
+
+	# User SSH stop
+	$msg = "$1 shelled out of $::host" if $text =~ /session closed for user (\w+)/ && $1 ne 'root';
+
+	# Su to root
+	$msg = "$1 is now root on $::host" if $text =~ /Successful su for root by (\w+)/;
+
+	print $::ircsock "PRIVMSG $ircchannel :$msg\n" if $msg;
+	logAdd( "$oldsize,$newsize\n$text\n" );
+
+}
+
+
 
 #---------------------------------------------------------------------------------------------------------#
-# EVENTS
+# WIKI EVENTS
 # $::script, $::site, $::event, $::data available
 
 sub onUserLoginComplete {
