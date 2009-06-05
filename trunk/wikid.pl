@@ -32,7 +32,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.2.8'; # 2009-06-02
+$::ver      = '3.2.9'; # 2009-06-02
 $::dir      = $Bin;
 $::log      = "$::dir/$::daemon.log";
 my $motd    = "Hail Earthlings! $::daemon-$::ver is in the heeeeeouse! (rock)";
@@ -104,7 +104,7 @@ print $::ircsock "PRIVMSG $ircchannel :$motd\n";
 
 # Initialise watched files list
 # TODO: this list should be drawn from shared record index
-my @files = ( '/var/log/auth.log' );
+my @files = ( '/var/log/auth.log', '/var/log/syslog' );
 my %files = ();
 for ( @files ) {
 	my @stat = stat $_;
@@ -361,6 +361,9 @@ sub onFileChanged {
 
 	# Su to root
 	$msg = "$1 is now root on $::host" if $text =~ /Successful su for root by (\w+)/;
+
+	# VPN connection
+	$msg = "VPN connection established from $1" if $text =~ /Peer Connection Initiated with ([0-9.]+):/;
 
 	print $::ircsock "PRIVMSG $ircchannel :$msg\n" if $msg;
 	logAdd( "$oldsize,$newsize\n$text\n" );
