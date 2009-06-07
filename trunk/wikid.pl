@@ -32,7 +32,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.2.9'; # 2009-06-02
+$::ver      = '3.2.10'; # 2009-06-07
 $::dir      = $Bin;
 $::log      = "$::dir/$::daemon.log";
 my $motd    = "Hail Earthlings! $::daemon-$::ver is in the heeeeeouse! (rock)";
@@ -42,14 +42,14 @@ if ( -e '/var/www/domains/localhost/LocalSettings.php' ) {
 	my $ls = readFile( '/var/www/domains/localhost/LocalSettings.php' );
 	$::dbname = $1 if $ls =~ /\$wgDBname\s*=\s*['"](.+?)["']/;
 	$::dbpre  = $1 if $ls =~ /\$wgDBprefix\s*=\s*['"](.+?)["']/;
-	$short    = $1 if $ls =~ /\$wgShortName\s*=\s*['"](.+?)["']/;
+	$::short  = $1 if $ls =~ /\$wgShortName\s*=\s*['"](.+?)["']/;
 }
 
-# Get DB user/pass from wiia.php
+# Get DB user/pass from wikia.php
 if ( -e '/var/www/extensions/wikia.php' ) {
 	my $wikia = readFile( '/var/www/extensions/wikia.php' );
-	my $dbuser = $1 if $wikia =~ /\$wgDBuser\s*=\s*['"](.+?)["']/;
-	my $dbpass = $1 if $wikia =~ /\$wgDBpassword\s*=\s*['"](.+?)["']/;
+	$::dbuser = $1 if $wikia =~ /\$wgDBuser\s*=\s*['"](.+?)["']/;
+	$::dbpass = $1 if $wikia =~ /\$wgDBpassword\s*=\s*['"](.+?)["']/;
 }
 
 # IRC server
@@ -98,8 +98,8 @@ if ( $ARGV[0] eq '--remove' ) {
 serverInitialise();
 ircInitialise();
 wikiLogin( $wiki, $wikiuser, $wikipass );
-$::db = DBI->connect( "DBI:mysql:$::dbname", $dbuser, $dbpass );
-logAdd( defined $::db ? "Connected '$dbuser' to '$::dbname" : DBI->errstr );
+$::db = DBI->connect( "DBI:mysql:$::dbname", $::dbuser, $::dbpass );
+logAdd( defined $::db ? "Connected '$::dbuser' to DBI:mysql:$::dbname" : "Could not connect '$::dbuser' to '$::dbname': " . DBI->errstr );
 print $::ircsock "PRIVMSG $ircchannel :$motd\n";
 
 # Initialise watched files list
