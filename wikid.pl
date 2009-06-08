@@ -32,7 +32,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.2.10'; # 2009-06-07
+$::ver      = '3.2.11'; # 2009-06-09
 $::dir      = $Bin;
 $::log      = "$::dir/$::daemon.log";
 my $motd    = "Hail Earthlings! $::daemon-$::ver is in the heeeeeouse! (rock)";
@@ -366,7 +366,7 @@ sub onFileChanged {
 	$msg = "VPN connection established from $1" if $text =~ /Peer Connection Initiated with ([0-9.]+):/;
 
 	print $::ircsock "PRIVMSG $ircchannel :$msg\n" if $msg;
-	logAdd( "$oldsize,$newsize\n$text\n" );
+	logAdd( "$file changed: ($oldsize/$newsize" );
 
 }
 
