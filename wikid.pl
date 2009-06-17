@@ -7,11 +7,11 @@
 # - license GNU General Public Licence 2.0 or later
 use POSIX qw(strftime setsid);
 use FindBin qw($Bin);
-use Cwd;
 use HTTP::Request;
 use LWP::UserAgent;
 use Expect;
 use Net::SCP::Expect;
+use Net::XMPP;
 use IO::Socket;
 use IO::Select;
 use MIME::Base64;
@@ -32,7 +32,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.2.12'; # 2009-06-11
+$::ver      = '3.2.14'; # 2009-06-17
 $::dir      = $Bin;
 $::log      = "$::dir/$::daemon.log";
 my $motd    = "Hail Earthlings! $::daemon-$::ver is in the heeeeeouse! (rock)";
@@ -165,6 +165,44 @@ sub writeFile {
 		return $file;
 	}
 }
+
+# Read in and execute a snippet
+sub declare {
+	$::subname = shift;
+	if (open FH,'<',$::subname) {
+		logAdd("Declaring \"$::subname\"") unless $@;
+		binmode FH;
+		sysread FH, (my $code), -s $::subname;
+		close FH;
+		eval $code;
+		logAdd("\"$::subname\" failed: $@") if $@;
+	}
+	else { logAdd("Couldn't declare $::subname!") }
+	$::subname = '';
+}
+
+# Function for spawning a child to execute a function by name
+sub spawn {
+	my $subname = shift;
+	my $subref = eval '\&$subname';
+	$SIG{CHLD} = 'IGNORE';
+	if (defined(my $pid = fork)) {
+		if ($pid) { logAdd("Spawned child ($pid) for \"$subname\"") }
+		else {
+			$::subname = $subname;
+			$0 = "$::daemon: $::name ($subname)";
+			&$subref(@_);
+			exit;
+		}
+	}
+	else { logAdd("Cannot fork a child for \"$subname\": $!") }
+}
+
+# Function to start an instance of this daemon
+sub start {
+	qx( "/etc/init.d/$::daemon.sh" );
+}
+
 
 #---------------------------------------------------------------------------------------------------------#
 # SERVER FUNCTIONS
@@ -326,8 +364,15 @@ sub ircHandleConnections {
 						$ts = $1 if $ts =~ /(\d\d:\d\d:\d\d)/;
 						logAdd( "[IRC/$nick] $text" ) if $ircserver eq '127.0.0.1';
 
-						# Respond to known messages
-						&doInfo if $text =~ /^($ircuser|$::daemon) info/i;
+						# Perform an action if it exists
+						if ( $text =~ /^($ircuser|$::daemon) (.+)$/ ) {
+							$title = ucfirst $2;
+							$::action = "do$title";
+							if ( defined &$::action ) {
+								logAdd( "Processing \"$title\" action issued from $nick" );
+								&$::action;
+							} else { logAdd( "Unknown action \"$title\" requested!" ) }
+						}
 					}
 				}
 			}
@@ -475,4 +520,25 @@ sub doUpdateAccount {
 # Output information about self
 sub doInfo {
 	print $::ircsock "PRIVMSG $ircchannel :I'm a $::daemon version $::ver listening on port $::port.\n";
+}
+
+# Update and restart
+sub doUpdate {
+	print $::ircsock "PRIVMSG $ircchannel :Updating code-base and tools...\n";
+	my $result = qx( "cd /var/www/tools && svn update" );
+	print $::ircsock "PRIVMSG $ircchannel :$result\n";	
+	my $exp = Expect->spawn( "/etc/init.d/wikid" );
+	$exp->soft_close();
+}
+
+# Restart
+sub doRestart {
+	print $::ircsock "PRIVMSG $ircchannel :Restarting...\n";
+	logAdd( "Closing handles..." );
+	serverDisconnect $_ for keys %$::streams;
+	logAdd( "Stopping listeners..." );
+	$::server->shutdown(2);
+	$::ircsock->shutdown(2);
+	spawn "start";
+	exit(0);
 }
