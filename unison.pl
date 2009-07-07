@@ -1,19 +1,14 @@
 #!/usr/bin/perl
 use Expect;
 require( '/var/www/tools/wikid.conf' );
-$server = 'foo.com';
-$port = '12345';
+$bak_user = $name unless defined $bak_user;
 
-for $dir (
-	'media',
-	'documents',
-	'logs'
-) {
-	$cmd = "unison $dir ssh://$name\@$server:$port/foo/$dir -batch -force $dir";
+for $dir ( @bak_paths ) {
+	$cmd = "unison $dir ssh://$bak_user\@$bak_server$dir -batch -force $dir";
 	$exp = Expect->spawn( $cmd );
 	$exp->expect(
 		undef,
-		[ qr/password:/ => sub { my $exp = shift; $exp->send( "$sshpass\n" ); exp_continue; } ],
+		[ qr/password:/ => sub { my $exp = shift; $exp->send( "$bak_pass\n" ); exp_continue; } ],
 		[ qr/Synchronization complete/ => sub { } ],
 	);
 	$exp->soft_close();
