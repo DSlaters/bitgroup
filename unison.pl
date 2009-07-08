@@ -4,7 +4,7 @@ require( '/var/www/tools/wikid.conf' );
 $bak_user = $name unless defined $bak_user;
 
 for $dir ( @bak_paths ) {
-	$cmd = "unison $dir ssh://$bak_user\@$bak_server$dir -batch -force $dir";
+	$cmd = "unison $dir ssh://$bak_user\@$bak_server$dir -batch -force $dir -log -logfile /var/log/syslog";
 	$exp = Expect->spawn( $cmd );
 	$exp->expect(
 		undef,
