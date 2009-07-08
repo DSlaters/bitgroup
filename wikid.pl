@@ -32,7 +32,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.2.16'; # 2009-07-08
+$::ver      = '3.2.17'; # 2009-07-08
 $::dir      = $Bin;
 $::log      = "$::dir/$::daemon.log";
 my $motd    = "Hail Earthlings! $::daemon-$::ver is in the heeeeeouse! (rock)";
@@ -399,13 +399,13 @@ sub onFileChanged {
 	}
 	
 	# User SSH start
-	$msg = "$1 shelled in to $::host" if $text =~ /session opened for user (\w+) by/ && !grep $_ eq $1, @userfilter;
+	$msg = "$1 shelled in to $::host" if $text =~ /session opened for user ([-_a-z0-9]+) by/ && !grep $_ eq $1, @userfilter;
 
 	# User SSH stop
-	$msg = "$1 shelled out of $::host" if $text =~ /session closed for user (\w+)/ && !grep $_ eq $1, @userfilter;
+	$msg = "$1 shelled out of $::host" if $text =~ /session closed for user ([-_a-z0-9]+)/ && !grep $_ eq $1, @userfilter;
 
 	# Su to root
-	$msg = "$1 is now root on $::host" if $text =~ /Successful su for root by (\w+)/;
+	$msg = "$1 is now root on $::host" if $text =~ /Successful su for root by ([-_a-z0-9]+)/;
 
 	# VPN connection
 	$msg = "VPN connection established from $1" if $text =~ /Peer Connection Initiated with ([0-9.]+):/;
