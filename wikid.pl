@@ -32,7 +32,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.2.15'; # 2009-06-22
+$::ver      = '3.2.16'; # 2009-07-08
 $::dir      = $Bin;
 $::log      = "$::dir/$::daemon.log";
 my $motd    = "Hail Earthlings! $::daemon-$::ver is in the heeeeeouse! (rock)";
@@ -388,7 +388,7 @@ sub onFileChanged {
 	my $newsize = shift;
 	my $text    = '';
 	my $msg     = '';
-	my @userfilter = ( 'root', 'nobody', 'fit' );
+	my @userfilter = ( 'root', 'nobody', 'fit', 'Bender', 'dcs', 'kg-lan', 'od-lan' );
 
 	# Read in difference
 	if ( $newsize > $oldsize and open FH, '<', $file ) {
@@ -410,8 +410,10 @@ sub onFileChanged {
 	# VPN connection
 	$msg = "VPN connection established from $1" if $text =~ /Peer Connection Initiated with ([0-9.]+):/;
 
+	# Unison synchronisation of file changes completed
+	$msg = $text if $text =~ /Synchronization complete/;
+
 	print $::ircsock "PRIVMSG $ircchannel :$msg\n" if $msg;
-	logAdd( "$file changed: ($oldsize/$newsize" );
 
 }
 
