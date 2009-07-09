@@ -3,16 +3,17 @@
 # - Author: http://www.organicdesign.co.nz/nad
 # - Started: 2007-08-25 {{perl}}{{Category:OD2}}
 use DBI;
+require( '/var/www/tools/wiki.pl' );
 
-$user = 'bender';
-$pwd  = 'g5T45$8';
-$tmp  = '/tmp/replicate-db';
+$user = wikiGetConfig( 'wgDBuser' );
+$pwd  = wikiGetConfig( 'wgDBpassword ');
+$tmp  = '/tmp/add-db';
 
 # Display usage info and die if too few or no parameters supplied
 die "\nReplicate a mediawiki SQL database dump to many databases and prefixes.
 
 Usage:
-	replicate-db TEMPLATE DB1.PREFIX1 [DB2.]PREFIX2 [DB3.]PREFIX3...
+	add-db TEMPLATE DB1.PREFIX1 [DB2.]PREFIX2 [DB3.]PREFIX3...
 Where,
 	TEMPLATE is the name of the *.sql file or db.prefix to use as the template.
 
@@ -50,7 +51,7 @@ if ($template !~ /\.sql$/i) {
 	qx(mysqldump -u $user --password='$pwd' $db $tbl > $tmp);
 	$template = $tmp;
 
-	}
+}
 
 # Read in the template file to $sql
 open FH,'<',$template or die "\nCould not read template file '$template'\n";
@@ -62,7 +63,7 @@ if ($prefix eq '') {
 	die "\nThe template file supplied is not a valid wiki dump\n"
 		unless $sql =~ /^CREATE TABLE `(\w*)recentchanges`/m;
 	$prefix = qr($1);
-	}
+}
 
 # Main replication loop
 for (@ARGV) {
@@ -84,5 +85,5 @@ for (@ARGV) {
 	qx(mysql -u $user --password='$pwd' $db < $tmp);
 	if ($!) { print "Error creating wiki $db.$pre: $!\n" }
 	else    { print "Wiki $db.$pre created.\n" }
-	}
+}
 

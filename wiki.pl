@@ -16,7 +16,7 @@
 #   - get namespaces
 #   - get messages used in patterns (and make methods use messages in their regexp's so lang-independent)
 
-$::wikipl_version = '1.9.0'; # 2009-05-30
+$::wikipl_version = '1.9.1'; # 2009-07-09
 
 use HTTP::Request;
 use LWP::UserAgent;
@@ -43,6 +43,7 @@ sub wikiUpdateTemplate;
 sub wikiMove;
 sub wikiExamineBraces;
 sub wikiGuid;
+sub wikiGetConfig;
 
 # Set up a global client for making HTTP requests as a browser
 $::client = LWP::UserAgent->new(
@@ -623,4 +624,10 @@ sub wikiGuid {
 	$guid = strftime('%Y%m%d', localtime).'-';
 	$guid .= chr( rand() < .72 ? int(rand(26)+65) : int(rand(10)+48) ) for 1..5;
 	return $guid;
+}
+
+# Get a configuration variable value from wikia.php
+sub wikiGetConfig {
+	my $var = shift;
+	return $1 if qx( cat /var/www/extensions/wikia.php|grep $var ) =~ /'(.+)'/;
 }
