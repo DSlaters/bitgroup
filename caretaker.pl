@@ -19,7 +19,7 @@ my $dbh = DBI->connect( 'DBI:mysql:'.$dbname, lc $dbuser, $dbpass ) or die DBI->
 
 # get a list of all titles in a category
 my @list = ();
-my $sth = $dbh->prepare( 'SELECT cl_from FROM categorylinks WHERE cl_to = "PERL"' );
+my $sth = $dbh->prepare( 'SELECT cl_from FROM ' . $dbpfix . 'categorylinks WHERE cl_to = "PERL"' );
 $sth->execute();
 push @list, @row[0] while @row = $sth->fetchrow_array;
 $sth->finish;
