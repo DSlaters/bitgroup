@@ -329,6 +329,7 @@ sub ircInitialise {
 	print $::ircsock "JOIN $ircchannel\n";
 
 	$::ircselect = new IO::Select $::ircsock;
+	logAdd( "$ircuser connected to $ircserver:$ircport" );
 }
 
 # Handle streams from select list needing attention
