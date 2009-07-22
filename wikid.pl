@@ -19,20 +19,12 @@ use Sys::Hostname;
 use DBI;
 require "$Bin/wiki.pl";
 
-# Connect to DB
-#my $dbh = DBI->connect('DBI:mysql:'.$::dbname, lc $::dbuser, $::dbpass) or die DBI->errstr;
-#my $sth = $dbh->prepare('SELECT page_id FROM '.$::dbpfix.'page WHERE page_title = "Zhconversiontable"');
-#$sth->execute();
-#my @row = $sth->fetchrow_array;
-#$sth->finish;
-#my $sth = $dbh->prepare('SELECT page_namespace,page_title,page_is_redirect FROM '.$::dbpfix.'page WHERE page_id=?');
-
 # Daemon parameters
 $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.2.18'; # 2009-07-23
+$::ver      = '3.2.19'; # 2009-07-23
 $::dir      = $Bin;
 $::log      = "$::dir/$::daemon.log";
 my $motd    = "Hail Earthlings! $::daemon-$::ver is in the heeeeeouse! (rock)";
@@ -98,8 +90,12 @@ if ( $ARGV[0] eq '--remove' ) {
 serverInitialise();
 ircInitialise();
 wikiLogin( $wiki, $wikiuser, $wikipass );
-$::db = DBI->connect( "DBI:mysql:$::dbname", $::dbuser, $::dbpass );
-logAdd( defined $::db ? "Connected '$::dbuser' to DBI:mysql:$::dbname" : "Could not connect '$::dbuser' to '$::dbname': " . DBI->errstr );
+
+if ( $::dbuser ) {
+	$::db = DBI->connect( "DBI:mysql:$::dbname", $::dbuser, $::dbpass );
+	logAdd( defined $::db ? "Connected '$::dbuser' to DBI:mysql:$::dbname" : "Could not connect '$::dbuser' to '$::dbname': " . DBI->errstr );
+}
+
 print $::ircsock "PRIVMSG $ircchannel :$motd\n";
 
 # Initialise watched files list
