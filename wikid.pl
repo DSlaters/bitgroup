@@ -32,7 +32,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.2.17'; # 2009-07-08
+$::ver      = '3.2.18'; # 2009-07-23
 $::dir      = $Bin;
 $::log      = "$::dir/$::daemon.log";
 my $motd    = "Hail Earthlings! $::daemon-$::ver is in the heeeeeouse! (rock)";
@@ -65,7 +65,7 @@ $::name   = $name if $name;
 $::port   = $port if $port;
 $wikiuser = $::name unless $wikiuser;
 $ircuser  = $::name unless $ircuser;
-$ircuser  = 'bad-name' unless length $ircuser < 10;
+#$ircuser  = 'bad-name' unless length $ircuser < 10;
 
 # Run as a daemon (see daemonise.pl article for more details and references regarding perl daemons)
 open STDIN, '/dev/null';
