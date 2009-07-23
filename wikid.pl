@@ -24,7 +24,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.2.19'; # 2009-07-23
+$::ver      = '3.2.20'; # 2009-07-24
 $::dir      = $Bin;
 $::log      = "$::dir/$::daemon.log";
 my $motd    = "Hail Earthlings! $::daemon-$::ver is in the heeeeeouse! (rock)";
@@ -246,7 +246,7 @@ sub serverHandleConnections {
 sub serverDisconnect {
 	my $stream = shift;
 	my $handle = $::streams{$stream}{handle};
-	return logAdd( "No valid handle to close for stream$stream!" ) unless defined $handle;
+	return unless defined $handle;
 	$::select->remove( $handle );
 	delete $::streams{$stream};
 	$handle->close();
