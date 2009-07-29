@@ -27,3 +27,5 @@ sub onRevisionInsertComplete {
 		}
 	} else { logAdd( "Not processing (page='$page', user='$user', title='$title')" ) }
 }
+
+1;
