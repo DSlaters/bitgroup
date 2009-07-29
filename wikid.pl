@@ -24,7 +24,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.2.20'; # 2009-07-24
+$::ver      = '3.3.0'; # 2009-07-29
 $::dir      = $Bin;
 $::log      = "$::dir/$::daemon.log";
 my $motd    = "Hail Earthlings! $::daemon-$::ver is in the heeeeeouse! (rock)";
@@ -50,7 +50,7 @@ $ircport    = 6667;
 $ircchannel = '#organicdesign';
 $ircpass    = '*****';
 
-# Override default with config file
+# Override default with config file (this is included again at the end so that it can replace event functions)
 # TODO: config should come from shared record index
 require "$Bin/$::daemon.conf";
 $::name   = $name if $name;
@@ -541,3 +541,7 @@ sub doRestart {
 	spawn "start";
 	exit(0);
 }
+
+
+# Include the config again so that it can replace default functions
+require "$Bin/$::daemon.conf";
