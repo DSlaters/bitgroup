@@ -1,5 +1,6 @@
 # Subroutines for DCS linking system called by wikid.pl
 
+# Overrides default event
 sub onRevisionInsertComplete {
 	my $id      = $::data =~ /'mId'\s*=>\s*([0-9]+)/       ? $1 : '';
 	my $page    = $::data =~ /'mPage'\s*=>\s*([0-9]+)/     ? $1 : '';
