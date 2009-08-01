@@ -415,7 +415,7 @@ sub onFileChanged {
 	$msg = $text if $text =~ /Synchronization complete/;
 
 	# SVN commits
-	$msg = $text if $text =~ /repo updated/;
+	$msg = $text if $text =~ /repo updated to revision/;
 
 	print $::ircsock "PRIVMSG $ircchannel :$msg\n" if $msg;
 
