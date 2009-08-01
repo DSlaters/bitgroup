@@ -27,4 +27,14 @@ sub onRevisionInsertComplete {
 	} else { logAdd( "Not processing (page='$page', user='$user', title='$title')" ) }
 }
 
+# Parse some article text and update terms links
+sub parseContent {
+	my $text = shift;
+	return $text;
+}
+
+# Scan all articles in all wikis and update links in each
+sub scanArticles {
+}
+
 1;

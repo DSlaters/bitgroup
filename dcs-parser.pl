@@ -9,30 +9,33 @@ $pass = 'yN$ger0';
 
 wikiLogin( $wiki, $user, $pass ) or die "Couldn't log into wiki!";
 
+sub doPage {
+	if ( $text ) {
+		if ( $title ) {
+			wikiEdit( $wiki, $title, $text, "Content imported from $file" );
+			sleep 1 if $changed; # delay to give time for the bot to update terms links
+		}
+		else {
+			logAdd( "Warning: Content preceeding first title marker ignored" );
+		}
+		$text = '';
+	}
+}
+
 $line = 1;
 for $file ( glob "$dir/*" ) {
 
-	print "Processing \"$file\"";
+	print "Processing \"$file\"\n";
 	logAdd( "Processing \"$file\"" );
-	open INPUT, '<', $_ or die "Could not open input file '$file'!";
+	open INPUT, '<', $file or die "Could not open input file '$file'!";
 
 	$title = '';
 	$text  = '';
 	for ( <INPUT> ) {
-		
-		if ( /^>>>\s*(.+)\s*<<<\s*/ ) {
-			
-			if ( $text ) {
-				if ( $title ) {
-					wikiEdit( $wiki, $title, $text, "Content imported from $file" );
-				}
-				else {
-					logAdd( "Warning: Content preceeding first title marker ignored" );
-				}
-			}
 
+		if ( /^>>>\s*(.+)\s*<<<\s*/ ) {
+			&doPage;
 			$title = $1;
-			
 		}
 		elsif ( /^>>>/ or /<<<\s*$/ ) {
 			logAdd( "Error: badly formed title markup on line $line" );
@@ -41,10 +44,8 @@ for $file ( glob "$dir/*" ) {
 			$text .= $_;
 		}
 		
-		
 	$line++;
 	}
-	
 	close INPUT;
-	 
+	&doPage;
 }
