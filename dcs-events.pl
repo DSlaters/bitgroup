@@ -28,7 +28,6 @@ sub onRevisionInsertComplete {
 	} else { logAdd( "Not processing (page='$page', user='$user', title='$title')" ) }
 }
 
-
 # Parse some article text and update terms links
 sub parseContent {
 	my $text = shift;
