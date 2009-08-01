@@ -24,7 +24,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.3.0'; # 2009-07-29
+$::ver      = '3.3.1'; # 2009-08-01
 $::dir      = $Bin;
 $::log      = "$::dir/$::daemon.log";
 my $motd    = "Hail Earthlings! $::daemon-$::ver is in the heeeeeouse! (rock)";
@@ -100,11 +100,13 @@ print $::ircsock "PRIVMSG $ircchannel :$motd\n";
 
 # Initialise watched files list
 # TODO: this list should be drawn from shared record index
-my @files = ( '/var/log/auth.log', '/var/log/syslog' );
+my @files = ( '/var/log/auth.log', '/var/log/syslog', '/var/log/svn.log' );
 my %files = ();
 for ( @files ) {
-	my @stat = stat $_;
-	$files{$_} = $stat[7];
+	if ( -e $_ ) {
+		my @stat = stat $_;
+		$files{$_} = $stat[7];
+	}
 }
 
 #---------------------------------------------------------------------------------------------------------#
@@ -409,6 +411,9 @@ sub onFileChanged {
 
 	# Unison synchronisation of file changes completed
 	$msg = $text if $text =~ /Synchronization complete/;
+
+	# SVN commits
+	$msg = $text if $text =~ /svn repo updated/;
 
 	print $::ircsock "PRIVMSG $ircchannel :$msg\n" if $msg;
 
