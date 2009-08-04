@@ -1,4 +1,12 @@
+#!/usr/bin/perl
 # Subroutines for DCS linking system called by wikid.pl
+
+use DBI;
+$::dbname = 'svn';
+$::dbuser = 'root';
+$::dbpass = 'pPq6r94';
+$::dbpre = '';
+$::db = DBI->connect( "DBI:mysql:$::dbname", $::dbuser, $::dbpass );
 
 # Overrides default event
 sub onRevisionInsertComplete {
@@ -32,39 +40,42 @@ sub onRevisionInsertComplete {
 sub parseContent {
 	my $text = shift;
 	
-	# read MediaWiki:TermsList
-	
-	# sort
-	
-	# loop thru them
-	
-		# if ( target ) 
-	
-		# check for each term in unlinked form for ones needing terms
-		
-		# check for linked ones to "undo" if marked as not linking (no target)
-	
+	# read MediaWiki:TermsList if not already read in
+	$::TermsList = '' unless defined $::TermsList;
+	$::TermsList = wikiRawPage( $::wiki, 'MediaWiki:TermsList' ) unless $::TermsList;
+
+	#while ( $row = $dbr->fetchRow( $res ) ) $terms[] = str_replace( '_', ' ', $row[0] );
+	#$this->terms = join( '|', $terms );
+	#$text = preg_replace_callback( "|<p>.+?</p>|s", array( $this, 'replaceTerms' ), $text );
+
+	# Loop through terms from longest to shortest
+	for my $term ( sort { length($b) <=> length($a) } keys %terms ) {
+		my $target = $terms($term};
+		if ( $target ) {
+			# check for each term in unlinked form for ones needing terms
+		} else {
+			# check for linked ones to "undo" if marked as not linking (no target)
+		}
+	}
+
 	return $text;
 }
 
 # Scan all articles in all wikis and update links in each
 sub scanArticles {
 
-	# Build a list of all articles in the wiki
-	my $sth = $::db->prepare( 'SELECT page_id FROM ' . $::dbpre . 'page WHERE page_title = "Zhconversiontable"' );
-	$sth->execute();
-	my @row = $sth->fetchrow_array;
-	$sth->finish;
-	my $first = $row[0]+1;
-	my $sth = $dbh->prepare( 'SELECT page_id FROM ' . $::dbpre . 'page ORDER BY page_id DESC' );
-	$sth->execute();
-	@row = $sth->fetchrow_array;
-	$sth->finish;
-	my $last = $row[0];
-	@list = ( $first .. $last );
+	# Clear the TermsList cache first
+	$::TermsList = '';
 
-	# Loop through all articles
-	my $sthid = $dbh->prepare( 'SELECT page_namespace,page_title,page_is_redirect FROM ' . $dbpre . 'page WHERE page_id=?' );
+	# Get ID's of all articles that are not in MediaWiki namespace
+	my @list = ();
+	my $sth = $::db->prepare( 'SELECT page_id FROM ' . $::dbpre . 'page WHERE page_namespace != 8' );
+	$sth->execute();
+	push @list, @row[0] while @row = $sth->fetchrow_array;
+	$sth->finish;
+
+	# Loop through list
+	my $sthid = $::db->prepare( 'SELECT page_namespace,page_title,page_is_redirect FROM ' . $::dbpre . 'page WHERE page_id=?' );
 	my $done = 'none';
 	for ( @list ) {
 		$sthid->execute( $_ );
@@ -77,5 +88,7 @@ sub scanArticles {
 		}
 	}
 }
+
+scanArticles();
 
 1;

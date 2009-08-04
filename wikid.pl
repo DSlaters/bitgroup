@@ -24,7 +24,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.3.1'; # 2009-08-01
+$::ver      = '3.3.2'; # 2009-08-04
 $::dir      = $Bin;
 $::log      = "$::dir/$::daemon.log";
 my $motd    = "Hail Earthlings! $::daemon-$::ver is in the heeeeeouse! (rock)";
@@ -282,7 +282,7 @@ sub serverProcessMessage {
 		if ( $::script and defined &$::event ) {
 			logAdd( "Processing \"$title\" hook from $::site" );
 			&$::event;
-		} else { logAdd( "Unknown event \"$title\" received!" ) }			
+		} else { logAdd( "Unknown event \"$title\" received!" ) }
 
 	} else { $http = "401 Authorization Required\r\nWWW-Authenticate: Basic realm=\"private\"" }
 
@@ -376,6 +376,12 @@ sub ircHandleConnections {
 					}
 				}
 			}
+		}
+
+		# Stream closed, try reconnecting
+		else {
+			serverDisconnect( $handle );
+			ircInitialise();
 		}
 	}
 }
