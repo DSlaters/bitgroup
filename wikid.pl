@@ -24,7 +24,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.3.2'; # 2009-08-04
+$::ver      = '3.3.3'; # 2009-08-05
 $::dir      = $Bin;
 $::log      = "$::dir/$::daemon.log";
 my $motd    = "Hail Earthlings! $::daemon-$::ver is in the heeeeeouse! (rock)";
@@ -304,8 +304,8 @@ sub ircInitialise {
 
 	# Log in to an IRC channel
 	$::ircsock = IO::Socket::INET->new(
-		PeerAddr => $ircserver,
-		PeerPort => $ircport,
+		PeerAddr => $::ircserver,
+		PeerPort => $::ircport,
 		Proto    => 'tcp'
 	) or die "could not connect to the IRC server ($ircserver:$ircport)";
 
@@ -380,6 +380,7 @@ sub ircHandleConnections {
 
 		# Stream closed, try reconnecting
 		else {
+			logAdd( "Disconnected from $::ircserver:$::ircport" );
 			serverDisconnect( $handle );
 			ircInitialise();
 		}
