@@ -24,7 +24,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.3.3'; # 2009-08-05
+$::ver      = '3.3.4'; # 2009-08-14
 $::dir      = $Bin;
 $::log      = "$::dir/$::daemon.log";
 my $motd    = "Hail Earthlings! $::daemon-$::ver is in the heeeeeouse! (rock)";
@@ -382,6 +382,7 @@ sub ircHandleConnections {
 		else {
 			logAdd( "Disconnected from $::ircserver:$::ircport" );
 			serverDisconnect( $handle );
+			sleep 5;
 			ircInitialise();
 		}
 	}
