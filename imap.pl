@@ -33,10 +33,10 @@ if(0) {
 }
     # the list of all folders
     @folders = $server->mailboxes();
-	print "folders: @folders\n";
+#	print "folders: @folders\n";
 
     # create a folder
-    $server->create_mailbox( 'newfolder' );
+    $server->create_mailbox( 'Contacts.newfolder' );
 
     # rename a folder
 #    $server->rename_mailbox( 'newfolder', 'renamedfolder' );
@@ -45,7 +45,7 @@ if(0) {
 #    $server->delete_mailbox( 'renamedfolder' );
 
     # copy a message to another folder
-#    $server->copy( $self, $msg, 'renamedfolder' );
+   print  $server->copy( 1, 'Contacts' );
 
     # close the connection
     $server->quit();
