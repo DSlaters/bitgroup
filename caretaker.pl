@@ -1,5 +1,9 @@
 #!/usr/bin/perl
-# {{perl}}
+# caretaker.pl - Organic Design wiki caretaker script{{perl}}
+#
+# - See http://www.organicdesign.co.nz/caretaker.pl
+# - copyright © 2007 Aran Dunkley
+# - license GNU General Public Licence 2.0 or later
 use DBI;
 require "wiki.pl";
 require "wikid.conf";
