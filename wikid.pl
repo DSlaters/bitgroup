@@ -24,7 +24,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.3.5'; # 2009-08-24
+$::ver      = '3.3.6'; # 2009-08-24
 $::dir      = $Bin;
 $::log      = "$::dir/$::daemon.log";
 my $motd    = "Hail Earthlings! $::daemon-$::ver is in the heeeeeouse! (rock)";
@@ -519,13 +519,14 @@ sub doUpdateAccount {
 	}
 
 	# Update the samba passwd too
-	print $::ircsock "PRIVMSG $ircchannel :Synchronising samba account\n";
-	my $exp = Expect->spawn( "smbpasswd -a $user" );
-	$exp->expect( 5,
-		[ qr/password:/ => sub { my $exp = shift; $exp->send( "$pass\n" ); exp_continue; } ],
-		[ qr/password:/ => sub { my $exp = shift; $exp->send( "$pass\n" ); } ],
-	);
-	$exp->soft_close();
+	if ( my $exp = Expect->spawn( "smbpasswd -a $user" ) ) {
+		print $::ircsock "PRIVMSG $ircchannel :Synchronising samba account\n";
+		$exp->expect( 5,
+			[ qr/password:/ => sub { my $exp = shift; $exp->send( "$pass\n" ); exp_continue; } ],
+			[ qr/password:/ => sub { my $exp = shift; $exp->send( "$pass\n" ); } ],
+		);
+		$exp->soft_close();
+	}
 
 	# Restart samba
 	#print $::ircsock "PRIVMSG $ircchannel :Restarting Samba server...\n";
