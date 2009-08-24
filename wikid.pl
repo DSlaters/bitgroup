@@ -24,7 +24,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.3.4'; # 2009-08-14
+$::ver      = '3.3.5'; # 2009-08-24
 $::dir      = $Bin;
 $::log      = "$::dir/$::daemon.log";
 my $motd    = "Hail Earthlings! $::daemon-$::ver is in the heeeeeouse! (rock)";
@@ -486,6 +486,9 @@ sub doUpdateAccount {
 	my $user = lc shift;
 	my $pass = shift;
 	$user =~ s/ /_/g;
+
+	# if the @users array exists, bail unless user is in it
+	return if defined @::users and not grep /$user/i, @::users;
 
 	# If unix account exists, change its password
 	if ( -d "/home/$user" ) {
