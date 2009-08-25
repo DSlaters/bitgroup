@@ -17,6 +17,7 @@ use IO::Select;
 use MIME::Base64;
 use Sys::Hostname;
 use DBI;
+use PHP::Serialization qw(serialize unserialize);
 require "$Bin/wiki.pl";
 
 # Daemon parameters
@@ -24,7 +25,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.3.6'; # 2009-08-24
+$::ver      = '3.4.0'; # 2009-08-25
 $::dir      = $Bin;
 $::log      = "$::dir/$::daemon.log";
 my $motd    = "Hail Earthlings! $::daemon-$::ver is in the heeeeeouse! (rock)";
