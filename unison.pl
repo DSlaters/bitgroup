@@ -22,5 +22,5 @@ if ( defined $wikipass ) {
 	my $text = '';
 	$text .= qx( du -sh $_ ) . "\n" for @stat_paths;
 	$text = "<pre>\n$text</pre>";
-	wikiEdit( $wiki, 'Template:FileSystemUsage', $text, 'Update usage statistics' );
+	wikiEdit( $wiki, 'Config:FileSystemUsage', $text, 'Update usage statistics' );
 }
