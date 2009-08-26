@@ -576,7 +576,7 @@ require "$Bin/$::daemon.conf";
 # JOBS
 # - later the specific job functions should be moved out into a work directory
 
-# Read in or create the persistent work hash
+# Read in or initialise the persistent work hash
 sub workInitialise {
 	if ( -e $::wkfile ) {
 		my $ref = unserialize( readFile( $::wkfile ) );
@@ -593,6 +593,17 @@ sub workExecute {
 	my %job = %{ $::work[$::wptr%($#::work+1)] };
 	my $jsub = 'main' . $job{'type'};
 	writeFile( $::wkfile, serialize( [ \@::work, ++$::wptr ] ) ) if &$jsub == 1;
+}
+
+# Add a new job to the work queue
+sub workStartJob {
+	my $type = shift;
+	my $data = shift;
+}
+
+# Remove a job from the work queue
+sub workStopJob {
+	my $job = shift;
 }
 
 sub initDcsLinks {
