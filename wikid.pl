@@ -28,6 +28,7 @@ $::port     = 1729;
 $::ver      = '3.4.0'; # 2009-08-25
 $::dir      = $Bin;
 $::log      = "$::dir/$::daemon.log";
+$::wkfile   = "$::dir/$::daemon.work";
 my $motd    = "Hail Earthlings! $::daemon-$::ver is in the heeeeeouse! (rock)";
 
 # Wiki - try and determine wikidb from wiki's localsettings.php
@@ -86,10 +87,11 @@ if ( $ARGV[0] eq '--remove' ) {
 	exit(0);
 }
 
-# Initialise services, logins and connections
+# Initialise services, current work, logins and connections
 %::streams = ();
 serverInitialise();
 ircInitialise();
+workInitialise();
 wikiLogin( $wiki, $wikiuser, $wikipass );
 
 if ( $::dbuser ) {
@@ -130,6 +132,9 @@ while( 1 ) {
 
 	# Handle current IRC connections
 	ircHandleConnections();
+
+	# Execute a job from the current work
+	workExecute();
 
 }
 
@@ -566,3 +571,36 @@ sub doRestart {
 
 # Include the config again so that it can replace default functions
 require "$Bin/$::daemon.conf";
+
+#---------------------------------------------------------------------------------------------------------#
+# JOBS
+# - later the specific job functions should be moved out into a work directory
+
+# Read in or create the persistent work hash
+sub workInitialise {
+	if ( -e $::wkfile ) {
+		my $ref = unserialize( readFile( $::wkfile ) );
+		@::work = @{$$ref[0]};
+		$::wptr = $$ref[1];
+	} else {
+		@::work = ();
+		$::wptr = 0;
+	}
+}
+
+# Call current jobs "main" then rotates work pointer and saves state if returned success
+sub workExecute {
+	my %job = %{ $::work[$::wptr%($#::work+1)] };
+	my $jsub = 'main' . $job{'type'};
+	writeFile( $::wkfile, serialize( [ \@::work, ++$::wptr ] ) ) if &$jsub == 1;
+	}
+}
+
+sub initDcsLinks {
+}
+
+sub mainDcsLinks {
+}
+
+sub stopDcsLinks {
+}
