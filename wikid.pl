@@ -593,7 +593,6 @@ sub workExecute {
 	my %job = %{ $::work[$::wptr%($#::work+1)] };
 	my $jsub = 'main' . $job{'type'};
 	writeFile( $::wkfile, serialize( [ \@::work, ++$::wptr ] ) ) if &$jsub == 1;
-	}
 }
 
 sub initDcsLinks {
