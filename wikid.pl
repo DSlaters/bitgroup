@@ -592,6 +592,11 @@ sub workInitialise {
 sub workExecute {
 	my %job = %{ $::work[$::wptr%($#::work+1)] };
 	my $jsub = 'main' . $job{'type'};
+	
+	# pass the job hash to the sub
+	# inc the jobs ptr
+	# stop the job if it set a size and has finished
+	
 	writeFile( $::wkfile, serialize( [ \@::work, ++$::wptr ] ) ) if &$jsub == 1;
 }
 
