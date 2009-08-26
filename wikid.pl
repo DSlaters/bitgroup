@@ -25,7 +25,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.4.0'; # 2009-08-25
+$::ver      = '3.4.1'; # 2009-08-27
 $::dir      = $Bin;
 $::log      = "$::dir/$::daemon.log";
 $::wkfile   = "$::dir/$::daemon.work";
@@ -39,12 +39,9 @@ if ( -e '/var/www/domains/localhost/LocalSettings.php' ) {
 	$::short  = $1 if $ls =~ /\$wgShortName\s*=\s*['"](.+?)["']/;
 }
 
-# Get DB user/pass from wikia.php
-if ( -e '/var/www/extensions/wikia.php' ) {
-	my $wikia = readFile( '/var/www/extensions/wikia.php' );
-	$::dbuser = $1 if $wikia =~ /\$wgDBuser\s*=\s*['"](.+?)["']/;
-	$::dbpass = $1 if $wikia =~ /\$wgDBpassword\s*=\s*['"](.+?)["']/;
-}
+# DB access defined in wikid.conf now not wikia.php
+$::dbuser = $wgDBuser;
+$::dbpass = $wgDBpassword;
 
 # IRC server
 $ircserver  = 'irc.organicdesign.co.nz';
