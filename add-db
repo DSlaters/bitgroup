@@ -37,13 +37,13 @@ if ( $template !~ /\.sql$/i ) {
 	$dbh = DBI->connect( "dbi:mysql:$db", $wgDBuser, $wgDBpassword )
 		or die "\nCan't connect to database '$db': ", $DBI::errstr, "\n";
 
-        # Obtain list of tables with selected prefix
-        @tbl = ();
-        $sth = $dbh->prepare( 'SHOW TABLES' );
-        $sth->execute() or die "\nCould not select tables: ", $DBI::errstr, "\n";
-        while ( @data = $sth->fetchrow_array() ) { push @tbl, $data[0] if $data[0] =~ /^$prefix/ }
-        die "\nNo tables found with matching prefix\n" if $#tbl < 0;
-        $tbl = join ' ', @tbl;
+	# Obtain list of tables with selected prefix
+	@tbl = ();
+	$sth = $dbh->prepare( 'SHOW TABLES' );
+	$sth->execute() or die "\nCould not select tables: ", $DBI::errstr, "\n";
+	while ( @data = $sth->fetchrow_array() ) { push @tbl, $data[0] if $data[0] =~ /^$prefix/ }
+	die "\nNo tables found with matching prefix\n" if $#tbl < 0;
+	$tbl = join ' ', @tbl;
 
 	# Export tables to tmp file and read into $template 
 	unlink $tmp;
@@ -61,7 +61,7 @@ close FH;
 if ( $prefix eq '' ) {
 	die "\nThe template file supplied is not a valid wiki dump\n"
 		unless $sql =~ /^CREATE TABLE `(\w*)recentchanges`/m;
-	$prefix = qr( $1 );
+	$prefix = $1;
 }
 
 # Main replication loop

@@ -571,7 +571,6 @@ require "$Bin/$::daemon.conf";
 
 #---------------------------------------------------------------------------------------------------------#
 # JOBS
-# - later the specific job functions should be moved out into a work directory
 
 # Read in or initialise the persistent work hash
 sub workInitialise {
@@ -605,14 +604,5 @@ sub workStartJob {
 
 # Remove a job from the work queue
 sub workStopJob {
-	my $job = shift;
-}
-
-sub initDcsLinks {
-}
-
-sub mainDcsLinks {
-}
-
-sub stopDcsLinks {
+	my %job = %{ shift };
 }
