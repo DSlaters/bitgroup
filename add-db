@@ -47,7 +47,7 @@ if ( $template !~ /\.sql$/i ) {
 
 	# Export tables to tmp file and read into $template 
 	unlink $tmp;
-	qx( mysqldump -u $user --password='$pwd' $db $tbl > $tmp );
+	qx( mysqldump -u $wgDBuser --password='$wgDBpassword' $db $tbl > $tmp );
 	$template = $tmp;
 
 }
@@ -81,7 +81,7 @@ for ( @ARGV ) {
 	else { print "Could not write data for wiki $db.$pre to '$tmp'\n" }
 
 	# Pipe the file into MySQL and remove the tmp file
-	qx( mysql -u $user --password='$pwd' $db < $tmp );
+	qx( mysql -u $wgDBuser --password='$wgDBpassword' $db < $tmp );
 	print $! ? "Error creating wiki $db.$pre: $!\n" : "Wiki $db.$pre created.\n";
 }
 
