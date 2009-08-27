@@ -3,10 +3,9 @@
 # - Author: http://www.organicdesign.co.nz/nad
 # - Started: 2007-08-25 {{perl}}{{Category:OD2}}
 use DBI;
+require( '/var/www/tools/wikid.conf' );
 require( '/var/www/tools/wiki.pl' );
 
-$user = wikiGetConfig( 'wgDBuser' );
-$pwd  = wikiGetConfig( 'wgDBpassword ');
 $tmp  = '/tmp/add-db';
 
 # Display usage info and die if too few or no parameters supplied
@@ -30,46 +29,46 @@ Notes:
 # Read in the template SQL
 $prefix = '';
 $template = shift @ARGV;
-if ($template !~ /\.sql$/i) {
+if ( $template !~ /\.sql$/i ) {
 
 	# Template is a database, so needs to be exported to tmp file first
 	$template =~ /^(\w+)\.(\w+)$/;
-	($db,$prefix) = ($1,qr($2));
-	$dbh = DBI->connect("dbi:mysql:$db",$user,$pwd)
-		or die "\nCan't connect to database '$db': ",$DBI::errstr,"\n";
+	( $db, $prefix ) = ( $1, qr($2) );
+	$dbh = DBI->connect( "dbi:mysql:$db", $wgDBuser, $wgDBpassword )
+		or die "\nCan't connect to database '$db': ", $DBI::errstr, "\n";
 
         # Obtain list of tables with selected prefix
         @tbl = ();
-        $sth = $dbh->prepare('SHOW TABLES');
-        $sth->execute() or die "\nCould not select tables: ",$DBI::errstr,"\n";
-        while (@data = $sth->fetchrow_array()) { push @tbl,$data[0] if $data[0] =~ /^$prefix/ }
+        $sth = $dbh->prepare( 'SHOW TABLES' );
+        $sth->execute() or die "\nCould not select tables: ", $DBI::errstr, "\n";
+        while ( @data = $sth->fetchrow_array() ) { push @tbl, $data[0] if $data[0] =~ /^$prefix/ }
         die "\nNo tables found with matching prefix\n" if $#tbl < 0;
         $tbl = join ' ', @tbl;
 
 	# Export tables to tmp file and read into $template 
 	unlink $tmp;
-	qx(mysqldump -u $user --password='$pwd' $db $tbl > $tmp);
+	qx( mysqldump -u $user --password='$pwd' $db $tbl > $tmp );
 	$template = $tmp;
 
 }
 
 # Read in the template file to $sql
-open FH,'<',$template or die "\nCould not read template file '$template'\n";
-sysread FH,$sql,-s $template;
+open FH, '<', $template or die "\nCould not read template file '$template'\n";
+sysread FH, $sql, -s $template;
 close FH;
 
 # Find the prefix (if not already set) being used in the template and prepare for use in replacement regexp
-if ($prefix eq '') {
+if ( $prefix eq '' ) {
 	die "\nThe template file supplied is not a valid wiki dump\n"
 		unless $sql =~ /^CREATE TABLE `(\w*)recentchanges`/m;
-	$prefix = qr($1);
+	$prefix = qr( $1 );
 }
 
 # Main replication loop
-for (@ARGV) {
+for ( @ARGV ) {
 
 	# Determine the database and prefix to replicate template into
-	if (/^(\w+)\.(\w+)$/) { ($db,$pre) = ($1,$2) } else { $pre = $_ }
+	if ( /^(\w+)\.(\w+)$/ ) { ( $db, $pre ) = ( $1, $2 ) } else { $pre = $_ }
 	$pre .= '_' unless $pre =~ /_$/;
 
 	# Make a duplicate of the template modified to the current prefix
@@ -78,12 +77,11 @@ for (@ARGV) {
 
 	# Write the duplicate into a tmp file
 	unlink $tmp;
-	if (open FH,'>',$tmp) {	print FH $data; close FH }
+	if ( open FH, '>', $tmp ) {	print FH $data; close FH; }
 	else { print "Could not write data for wiki $db.$pre to '$tmp'\n" }
 
 	# Pipe the file into MySQL and remove the tmp file
-	qx(mysql -u $user --password='$pwd' $db < $tmp);
-	if ($!) { print "Error creating wiki $db.$pre: $!\n" }
-	else    { print "Wiki $db.$pre created.\n" }
+	qx( mysql -u $user --password='$pwd' $db < $tmp );
+	print $! ? "Error creating wiki $db.$pre: $!\n" : "Wiki $db.$pre created.\n";
 }
 
