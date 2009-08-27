@@ -25,7 +25,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.4.1'; # 2009-08-27
+$::ver      = '3.4.2'; # 2009-08-27
 $::dir      = $Bin;
 $::log      = "$::dir/$::daemon.log";
 $::wkfile   = "$::dir/$::daemon.work";
@@ -586,6 +586,7 @@ sub workInitialise {
 
 # Call current jobs "main" then rotates work pointer and saves state if returned success
 sub workExecute {
+	return if $#::work < 0;
 	my %job = %{ $::work[$::wptr%($#::work+1)] };
 	my $jsub = 'main' . $job{'type'};
 	
