@@ -1,0 +1,6 @@
+#!/usr/bin/perl
+for ( glob "/home/*" ) {
+	$dir = $_;
+	s|/home/||;
+	qx( chown -R $_:$_ $dir/* ); 
+}
