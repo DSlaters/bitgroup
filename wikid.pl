@@ -25,7 +25,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.4.2'; # 2009-08-27
+$::ver      = '3.5.0'; # 2009-08-28
 $::dir      = $Bin;
 $::log      = "$::dir/$::daemon.log";
 $::wkfile   = "$::dir/$::daemon.work";
@@ -277,15 +277,17 @@ sub serverProcessMessage {
 	if ( $ct =~ /^cmd/ ? ( $msg =~ /Authorization: Basic (\w+)/ and decode_base64( $1 ) eq "$::name:$::password" ) : 1 ) {
 
 		# Call event handler for received event if one exists
-		$::data   = $title =~ /^(.+?)\?(.+)$/s ? $2 : '';
-		$title    = $1 if $::data;
-		$::script = $::data =~ /'wgScript'\s*=>\s*\'(.+?)'/   ? $1 : '';
-		$::site   = $::data =~ /'wgSitename'\s*=>\s*\'(.+?)'/ ? $1 : '';
-		$::event  = "on$title";
-		if ( $::script and defined &$::event ) {
-			logAdd( "Processing \"$title\" hook from $::site" );
-			&$::event;
-		} else { logAdd( "Unknown event \"$title\" received!" ) }
+		if ( $::data = $title =~ /^(.+?)\?(.+)$/s ? $2 : '' ) {
+			$title    = $1;
+			$::data   = unserialize( $::data );
+			$::script = $$::data{'wgScript'};
+			$::site   = $$::data{'wgSitename'};
+			$::event  = "on$title";
+			if ( $::script and defined &$::event ) {
+				logAdd( "Processing \"$title\" hook from $::site" );
+				&$::event;
+			} else { logAdd( "Unknown event \"$title\" received!" ) }
+		}
 
 	} else { $http = "401 Authorization Required\r\nWWW-Authenticate: Basic realm=\"private\"" }
 
@@ -439,32 +441,38 @@ sub onFileChanged {
 # WIKI EVENTS
 # $::script, $::site, $::event, $::data available
 
+sub onStartJob {
+	workStartJob( $::data, "" );
+}
+
 sub onUserLoginComplete {
-	print $::ircsock "PRIVMSG $ircchannel :$1 logged in to $site\n" if $::data =~ /'mName'\s*=>\s*'(.+?)'/s;
+	my $user = $$::data{'args'}[0]{'mName'};
+	print $::ircsock "PRIVMSG $ircchannel :$user logged in to $::site\n" if $user;
 }
 
 sub onPrefsPasswordAudit {
-	if ( $::data =~ /'mName'\s*=>\s*'(.+?)'.+?\)\),.+?=>\s*'(.+?)'.+success/s ) {
-		my( $user, $pass ) = ( $1, $2 );
+	if ( $$::data{'args'}[2] eq 'success' ) {
+		my $user = $$::data{'args'}[0]{'mName'};
+		my $pass = $$::data{'args'}[1];
 		doUpdateAccount( $user, $pass );
 	}
 }
 
 sub onAddNewAccount {
-	if ( $::data =~ /'mName'\s*=>\s*'(.+?)'.+'wpPassword'\s*=>\s*'(.+?)'/s ) {
-		my( $user, $pass ) = ( $1, $2 );
-		doUpdateAccount( $user, $pass );
-	}
+	my $user = $$::data{'args'}[0]{'mName'};
+	my $pass = $$::data{'REQUEST'}{'wpPassword'};
+	doUpdateAccount( $user, $pass ) if $user and $pass;
 }
 
 sub onRevisionInsertComplete {
-	my $minor   = $::data =~ /'mMinorEdit'\s*=>\s*1/       ? return : '';
-	my $id      = $::data =~ /'mId'\s*=>\s*([0-9]+)/       ? $1 : '';
-	my $page    = $::data =~ /'mPage'\s*=>\s*([0-9]+)/     ? $1 : '';
-	my $user    = $::data =~ /'mUserText'\s*=>\s*'(.+?)'/  ? $1 : '';
-	my $parent  = $::data =~ /'mParentId'\s*=>\s*([0-9]+)/ ? $1 : '';
-	my $comment = $::data =~ /'mComment'\s*=>\s*'(.+?)'/   ? $1 : '';
-	my $title   = $::data =~ /'title'\s*=>\s*'(.+?)'/      ? $1 : '';
+	my %revision = %{$$::data{'args'}[0]};
+	return if $revision{'mMinorEdit'};
+	my $id      = $revision{'mId'};
+	my $page    = $revision{'mPage'};
+	my $user    = $revision{'mUserText'};
+	my $parent  = $revision{'mParentId'};
+	my $comment = $revision{'mComment'};
+	my $title   = $$::data{'REQUEST'}{'title'};
 	if ( $page and $user ) {
 		if ( lc $user ne lc $wikiuser ) {
 			my $action = $parent ? 'changed' : 'created';
@@ -588,22 +596,37 @@ sub workInitialise {
 sub workExecute {
 	return if $#::work < 0;
 	my %job = %{ $::work[$::wptr%($#::work+1)] };
-	my $jsub = 'main' . $job{'type'};
+	my $main = 'main' . $job{'type'};
 	
 	# pass the job hash to the sub
 	# inc the jobs ptr
 	# stop the job if it set a size and has finished
 	
-	writeFile( $::wkfile, serialize( [ \@::work, ++$::wptr ] ) ) if &$jsub == 1;
+	# Write any changes to work file
+	writeFile( $::wkfile, serialize( [ \@::work, ++$::wptr ] ) ) if &$main == 1;
 }
 
 # Add a new job to the work queue
 sub workStartJob {
 	my $type = shift;
 	my $data = shift;
+
+	# Execute the init if defined
+	my $init = 'stop' . $job{'type'};
+	&$init if defined &$init;
+
+	# Write changes to work file
+	writeFile( $::wkfile, serialize( [ \@::work, $::wptr ] ) );
 }
 
 # Remove a job from the work queue
 sub workStopJob {
 	my %job = %{ shift };
+
+	# Execute the stop if defined
+	my $stop = 'stop' . $job{'type'};
+	&$stop if defined &$stop;
+
+	# Write changes to work file
+	writeFile( $::wkfile, serialize( [ \@::work, $::wptr ] ) );
 }
