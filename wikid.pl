@@ -442,7 +442,7 @@ sub onFileChanged {
 # $::script, $::site, $::event, $::data available
 
 sub onStartJob {
-	workStartJob( $::data, "" );
+	workStartJob( $::data );
 }
 
 sub onUserLoginComplete {
@@ -608,15 +608,26 @@ sub workExecute {
 
 # Add a new job to the work queue
 sub workStartJob {
-	my $type = shift;
-	my $data = shift;
+	my %job = %{ shift };
+	my $type = $job{'type'};
+	my $init = "init$type";
+	my $main = "main$type";
+	
+	if ( defined &$main ) {
 
-	# Execute the init if defined
-	my $init = 'stop' . $job{'type'};
-	&$init if defined &$init;
+		# Add the new job to the work hash
 
-	# Write changes to work file
-	writeFile( $::wkfile, serialize( [ \@::work, $::wptr ] ) );
+		# Execute the init if defined
+		&$init if defined &$init;
+
+		# Write changes to work file
+		writeFile( $::wkfile, serialize( [ \@::work, $::wptr ] ) );
+		
+	} else {
+
+		# Unkown job type
+		
+	}
 }
 
 # Remove a job from the work queue
