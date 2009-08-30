@@ -25,7 +25,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.5.0'; # 2009-08-28
+$::ver      = '3.5.1'; # 2009-08-30
 $::dir      = $Bin;
 $::log      = "$::dir/$::daemon.log";
 $::wkfile   = "$::dir/$::daemon.work";
@@ -597,6 +597,8 @@ sub workExecute {
 	return if $#::work < 0;
 	my %job = %{ $::work[$::wptr%($#::work+1)] };
 	my $main = 'main' . $job{'type'};
+	
+	return unless defined &$main;
 	
 	# pass the job hash to the sub
 	# inc the jobs ptr
