@@ -1,10 +1,15 @@
 #!/usr/bin/perl
-# wikid.pl - Organic Design Wiki Daemon{{perl}}
+#
+# wikid.pl - Organic Design Wiki Daemon
+#
 # - Version 2.00 started on 2007-04-26
 # - Version 3.00 started on 2009-04-29
+#
 # - See http://www.organicdesign.co.nz/Talk:Wikid.pl
+#
 # - copyright © 2007 Aran Dunkley
 # - license GNU General Public Licence 2.0 or later
+#
 use POSIX qw(strftime setsid);
 use FindBin qw($Bin);
 use HTTP::Request;
@@ -25,7 +30,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.5.1'; # 2009-08-30
+$::ver      = '3.5.4'; # 2009-09-03
 $::dir      = $Bin;
 $::log      = "$::dir/$::daemon.log";
 $::wkfile   = "$::dir/$::daemon.work";
@@ -442,7 +447,18 @@ sub onFileChanged {
 # $::script, $::site, $::event, $::data available
 
 sub onStartJob {
-	workStartJob( $::data );
+	$::job = $::data;
+	workStartJob( $$::job{'type'}, $$::job{'id'} );
+}
+
+sub onPauseJob {
+	my @job = grep { $::work[$_]{'id'} eq $::data } @::work;
+	$$::job[0]{'paused'} = 1;
+}
+
+sub onContinueJob {
+	my @job = grep { $::work[$_]{'id'} eq $::data } @::work;
+	$$::job[0]{'paused'} = 0;
 }
 
 sub onUserLoginComplete {
@@ -583,7 +599,7 @@ require "$Bin/$::daemon.conf";
 # Read in or initialise the persistent work hash
 sub workInitialise {
 	if ( -e $::wkfile ) {
-		my $ref = unserialize( readFile( $::wkfile ) );
+		my $ref = workLoad();
 		@::work = @{$$ref[0]};
 		$::wptr = $$ref[1];
 	} else {
@@ -594,52 +610,123 @@ sub workInitialise {
 
 # Call current jobs "main" then rotates work pointer and saves state if returned success
 sub workExecute {
+
+	# Bail if no work items
 	return if $#::work < 0;
-	my %job = %{ $::work[$::wptr%($#::work+1)] };
-	my $main = 'main' . $job{'type'};
-	
+
+	# Move work pointer to next item and set $::job
+	$::job = $::work[$::wptr%($#::work+1)];
+
+	# Bail if the job is paused
+	return if $$::job{'paused'};
+
+	# Bail if the job has no "main" to call
+	my $main = 'main' . $$::job{'type'};
 	return unless defined &$main;
-	
-	# pass the job hash to the sub
-	# inc the jobs ptr
-	# stop the job if it set a size and has finished
-	
-	# Write any changes to work file
-	writeFile( $::wkfile, serialize( [ \@::work, ++$::wptr ] ) ) if &$main == 1;
+
+	# Call the job's "main" and check for success
+	if ( &$main == 1 ) {
+
+		# Increment the *global* work pointer
+		$::wptr++;
+
+		# Increment the *job* work pointer and stop if finished
+		workStopJob() if ++$$::job{'wptr'} == $$::job{'length'};
+
+		# Write back the changes to the work file
+		workSave();
+
+	} else {
+
+		# Log an error and stop the job if its "main" doesn't return success
+		workLogError( $main . "() did not return success on iteration " . $$::job{'wptr'} );
+		workStopJob();
+	}
 }
 
 # Add a new job to the work queue
+# - called with Type, ID (if ID not supplied, a GUID is created)
+# - the new job created is $::job
+# - returns the job ID
 sub workStartJob {
-	my %job = %{ shift };
-	my $type = $job{'type'};
+	my $type = shift;
+	my $id   = shift || wikiGuid();
 	my $init = "init$type";
 	my $main = "main$type";
-	
+
 	if ( defined &$main ) {
 
 		# Add the new job to the work hash
+		$$::job{'id'}        = $id;
+		$$::job{'type'}      = $type;
+		$$::job{'user'}      = $::wikiuser;
+		$$::job{'start'}     = time();
+		$$::job{'finish'}    = 0;
+		$$::job{'progress'}  = 0;
+		$$::job{'revisions'} = 0;
+		$$::job{'length'}    = 0;
+		$$::job{'paused'}    = 0;
+		$$::job{'status'}    = '';
+		$$::job{'errors'}    = '';
+		push @::work, $::job;
 
 		# Execute the init if defined
 		&$init if defined &$init;
 
 		# Write changes to work file
-		writeFile( $::wkfile, serialize( [ \@::work, $::wptr ] ) );
+		workSave()
 		
 	} else {
 
 		# Unkown job type
-		
+
 	}
 }
 
-# Remove a job from the work queue
+# Remove a job from the work queue (called to cancel and when finished)
+# - if no job ID is passed, then the ID of $::job is used
 sub workStopJob {
-	my %job = %{ shift };
+	my $id = shift;
+	$id = $$::job{'id'} unless $id;
 
-	# Execute the stop if defined
-	my $stop = 'stop' . $job{'type'};
+	# Execute the job type's stop function if defined
+	my $stop = 'stop' . $$::job{'type'};
 	&$stop if defined &$stop;
 
-	# Write changes to work file
+	# Append final job info to log
+	$entry = "[$id]\n";
+	$entry .= "   Type      : " . $$::job{'type'}      . "\n";
+	$entry .= "   User      : " . $$::job{'user'}      . "\n";
+	$entry .= "   Start     : " . $$::job{'start'}     . "\n";
+	$entry .= "   Finish    : " . time()               . "\n";
+	$entry .= "   Progress  : " . $$::job{'progress'}  . "\n";
+	$entry .= "   Revisions : " . $$::job{'revisions'} . "\n";
+	$entry .= "   Length    : " . $$::job{'length'}    . "\n";
+	$entry .= "   Status    : " . $$::job{'status'}    . "\n";
+	$entry .= "   Errors    : " . $$::job{'errors'}    . "\n\n";
+	open LOGH, '>>', "$::wkfile.log" or die "Can't open $::wkfile.log for writing!";
+	print LOGH $entry;
+	close LOGH;
+
+	# Remove the item from work list and write changes to work file
+	@::work = grep { $::work[$_]{'id'} ne $id } @::work;
+	workSave();
+}
+
+# Read the contents of the work file into the local work array
+sub workLoad {
+	unserialize( readFile( $::wkfile ) );
+}
+
+# Write the work array and pointer to the work file
+sub workSave {
 	writeFile( $::wkfile, serialize( [ \@::work, $::wptr ] ) );
 }
+
+# Add a line to a jobs error log
+sub workLogError {
+	my $err = shift;
+	$$::job{'errors'} .= $$::job{'errors'} ? "|$err" : $err;
+	return $err;
+}
+
