@@ -30,7 +30,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.5.6'; # 2009-09-04
+$::ver      = '3.6.0'; # 2009-09-04
 $::dir      = $Bin;
 $::log      = "$::dir/$::daemon.log";
 $::wkfile   = "$::dir/$::daemon.work";
@@ -44,10 +44,6 @@ if ( -e '/var/www/domains/localhost/LocalSettings.php' ) {
 	$::short  = $1 if $ls =~ /\$wgShortName\s*=\s*['"](.+?)["']/;
 }
 
-# DB access defined in wikid.conf now not wikia.php
-$::dbuser = $wgDBuser;
-$::dbpass = $wgDBpassword;
-
 # IRC server
 $ircserver  = 'irc.organicdesign.co.nz';
 $ircport    = 6667;
@@ -55,13 +51,15 @@ $ircchannel = '#organicdesign';
 $ircpass    = '*****';
 
 # Override default with config file (this is included again at the end so that it can replace event functions)
-# TODO: config should come from shared record index
 require "$Bin/$::daemon.conf";
+$::dbname = $wgDBname if defined $wgDBname;
+$::dbuser = $wgDBuser if defined $wgDBuser;
+$::dbpass = $wgDBpassword if defined $wgDBpassword;
+$::dbpre  = $wgDBprefix if defined $wgDBprefix;
 $::name   = $name if $name;
 $::port   = $port if $port;
 $wikiuser = $::name unless $wikiuser;
 $ircuser  = $::name unless $ircuser;
-#$ircuser  = 'bad-name' unless length $ircuser < 10;
 
 # Run as a daemon (see daemonise.pl article for more details and references regarding perl daemons)
 open STDIN, '/dev/null';
@@ -90,17 +88,17 @@ if ( $ARGV[0] eq '--remove' ) {
 }
 
 # Initialise services, current work, logins and connections
-%::streams = ();
 serverInitialise();
 ircInitialise();
-workInitialise();
 wikiLogin( $wiki, $wikiuser, $wikipass );
-
 if ( $::dbuser ) {
 	$::db = DBI->connect( "DBI:mysql:$::dbname", $::dbuser, $::dbpass );
-	logAdd( defined $::db ? "Connected '$::dbuser' to DBI:mysql:$::dbname" : "Could not connect '$::dbuser' to '$::dbname': " . DBI->errstr );
+	my $msg = defined $::db ? "Connected '$::dbuser' to DBI:mysql:$::dbname" : "Could not connect '$::dbuser' to '$::dbname': " . DBI->errstr;
+	logAdd( $msg );
+	logIRC( $msg );
 }
-
+%::streams = ();
+workInitialise();
 logIRC( $motd );
 
 # Initialise watched files list
@@ -464,10 +462,16 @@ sub onFileChanged {
 # WIKI EVENTS
 # $::script, $::site, $::event, $::data available
 
+sub onStartJob {
+	$::job = $::data;
+	workStartJob( $$::job{'type'}, -e $$::job{'id'} ? $$::job{'id'} : undef );
+}
+
 sub onPauseJobToggle {
 	my $id = $$::data{'id'};
-	workSetJobFromId();
+	workSetJobFromId( $id );
 	$$::job{'paused'} = $$::job{'paused'} ? 0 : 1;
+	workSave();
 	$msg = "Job $id " . ( $$::job{'paused'} ? '' : 'un' ) . "paused";
 	logIRC( $msg );
 	logAdd( $msg );
@@ -517,11 +521,6 @@ sub onRevisionInsertComplete {
 
 #---------------------------------------------------------------------------------------------------------#
 # ACTIONS
-
-sub doStartJob {
-	$::job = $::data;
-	workStartJob( $$::job{'type'}, $$::job{'id'} );
-}
 
 # Synchronise the unix system passwords and samba passwords with the wiki users and passwords
 # - users must be in the wiki group for their passwd to be valid (updatable by this action)
@@ -583,6 +582,7 @@ sub doUpdateAccount {
 # Output information about self
 sub doInfo {
 	logIRC( "I'm a $::daemon version $::ver listening on port $::port." );
+	logIRC( "There are currently $n jobs in progress" ) unless ( $n = $#::work ) < 0;
 }
 
 # Update and restart
@@ -607,21 +607,18 @@ sub doRestart {
 }
 
 
-# Include the config again so that it can replace default functions
-require "$Bin/$::daemon.conf";
-
 #---------------------------------------------------------------------------------------------------------#
 # JOBS
 
 # Read in or initialise the persistent work hash
 sub workInitialise {
 	if ( -e $::wkfile ) {
-		my $ref = workLoad();
-		@::work = @{$$ref[0]};
-		$::wptr = $$ref[1];
+		workLoad();
 	} else {
 		@::work = ();
 		$::wptr = 0;
+		for ( keys %:: ) { push @types, $1 if defined &$_ and /^main(\w+)$/ }
+		workSave();
 	}
 }
 
@@ -630,11 +627,16 @@ sub workInitialise {
 sub workSetJobFromId {
 	my $id = shift;
 	my $i = -1;
-	for ( @$::work ) {
-		if ( $$::work[$_]{'id'} eq $id ) {
-			$::job = $$::work[$_];
+	for ( 0 .. $#::work ) {
+		if ( $::work[$_]{'id'} eq $id ) {
+			$::job = $::work[$_];
 			$i = $_;
 		}
+	}
+	if ( $i < 0 ) {
+		my $msg = "Job $id not found in work list!";
+		logAdd( $msg );
+		logIRC( $msg );
 	}
 	return $i;
 }
@@ -747,14 +749,17 @@ sub workStopJob {
 	workSave();
 }
 
-# Read the contents of the work file into the local work array
+# Read the contents of the work file into the local work array, work pointer and work types array
 sub workLoad {
-	unserialize( readFile( $::wkfile ) );
+	my $tmp  = unserialize( readFile( $::wkfile ) );
+	@::work  = @{$$tmp[0]};
+	$::wptr  = $$tmp[1];
+	@::types = @{$$tmp[2]};
 }
 
 # Write the work array and pointer to the work file
 sub workSave {
-	writeFile( $::wkfile, serialize( [ \@::work, $::wptr ] ) );
+	writeFile( $::wkfile, serialize( [ \@::work, $::wptr, \@::types ] ) );
 }
 
 # Add a line to a jobs error log
@@ -765,5 +770,10 @@ sub workLogError {
 }
 
 sub doGrepTest {
-	my @job = grep { $::work[$_]{'id'} eq $::data } @::work;
+	my @job = grep { $$::work[$_]{'id'} eq $$::data } @::work;
 }
+
+
+
+# Include the config again so that it can replace default functions
+require "$Bin/$::daemon.conf";
