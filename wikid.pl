@@ -30,7 +30,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.5.4'; # 2009-09-03
+$::ver      = '3.5.6'; # 2009-09-04
 $::dir      = $Bin;
 $::log      = "$::dir/$::daemon.log";
 $::wkfile   = "$::dir/$::daemon.work";
@@ -101,7 +101,7 @@ if ( $::dbuser ) {
 	logAdd( defined $::db ? "Connected '$::dbuser' to DBI:mysql:$::dbname" : "Could not connect '$::dbuser' to '$::dbname': " . DBI->errstr );
 }
 
-print $::ircsock "PRIVMSG $ircchannel :$motd\n";
+logIRC( $motd );
 
 # Initialise watched files list
 # TODO: this list should be drawn from shared record index
@@ -137,6 +137,8 @@ while( 1 ) {
 
 	# Execute a job from the current work
 	workExecute();
+	
+	sleep( 0.1 );
 
 }
 
@@ -148,7 +150,7 @@ while( 1 ) {
 sub notify {
 	my $comment = shift;
 	wikiAppend( $wiki, 'Server log', "\n*" . localtime() . " : $comment", "\n$comment" );
-	print $::ircsock "PRIVMSG $ircchannel :$comment\n";
+	logIRC( $comment );
 }
 
 # Read and return content from passed file
@@ -311,8 +313,8 @@ sub serverProcessMessage {
 # IRC FUNCTIONS
 
 sub ircInitialise {
+	return unless $::ircserver;
 
-	# Log in to an IRC channel
 	$::ircsock = IO::Socket::INET->new(
 		PeerAddr => $::ircserver,
 		PeerPort => $::ircport,
@@ -343,6 +345,7 @@ sub ircInitialise {
 
 # Handle streams from select list needing attention
 sub ircHandleConnections {
+	return unless $::ircserver;
 	for my $handle ( $::ircselect->can_read( 1 ) ) {
 		my $stream = fileno $handle;
 		if ( sysread $handle, my $data, 100 ) {
@@ -355,6 +358,7 @@ sub ircHandleConnections {
 				for ( split /\r?\n/, $1 ) {
 
 					( $command, $text ) = split( / :/, $_ );
+
 					# Respond to pings if any
 					if ( $command eq 'PING' ) {
 						$text =~ s/[\r\n]//g;
@@ -379,9 +383,15 @@ sub ircHandleConnections {
 							$title = ucfirst $2;
 							$::action = "do$title";
 							if ( defined &$::action ) {
-								logAdd( "Processing \"$title\" action issued from $nick" );
+								$msg = "Processing \"$title\" action issued by $nick";
+								logIRC( $msg );
+								logAdd( $msg );
 								&$::action;
-							} else { logAdd( "Unknown action \"$title\" requested!" ) }
+							} else {
+								$msg = "Unknown action \"$title\" requested!";
+								logIRC( $msg );
+								logAdd( $msg );
+							}
 						}
 					}
 				}
@@ -398,10 +408,18 @@ sub ircHandleConnections {
 	}
 }
 
+# Output a comment into the IRC channel
+sub logIRC {
+	my $msg = shift;
+	print $::ircsock "PRIVMSG $ircchannel :$msg\n" if $::ircsock;
+	return $msg;
+}
+
 
 
 #---------------------------------------------------------------------------------------------------------#
 # FILE EVENTS
+
 sub onFileChanged {
 	my $file    = shift;
 	my $oldsize = shift;
@@ -436,7 +454,7 @@ sub onFileChanged {
 	# SVN commits
 	$msg = $text if $text =~ /repo updated to revision/;
 
-	print $::ircsock "PRIVMSG $ircchannel :$msg\n" if $msg;
+	logIRC( $msg ) if $msg;
 
 }
 
@@ -446,24 +464,18 @@ sub onFileChanged {
 # WIKI EVENTS
 # $::script, $::site, $::event, $::data available
 
-sub onStartJob {
-	$::job = $::data;
-	workStartJob( $$::job{'type'}, $$::job{'id'} );
-}
-
-sub onPauseJob {
-	my @job = grep { $::work[$_]{'id'} eq $::data } @::work;
-	$$::job[0]{'paused'} = 1;
-}
-
-sub onContinueJob {
-	my @job = grep { $::work[$_]{'id'} eq $::data } @::work;
-	$$::job[0]{'paused'} = 0;
+sub onPauseJobToggle {
+	my $id = $$::data{'id'};
+	workSetJobFromId();
+	$$::job{'paused'} = $$::job{'paused'} ? 0 : 1;
+	$msg = "Job $id " . ( $$::job{'paused'} ? '' : 'un' ) . "paused";
+	logIRC( $msg );
+	logAdd( $msg );
 }
 
 sub onUserLoginComplete {
 	my $user = $$::data{'args'}[0]{'mName'};
-	print $::ircsock "PRIVMSG $ircchannel :$user logged in to $::site\n" if $user;
+	logIRC( "$user logged in to $::site" ) if $user;
 }
 
 sub onPrefsPasswordAudit {
@@ -497,14 +509,19 @@ sub onRevisionInsertComplete {
 			$utitle =~ s/ /_/g;
 			$comment =~ s/\\("')/$1/g;
 			$comment = " ($comment)" if $comment;
-			print $::ircsock "PRIVMSG $ircchannel :\"$title\" $action by $user$comment\n";
+			logIRC( "\"$title\" $action by $user$comment" );
 		}
 	} else { logAdd( "Not processing (page='$page', user='$user', title='$title')" ) }
 }
 
 
 #---------------------------------------------------------------------------------------------------------#
-# COMMANDS
+# ACTIONS
+
+sub doStartJob {
+	$::job = $::data;
+	workStartJob( $$::job{'type'}, $$::job{'id'} );
+}
 
 # Synchronise the unix system passwords and samba passwords with the wiki users and passwords
 # - users must be in the wiki group for their passwd to be valid (updatable by this action)
@@ -519,7 +536,7 @@ sub doUpdateAccount {
 
 	# If unix account exists, change its password
 	if ( -d "/home/$user" ) {
-		print $::ircsock "PRIVMSG $ircchannel :Updating unix account details for user \"$user\"\n";
+		logIRC( "Updating unix account details for user \"$user\"" );
 		my $exp = Expect->spawn( "passwd $user" );
 		$exp->expect( 5,
 			[ qr/password:/ => sub { my $exp = shift; $exp->send( "$pass\n" ); exp_continue; } ],
@@ -530,7 +547,7 @@ sub doUpdateAccount {
 
 	# Unix account doesn't exist, create now
 	else {
-		print $::ircsock "PRIVMSG $ircchannel :Creating unix account for user \"$user\"\n";
+		logIRC( "Creating unix account for user \"$user\"" );
 		my $exp = Expect->spawn( "adduser $user" );
 		$exp->expect( 5,
 			[ qr/password:/ => sub { my $exp = shift; $exp->send( "$pass\n" ); exp_continue; } ],
@@ -547,7 +564,7 @@ sub doUpdateAccount {
 
 	# Update the samba passwd too
 	if ( my $exp = Expect->spawn( "smbpasswd -a $user" ) ) {
-		print $::ircsock "PRIVMSG $ircchannel :Synchronising samba account\n";
+		logIRC( "Synchronising samba account" );
 		$exp->expect( 5,
 			[ qr/password:/ => sub { my $exp = shift; $exp->send( "$pass\n" ); exp_continue; } ],
 			[ qr/password:/ => sub { my $exp = shift; $exp->send( "$pass\n" ); } ],
@@ -556,30 +573,30 @@ sub doUpdateAccount {
 	}
 
 	# Restart samba
-	#print $::ircsock "PRIVMSG $ircchannel :Restarting Samba server...\n";
+	#logIRC( ":Restarting Samba server..." );
 	#$exp = Expect->spawn( "/etc/init.d/samba restart" );
 	#$exp->soft_close();
 	
-	print $::ircsock "PRIVMSG $ircchannel :Done.\n";
+	logIRC( "Done." );
 }
 
 # Output information about self
 sub doInfo {
-	print $::ircsock "PRIVMSG $ircchannel :I'm a $::daemon version $::ver listening on port $::port.\n";
+	logIRC( "I'm a $::daemon version $::ver listening on port $::port." );
 }
 
 # Update and restart
 sub doUpdate {
-	print $::ircsock "PRIVMSG $ircchannel :Updating code-base and tools...\n";
+	logIRC( "Updating code-base and tools..." );
 	my $result = qx( "cd /var/www/tools && svn update" );
-	print $::ircsock "PRIVMSG $ircchannel :$result\n";	
+	logIRC( $result );	
 	my $exp = Expect->spawn( "/etc/init.d/wikid" );
 	$exp->soft_close();
 }
 
 # Restart
 sub doRestart {
-	print $::ircsock "PRIVMSG $ircchannel :Restarting...\n";
+	logIRC( "Restarting..." );
 	logAdd( "Closing handles..." );
 	serverDisconnect $_ for keys %$::streams;
 	logAdd( "Stopping listeners..." );
@@ -606,6 +623,20 @@ sub workInitialise {
 		@::work = ();
 		$::wptr = 0;
 	}
+}
+
+# Set the global $::job hash from passed job ID
+# - returns index of job in work array
+sub workSetJobFromId {
+	my $id = shift;
+	my $i = -1;
+	for ( @$::work ) {
+		if ( $$::work[$_]{'id'} eq $id ) {
+			$::job = $$::work[$_];
+			$i = $_;
+		}
+	}
+	return $i;
 }
 
 # Call current jobs "main" then rotates work pointer and saves state if returned success
@@ -709,7 +740,10 @@ sub workStopJob {
 	close LOGH;
 
 	# Remove the item from work list and write changes to work file
-	@::work = grep { $::work[$_]{'id'} ne $id } @::work;
+	my @tmp = ();
+	my $i = workSetJobFromId( $id );
+	for ( 0 .. $#::work ) { push @tmp, $::work[$_] if $i ne $_ }
+	@::work = @tmp;
 	workSave();
 }
 
@@ -730,3 +764,6 @@ sub workLogError {
 	return $err;
 }
 
+sub doGrepTest {
+	my @job = grep { $::work[$_]{'id'} eq $::data } @::work;
+}
