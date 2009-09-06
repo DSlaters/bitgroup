@@ -30,7 +30,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.6.0'; # 2009-09-04
+$::ver      = '3.6.1'; # 2009-09-07
 $::dir      = $Bin;
 $::log      = "$::dir/$::daemon.log";
 $::wkfile   = "$::dir/$::daemon.work";
@@ -628,6 +628,9 @@ sub workInitialise {
 		$::wptr = 0;
 		for ( keys %:: ) { push @types, $1 if defined &$_ and /^main(\w+)$/ }
 		workSave();
+		my $msg = "Work file created with job types " . join ', ', @types;
+		logAdd( $msg );
+		logIRC( $msg );
 	}
 }
 
