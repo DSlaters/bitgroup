@@ -690,7 +690,7 @@ sub workExecute {
 	} else {
 
 		# Log an error and stop the job if its "main" doesn't return success
-		my $msg = $main . "() did not return success on iteration " . $$::job{'wptr'};
+		my $msg = "$main() did not return success on iteration " . $$::job{'wptr'};
 		workLogError( $msg );
 		workStopJob();
 		logAdd( $msg );
