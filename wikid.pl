@@ -467,6 +467,15 @@ sub onStartJob {
 	workStartJob( $$::job{'type'}, -e $$::job{'id'} ? $$::job{'id'} : undef );
 }
 
+sub onStopJob {
+	my $id = $$::data{'id'};
+	if ( workStopJob( $id ) ) {
+		my $msg = "Job $id cancelled";
+		logIRC( $msg );
+		logAdd( $msg );
+	}
+}
+
 sub onPauseJobToggle {
 	my $id = $$::data{'id'};
 	workSetJobFromId( $id );
@@ -664,7 +673,13 @@ sub workExecute {
 		$::wptr++;
 
 		# Increment the *job* work pointer and stop if finished
-		workStopJob() if ++$$::job{'wptr'} == $$::job{'length'};
+		if ( ++$$::job{'wptr'} >= $$::job{'length'} ) {
+			my $id = $$::job{'id'};
+			my $msg = "Job $id has finished successfully";
+			logAdd( $msg );
+			logIRC( $msg );
+			workStopJob();
+		}
 
 		# Write back the changes to the work file
 		workSave();
@@ -672,8 +687,11 @@ sub workExecute {
 	} else {
 
 		# Log an error and stop the job if its "main" doesn't return success
-		workLogError( $main . "() did not return success on iteration " . $$::job{'wptr'} );
+		my $msg = $main . "() did not return success on iteration " . $$::job{'wptr'};
+		workLogError( $msg );
 		workStopJob();
+		logAdd( $msg );
+		logIRC( $msg );
 	}
 }
 
@@ -707,8 +725,12 @@ sub workStartJob {
 		&$init if defined &$init;
 
 		# Write changes to work file
-		workSave()
-		
+		workSave();
+
+		my $msg = "$type job started with ID $id";
+		logAdd( $msg );
+		logIRC( $msg );
+
 	} else {
 
 		# Unkown job type
@@ -721,6 +743,8 @@ sub workStartJob {
 sub workStopJob {
 	my $id = shift;
 	$id = $$::job{'id'} unless $id;
+	my $i = workSetJobFromId( $id );
+	return 0 if $i < 0;
 
 	# Execute the job type's stop function if defined
 	my $stop = 'stop' . $$::job{'type'};
@@ -737,16 +761,16 @@ sub workStopJob {
 	$entry .= "   Length    : " . $$::job{'length'}    . "\n";
 	$entry .= "   Status    : " . $$::job{'status'}    . "\n";
 	$entry .= "   Errors    : " . $$::job{'errors'}    . "\n\n";
-	open LOGH, '>>', "$::wkfile.log" or die "Can't open $::wkfile.log for writing!";
-	print LOGH $entry;
-	close LOGH;
+	open WKLOGH, '>>', "$::wkfile.log" or die "Can't open $::wkfile.log for writing!";
+	print WKLOGH $entry;
+	close WKLOGH;
 
 	# Remove the item from work list and write changes to work file
 	my @tmp = ();
-	my $i = workSetJobFromId( $id );
 	for ( 0 .. $#::work ) { push @tmp, $::work[$_] if $i ne $_ }
 	@::work = @tmp;
 	workSave();
+	return 1;
 }
 
 # Read the contents of the work file into the local work array, work pointer and work types array
@@ -768,11 +792,6 @@ sub workLogError {
 	$$::job{'errors'} .= $$::job{'errors'} ? "|$err" : $err;
 	return $err;
 }
-
-sub doGrepTest {
-	my @job = grep { $$::work[$_]{'id'} eq $$::data } @::work;
-}
-
 
 
 # Include the config again so that it can replace default functions
