@@ -469,6 +469,8 @@ sub onStartJob {
 
 sub onStopJob {
 	my $id = $$::data{'id'};
+	return if workSetJobFromId( $id ) < 0;
+	$$::job{'errors'} = "Job cancelled\n" . $$::job{'errors'};
 	if ( workStopJob( $id ) ) {
 		my $msg = "Job $id cancelled";
 		logIRC( $msg );
@@ -639,6 +641,7 @@ sub workInitialise {
 sub workSetJobFromId {
 	my $id = shift;
 	my $i = -1;
+	$::job = undef;
 	for ( 0 .. $#::work ) {
 		if ( $::work[$_]{'id'} eq $id ) {
 			$::job = $::work[$_];
@@ -753,13 +756,17 @@ sub workStopJob {
 	my $stop = 'stop' . $$::job{'type'};
 	&$stop if defined &$stop;
 
+	# Update progress
+	my $progress = $$::job{'length'} ? $$::job{'wptr'} . ' of ' . $$::job{'length'} : $$::job{'wptr'};
+	if ( $$::job{'wptr'} == $$::job{'length'} && $$::job{'length'} > 0 ) { $progress = "Job completed" }
+
 	# Append final job info to log
-	$entry = "[$id]\n";
+	$entry  = "[$id]\n";
 	$entry .= "   Type      : " . $$::job{'type'}      . "\n";
 	$entry .= "   User      : " . $$::job{'user'}      . "\n";
 	$entry .= "   Start     : " . $$::job{'start'}     . "\n";
 	$entry .= "   Finish    : " . time()               . "\n";
-	$entry .= "   Progress  : " . $$::job{'progress'}  . "\n";
+	$entry .= "   Progress  : " . $progress            . "\n";
 	$entry .= "   Revisions : " . $$::job{'revisions'} . "\n";
 	$entry .= "   Length    : " . $$::job{'length'}    . "\n";
 	$entry .= "   Status    : " . $$::job{'status'}    . "\n";
@@ -773,7 +780,7 @@ sub workStopJob {
 	for ( 0 .. $#::work ) { push @tmp, $::work[$_] if $i ne $_ }
 	@::work = @tmp;
 	workSave();
-	return 1;
+	1;
 }
 
 # Read the contents of the work file into the local work array, work pointer and work types array
