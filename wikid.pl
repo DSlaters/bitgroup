@@ -663,7 +663,7 @@ sub workExecute {
 	return if $#::work < 0;
 
 	# Move work pointer to next item and set $::job
-	$::job = $::work[$::wptr%($#::work+1)];
+	$::job = $::work[$::wptr++%($#::work+1)];
 
 	# Bail if the job is paused
 	return if $$::job{'paused'};
@@ -674,9 +674,6 @@ sub workExecute {
 
 	# Call the job's "main" and check for success
 	if ( &$main == 1 ) {
-
-		# Increment the *global* work pointer
-		$::wptr++;
 
 		# Increment the *job* work pointer and stop if finished
 		if ( ++$$::job{'wptr'} >= $$::job{'length'} ) {
