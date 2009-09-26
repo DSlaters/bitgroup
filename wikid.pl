@@ -30,7 +30,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.6.2'; # 2009-09-26
+$::ver      = '3.6.3'; # 2009-09-26
 $::dir      = $Bin;
 $::log      = "$::dir/$::daemon.log";
 $::wkfile   = "$::dir/$::daemon.work";
@@ -116,6 +116,7 @@ for ( @files ) {
 #---------------------------------------------------------------------------------------------------------#
 # MAIN SERVER & CRON LOOP
 my $i = 0;
+my $n = 0;
 while( 1 ) {
 
 	# Check one of the files in the list for size change each iteration
@@ -137,6 +138,12 @@ while( 1 ) {
 	workExecute();
 	
 	sleep( 0.1 );
+
+	# Housekeeping every 100 iterations
+	if ( ++$n % 100 == 0 ) {
+		my $q = $::db->prepare( 'SELECT 0' );
+		$q->execute() or logIRC( 'DB connection gone away' );
+	}
 
 }
 
