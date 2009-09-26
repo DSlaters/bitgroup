@@ -30,11 +30,11 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.6.1'; # 2009-09-07
+$::ver      = '3.6.2'; # 2009-09-26
 $::dir      = $Bin;
 $::log      = "$::dir/$::daemon.log";
 $::wkfile   = "$::dir/$::daemon.work";
-my $motd    = "Hail Earthlings! $::daemon-$::ver is in the heeeeeouse! (rock)";
+$::motd     = "Hail Earthlings! $::daemon-$::ver is in the heeeeeouse! (rock)" unless defined $::motd;
 
 # Wiki - try and determine wikidb from wiki's localsettings.php
 if ( -e '/var/www/domains/localhost/LocalSettings.php' ) {
