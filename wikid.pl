@@ -140,7 +140,7 @@ while( 1 ) {
 	sleep( 0.1 );
 
 	# Housekeeping every 100 iterations
-	if ( ++$n % 100 == 0 ) {
+	if ( defined $::wgDBuser && ++$n % 100 == 0 ) {
 		my $q = $::db->prepare( 'SELECT 0' );
 		$q->execute() or logIRC( 'DB connection gone away' );
 	}
