@@ -30,7 +30,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.6.3'; # 2009-09-26
+$::ver      = '3.6.4'; # 2009-10-11
 $::dir      = $Bin;
 $::log      = "$::dir/$::daemon.log";
 $::wkfile   = "$::dir/$::daemon.work";
@@ -142,7 +142,7 @@ while( 1 ) {
 	# Housekeeping every 100 iterations
 	if ( defined $::wgDBuser && ++$n % 100 == 0 ) {
 		my $q = $::db->prepare( 'SELECT 0' );
-		$q->execute() or logIRC( 'DB connection gone away' );
+		$q->execute() or logAdd( 'DB connection gone away' );
 	}
 
 }
