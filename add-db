@@ -3,16 +3,24 @@
 # - Author: http://www.organicdesign.co.nz/nad
 # - Started: 2007-08-25 {{perl}}{{Category:OD2}}
 use DBI;
+use Digest::MD5 qw( md5_hex );
 require( '/var/www/tools/wikid.conf' );
 require( '/var/www/tools/wiki.pl' );
 
 $tmp  = '/tmp/add-db';
 
+# Extract sysop user and pass if supplied
+if ( $ARGV[0] =~ /--sysop\s*=\s*(.+):(.+)/ ) {
+	$sysopUser = $1;
+	$sysopPass = $2;
+	shift @ARGV;
+}
+
 # Display usage info and die if too few or no parameters supplied
 die "\nReplicate a mediawiki SQL database dump to many databases and prefixes.
 
 Usage:
-	add-db TEMPLATE DB1.PREFIX1 [DB2.]PREFIX2 [DB3.]PREFIX3...
+	add-db [--sysop=USER:PASS] TEMPLATE DB1.PREFIX1 [DB2.]PREFIX2 [DB3.]PREFIX3...
 Where,
 	TEMPLATE is the name of the *.sql file or db.prefix to use as the template.
 
@@ -56,6 +64,12 @@ if ( $template !~ /\.sql$/i ) {
 open FH, '<', $template or die "\nCould not read template file '$template'\n";
 sysread FH, $sql, -s $template;
 close FH;
+
+# Update the sysop user and password if supplied
+if ( defined $sysopUser and defined $sysopPass ) {
+	$md5 = md5_hex( '1-' . md5_hex( $sysopPass ) );
+	$sql =~ s/^(\s*INSERT\s+INTO\s+`wiki_user`\s+VALUES\s+\(\s*1,\s*)'.+?'(.+?:B:1:)[a-z0-9]{32}'/$1'$sysopUser'$2$md5'/m;
+}
 
 # Find the prefix (if not already set) being used in the template and prepare for use in replacement regexp
 if ( $prefix eq '' ) {
