@@ -4,10 +4,9 @@
 # - Started: 2007-08-25 {{perl}}{{Category:OD2}}
 use DBI;
 use Digest::MD5 qw( md5_hex );
+use File::Temp qw( tempfile );
 require( '/var/www/tools/wikid.conf' );
 require( '/var/www/tools/wiki.pl' );
-
-$tmp  = '/tmp/add-db';
 
 # Extract sysop user and pass if supplied
 if ( $ARGV[0] =~ /--sysop\s*=\s*(.+):(.+)/ ) {
@@ -34,6 +33,9 @@ Notes:
 - The DB part is optional for all but the first and means to continue using the previous database.\n"
 	unless $#ARGV > 0 and $ARGV[1] =~ /^\w+\.\w+$/;
 
+# Prepare a tmp file to store the adjusted dump in
+( $th, $tmp ) = tempfile();
+
 # Read in the template SQL
 $prefix = '';
 $template = shift @ARGV;
@@ -54,7 +56,6 @@ if ( $template !~ /\.sql$/i ) {
 	$tbl = join ' ', @tbl;
 
 	# Export tables to tmp file and read into $template 
-	unlink $tmp;
 	qx( mysqldump -u $wgDBuser --password='$wgDBpassword' $db $tbl > $tmp );
 	$template = $tmp;
 
@@ -91,11 +92,12 @@ for ( @ARGV ) {
 
 	# Write the duplicate into a tmp file
 	unlink $tmp;
-	if ( open FH, '>', $tmp ) {	print FH $data; close FH; }
-	else { print "Could not write data for wiki $db.$pre to '$tmp'\n" }
+	open FH, '>', $tmp or die "Could not open '$tmp' for writing";
+	print FH $data or die "Could not write data for wiki $db.$pre to '$tmp'\n";
+	close FH;
 
 	# Pipe the file into MySQL and remove the tmp file
 	qx( mysql -u $wgDBuser --password='$wgDBpassword' $db < $tmp );
-	print $! ? "Error creating wiki $db.$pre: $!\n" : "Wiki $db.$pre created.\n";
+	print "Wiki \"$db.$pre\" created successfully.\n";
 }
 
