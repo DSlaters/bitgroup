@@ -30,7 +30,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.6.4'; # 2009-10-11
+$::ver      = '3.6.6'; # 2009-10-22
 $::dir      = $Bin;
 $::log      = "$::dir/$::daemon.log";
 $::wkfile   = "$::dir/$::daemon.work";
@@ -91,12 +91,7 @@ if ( $ARGV[0] eq '--remove' ) {
 serverInitialise();
 ircInitialise();
 wikiLogin( $wiki, $wikiuser, $wikipass );
-if ( $::dbuser ) {
-	$::db = DBI->connect( "DBI:mysql:$::dbname", $::dbuser, $::dbpass );
-	my $msg = defined $::db ? "Connected '$::dbuser' to DBI:mysql:$::dbname" : "Could not connect '$::dbuser' to '$::dbname': " . DBI->errstr;
-	logAdd( $msg );
-	logIRC( $msg );
-}
+dbConnect() if $::dbuser;
 %::streams = ();
 workInitialise();
 logIRC( $motd );
@@ -142,7 +137,10 @@ while( 1 ) {
 	# Housekeeping every 100 iterations
 	if ( defined $::wgDBuser && ++$n % 100 == 0 ) {
 		my $q = $::db->prepare( 'SELECT 0' );
-		$q->execute() or logAdd( 'DB connection gone away' );
+		unless ( $q->execute() ) {
+			logAdd( 'DB connection gone away, reconnecting...' );
+			dbConnect();
+		}
 	}
 
 }
@@ -217,6 +215,12 @@ sub start {
 	qx( "/etc/init.d/$::daemon.sh" );
 }
 
+sub dbConnect {
+	$::db = DBI->connect( "DBI:mysql:$::dbname", $::dbuser, $::dbpass );
+	my $msg = defined $::db ? "Connected '$::dbuser' to DBI:mysql:$::dbname" : "Could not connect '$::dbuser' to '$::dbname': " . DBI->errstr;
+	logAdd( $msg );
+	logIRC( $msg );
+}
 
 #---------------------------------------------------------------------------------------------------------#
 # SERVER FUNCTIONS
@@ -530,8 +534,10 @@ sub onRevisionInsertComplete {
 			$title  =~ s/_/ /g;
 			$utitle =~ s/ /_/g;
 			$comment =~ s/\\("')/$1/g;
-			$comment = " ($comment)" if $comment;
-			logIRC( "\"$title\" $action by $user$comment" );
+			$url = $wiki;
+			$url =~ s/wiki\/index.php//;
+			logIRC( "$user $action: $url/$title" );
+			logIRC( "Comment: $comment" ) if $comment;
 		}
 	} else { logAdd( "Not processing (page='$page', user='$user', title='$title')" ) }
 }
