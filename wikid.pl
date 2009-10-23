@@ -30,7 +30,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.6.6'; # 2009-10-22
+$::ver      = '3.6.7'; # 2009-10-24
 $::dir      = $Bin;
 $::log      = "$::dir/$::daemon.log";
 $::wkfile   = "$::dir/$::daemon.work";
@@ -91,10 +91,10 @@ if ( $ARGV[0] eq '--remove' ) {
 serverInitialise();
 ircInitialise();
 wikiLogin( $wiki, $wikiuser, $wikipass );
-dbConnect() if $::dbuser;
+dbConnect() if defined $::dbuser;
 %::streams = ();
 workInitialise();
-logIRC( $motd );
+logIRC( $::motd );
 
 # Initialise watched files list
 # TODO: this list should be drawn from shared record index
@@ -135,7 +135,7 @@ while( 1 ) {
 	sleep( 0.1 );
 
 	# Housekeeping every 100 iterations
-	if ( defined $::wgDBuser && ++$n % 100 == 0 ) {
+	if ( defined $::dbuser && ++$n % 100 == 0 ) {
 		my $q = $::db->prepare( 'SELECT 0' );
 		unless ( $q->execute() ) {
 			logAdd( 'DB connection gone away, reconnecting...' );
