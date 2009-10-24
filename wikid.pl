@@ -30,7 +30,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.6.8'; # 2009-10-24
+$::ver      = '3.6.9'; # 2009-10-24
 $::dir      = $Bin;
 $::log      = "$::dir/$::daemon.log";
 $::wkfile   = "$::dir/$::daemon.work";
@@ -609,15 +609,6 @@ sub doInfo {
 	logIRC( "There are currently $n jobs in progress" ) unless ( $n = $#::work ) < 0;
 }
 
-# Update and restart
-sub doUpdate {
-	logIRC( "Updating code-base and tools..." );
-	my $result = qx( "cd /var/www/tools && svn update" );
-	logIRC( $result );	
-	my $exp = Expect->spawn( "/etc/init.d/wikid" );
-	$exp->soft_close();
-}
-
 # Restart
 sub doRestart {
 	logIRC( "Restarting..." );
@@ -630,6 +621,17 @@ sub doRestart {
 	exit(0);
 }
 
+# Update
+sub doUpdate {
+	if ( my $exp = Expect->spawn( "cd /var/www/tools && svn update" ) ) {
+		logIRC( "Updating /var/www/tools from svn..." );
+		$exp->expect( 5,
+			[ qr/password:/ => sub { my $exp = shift; $exp->send( "$pass\n" ); exp_continue; } ],
+			[ qr/(^.+revision [0-9]+.*$)/ => sub { logIRC( $1 ); } ],
+		);
+		$exp->soft_close();
+	}
+}
 
 #---------------------------------------------------------------------------------------------------------#
 # JOBS
