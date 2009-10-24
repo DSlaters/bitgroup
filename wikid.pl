@@ -30,7 +30,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.6.7'; # 2009-10-24
+$::ver      = '3.6.8'; # 2009-10-24
 $::dir      = $Bin;
 $::log      = "$::dir/$::daemon.log";
 $::wkfile   = "$::dir/$::daemon.work";
@@ -536,7 +536,7 @@ sub onRevisionInsertComplete {
 			$comment =~ s/\\("')/$1/g;
 			$url = $wiki;
 			$url =~ s/wiki\/index.php//;
-			logIRC( "$user $action: $url/$title" );
+			logIRC( "$user $action: $url/$utitle" );
 			logIRC( "Comment: $comment" ) if $comment;
 		}
 	} else { logAdd( "Not processing (page='$page', user='$user', title='$title')" ) }
