@@ -30,7 +30,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.6.9'; # 2009-10-24
+$::ver      = '3.6.10'; # 2009-10-28
 $::dir      = $Bin;
 $::log      = "$::dir/$::daemon.log";
 $::wkfile   = "$::dir/$::daemon.work";
@@ -536,7 +536,7 @@ sub onRevisionInsertComplete {
 			$comment =~ s/\\("')/$1/g;
 			$url = $wiki;
 			$url =~ s/wiki\/index.php//;
-			logIRC( "$user $action: $url/$utitle" );
+			logIRC( "$user $action: $url$utitle" );
 			logIRC( "Comment: $comment" ) if $comment;
 		}
 	} else { logAdd( "Not processing (page='$page', user='$user', title='$title')" ) }
@@ -749,11 +749,7 @@ sub workStartJob {
 		logAdd( $msg );
 		logIRC( $msg );
 
-	} else {
-
-		# Unkown job type
-
-	}
+	} else { logAdd( "Unknown job type \"$type\"!" ) }
 }
 
 # Remove a job from the work queue (called to cancel and when finished)
