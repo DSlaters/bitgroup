@@ -30,7 +30,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.6.10'; # 2009-10-28
+$::ver      = '3.6.11'; # 2009-10-30
 $::dir      = $Bin;
 $::log      = "$::dir/$::daemon.log";
 $::wkfile   = "$::dir/$::daemon.work";
@@ -388,8 +388,9 @@ sub ircHandleConnections {
 						logAdd( "[IRC/$nick] $text" ) if $ircserver eq '127.0.0.1';
 
 						# Perform an action if it exists
-						if ( $text =~ /^($ircuser|$::daemon) (.+)$/i ) {
+						if ( $text =~ /^($ircuser|$::daemon) (.+)(\s+(.+))?$/i ) {
 							$title = ucfirst $2;
+							$::args = $4;
 							$::action = "do$title";
 							if ( defined &$::action ) {
 								$msg = "Processing \"$title\" action issued by $nick";
