@@ -528,7 +528,7 @@ sub onRevisionInsertComplete {
 	my $parent   = $revision{'mParentId'};
 	my $comment  = $revision{'mComment'};
 	my $title    = $$::data{'REQUEST'}{'title'};
-	my $wgScript = $$::data{'wgServer'};
+	my $wgServer = $$::data{'wgServer'};
 	if ( $page and $user ) {
 		if ( lc $user ne lc $wikiuser ) {
 			my $action = $parent ? 'changed' : 'created';
