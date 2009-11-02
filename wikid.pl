@@ -528,7 +528,7 @@ sub onRevisionInsertComplete {
 	my $parent   = $revision{'mParentId'};
 	my $comment  = $revision{'mComment'};
 	my $title    = $$::data{'REQUEST'}{'title'};
-	my $wgScript = $$::data{'wgScript'};
+	my $wgScript = $$::data{'wgServer'};
 	if ( $page and $user ) {
 		if ( lc $user ne lc $wikiuser ) {
 			my $action = $parent ? 'changed' : 'created';
@@ -536,7 +536,7 @@ sub onRevisionInsertComplete {
 			$title  =~ s/_/ /g;
 			$utitle =~ s/ /_/g;
 			$comment =~ s/\\("')/$1/g;
-			logIRC( "$user $action: $wgScript$utitle" );
+			logIRC( "$user $action: $wgServer/$utitle" );
 			logIRC( "Comment: $comment" ) if $comment;
 		}
 	} else { logAdd( "Not processing (page='$page', user='$user', title='$title')" ) }
