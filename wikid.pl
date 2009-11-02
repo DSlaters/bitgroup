@@ -30,7 +30,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.6.11'; # 2009-10-30
+$::ver      = '3.6.12'; # 2009-11-02
 $::dir      = $Bin;
 $::log      = "$::dir/$::daemon.log";
 $::wkfile   = "$::dir/$::daemon.work";
@@ -522,12 +522,13 @@ sub onAddNewAccount {
 sub onRevisionInsertComplete {
 	my %revision = %{$$::data{'args'}[0]};
 	return if $revision{'mMinorEdit'};
-	my $id      = $revision{'mId'};
-	my $page    = $revision{'mPage'};
-	my $user    = $revision{'mUserText'};
-	my $parent  = $revision{'mParentId'};
-	my $comment = $revision{'mComment'};
-	my $title   = $$::data{'REQUEST'}{'title'};
+	my $id       = $revision{'mId'};
+	my $page     = $revision{'mPage'};
+	my $user     = $revision{'mUserText'};
+	my $parent   = $revision{'mParentId'};
+	my $comment  = $revision{'mComment'};
+	my $title    = $$::data{'REQUEST'}{'title'};
+	my $wgScript = $$::data{'wgScript'};
 	if ( $page and $user ) {
 		if ( lc $user ne lc $wikiuser ) {
 			my $action = $parent ? 'changed' : 'created';
@@ -535,9 +536,7 @@ sub onRevisionInsertComplete {
 			$title  =~ s/_/ /g;
 			$utitle =~ s/ /_/g;
 			$comment =~ s/\\("')/$1/g;
-			$url = $wiki;
-			$url =~ s/wiki\/index.php//;
-			logIRC( "$user $action: $url$utitle" );
+			logIRC( "$user $action: $wgScript$utitle" );
 			logIRC( "Comment: $comment" ) if $comment;
 		}
 	} else { logAdd( "Not processing (page='$page', user='$user', title='$title')" ) }
