@@ -26,9 +26,11 @@ $letter = 'A';
 open DICT, '<', $file or die "Could not open dictionary file '$file'!";
 for ( <DICT> ) {
 
+	# Start of a new term with synonym
+	if ( /^([-A-Z ]+) or ([-A-Z ]+)[.,]/ ) { @titles = ( processTitle( $1 ), processTitle( $2 ) ) }
+
 	# Start of a new term definition
-	if ( /^([-A-Z ]+)[.,]/ ) {
-	}
+	elsif ( /^([-A-Z ]+)[.,]/ ) { @titles = ( processTitle( $1 ) }
 
 	# New letter of the alphabet starting
 	elsif ( /^([A-Z])$/ ) { $letter = $1 }
@@ -48,4 +50,9 @@ for ( <DICT> ) {
 		$comment = '';
 	}
 
+}
+
+
+# Process a title string and return array of main title and redirects
+sub processTitle {
 }
