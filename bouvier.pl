@@ -1,11 +1,15 @@
 #!/usr/bin/perl
-
+#
+# Parse text of Bouvier's dictionary into a wiki
+#
 # A line containing just a single capital letter indicates the start of a new section whereby all words start with that letter.
 # It's important to track this because some words don't start with their proper letter,
 # for example, TO DISHONOR is listed under "D".
 # Synonyms, e.g. AVOW or ADVOW
 # Each description is a paragraph followed by zero or more numbered paragraphs starting at "2." 
-    
+
+$ver = '0.0.2'; # 2009-11-04
+
 require('/var/www/tools/wiki.pl');
 
 $wiki     = 'http://wiki.translatum.gr/w/index.php';
@@ -22,8 +26,12 @@ $letter = 'A';
 open DICT, '<', $file or die "Could not open dictionary file '$file'!";
 for ( <DICT> ) {
 
+	# Start of a new term definition
+	if ( /^([-A-Z ]+)[.,]/ ) {
+	}
+
 	# New letter of the alphabet starting
-	if ( /^([A-Z])$/ ) { $letter = $1 }
+	elsif ( /^([A-Z])$/ ) { $letter = $1 }
 
 	# Additional meaning of the current term
 	elsif ( /^[0-9]+\.\s*(.+)$/ ) { $text .= "# $1\n" }
