@@ -8,11 +8,11 @@
 # Synonyms, e.g. AVOW or ADVOW
 # Each description is a paragraph followed by zero or more numbered paragraphs starting at "2." 
 
-$ver = '0.0.2'; # 2009-11-04
+$ver = '0.0.3'; # 2009-11-06
 
 require('/var/www/tools/wiki.pl');
 
-$wiki     = 'http://wiki.translatum.gr/w/index.php';
+$wiki     = 'http://114.localhost/wiki/index.php';
 $wikiuser = '****';
 $wikipass = '****';
 $file     = '/home/nad/Knowledge/Economy/Freemen Documents/Bouviers Law Dictionary/Bouvier.txt';
@@ -21,8 +21,8 @@ $file     = '/home/nad/Knowledge/Economy/Freemen Documents/Bouviers Law Dictiona
 wikiLogin( $wiki, $wikiuser, $wikipass ) or die "Couldn't log into wiki!";
 
 # Loop through the lines of the input file
-$file   = $ARGV[0];
 $letter = 'A';
+$write = 0;
 open DICT, '<', $file or die "Could not open dictionary file '$file'!";
 for ( <DICT> ) {
 
@@ -30,7 +30,7 @@ for ( <DICT> ) {
 	if ( /^([-A-Z ]+) or ([-A-Z ]+)[.,]/ ) { @titles = ( processTitle( $1 ), processTitle( $2 ) ) }
 
 	# Start of a new term definition
-	elsif ( /^([-A-Z ]+)[.,]/ ) { @titles = ( processTitle( $1 ) }
+	elsif ( /^([-A-Z ]+)[.,]/ ) { @titles = ( processTitle( $1 ) ) }
 
 	# New letter of the alphabet starting
 	elsif ( /^([A-Z])$/ ) { $letter = $1 }
@@ -38,21 +38,32 @@ for ( <DICT> ) {
 	# Additional meaning of the current term
 	elsif ( /^[0-9]+\.\s*(.+)$/ ) { $text .= "# $1\n" }
 
-	# Create/overwrite the primary definition article
-	$text  = "{{Bouvier}}\n\n";
-	$comment = "Term definition imported from Bouvier's dictionary";
-
 	# Create the articles, the first is the real content, subsequent ones are redirects
-	for ( @titles ) {
-		print lc $_ . "\n";
-		wikiEdit( $wiki, $_, $text, $comment );
-		$text = "#REDIRECT [[$title]]" if $comment;
-		$comment = '';
+	if ( $write and $text ) {
+
+		$text  = "{{Bouvier}}\n$text";
+		$comment = "Term definition imported from Bouvier's dictionary";
+
+		for ( @titles ) {
+			print "$_\n";
+			wikiEdit( $wiki, $_, $text, $comment );
+			$text = "#REDIRECT [[$titles[0]]]\n" unless $comment;
+			$comment = '';
+		}
+
+		$write = 0;
+		$text = '';
 	}
 
 }
 
 
-# Process a title string and return array of main title and redirects
+# Process a title string and return array of titles from the passed text
 sub processTitle {
+	$write = 1;
+	my $title = shift;
+	my @titles = ( $title, ucfirst lc $title );
+	push @titles, $2 if $titles[0] =~ /^(.).* (.+)$/ and $1 ne $letter;
+	push @titles, ucfirst lc $2 if $titles[0] =~ /^(.).* (.+)$/ and $1 ne $letter;
+	return @titles;
 }
