@@ -13,7 +13,7 @@ $ver = '1.0.0'; # 2009-11-07
 
 require( '/var/www/tools/wiki.pl' );
 
-$wiki     = 'https://www.maoria.co.nz/wiki/index.php';
+$wiki     = 'http://114.localhost/wiki/index.php';
 $wikiuser = '****';
 $wikipass = '****';
 $file     = '/home/nad/Knowledge/Economy/Freemen Documents/Bouviers Law Dictionary/Bouvier.txt';
@@ -29,24 +29,28 @@ for ( <DICT> ) {
 
 	@last = ();
 
+	# Ignore these
+	if ( /^(Bouvier's Law Dictionary|1856 Edition)/ ) {
+	}
+
+	# New letter of the alphabet starting
+	elsif ( /^\s*([A-Z])\s*$/ ) {
+		@last = @titles;
+		$letter = $1;
+	}
+
 	# Start of a new term with synonym
-	if ( /^([-A-Z ]+) or ([-A-Z ]+)[.,]/ ) {
+	elsif ( /^([-A-Z ]+) or ([-A-Z ]+)[.,]/ ) {
 		$next = $_;
 		@last = @titles;
 		@titles = ( processTitle( $1 ), processTitle( $2 ) );
 	}
 
 	# Start of a new term definition
-	elsif ( /^([-A-Z ]+)[.,]/ ) {
+	elsif ( /^([-A-Z ]+)[.,]/ and not /^-/ ) {
 		$next = $_;
 		@last = @titles;
 		@titles = ( processTitle( $1 ) );
-	}
-
-	# New letter of the alphabet starting
-	elsif ( /^([A-Z])$/ ) {
-		@last = @titles;
-		$letter = $1;
 	}
 
 	# Additional meaning of the current term
@@ -61,20 +65,20 @@ for ( <DICT> ) {
 	# Create the articles, the first is the real content, subsequent ones are redirects
 	if ( $text and $#last >= 0 ) {
 
+		# Add/append the definition for this term (unless the term is a single letter)
 		$key = shift @last;
-
-		# If title already exists append current definition
-		if ( -e $dict{$key} ) {
-			@entry = @{ $dict{$key} };
-			$text = $entry[0] . "\n\n$text";
+		unless ( $key =~ /^\s*[A-Z]\s*$/s ) {
+			if ( -e $dict{$key} ) {
+				@entry = @{ $dict{$key} };
+				$text = $entry[0] . "\n\n$text";
+			}
+			$dict{$key} = [ $text, [ @last ] ];
 		}
-
-		$dict{$key} = [ $text, [ @last ] ];
+		
 		$text = "$next\n";
 		$text =~ s/^([-A-Z ]{3,})(?=[.,])/'''$1'''/mg;
 	}
 }
-
 
 # Second pass - run through the hash keys creating articles
 for $key ( keys %dict ) {
