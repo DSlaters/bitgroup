@@ -30,7 +30,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.6.12'; # 2009-11-02
+$::ver      = '3.6.13'; # 2009-11-23
 $::dir      = $Bin;
 $::log      = "$::dir/$::daemon.log";
 $::wkfile   = "$::dir/$::daemon.work";
@@ -761,6 +761,7 @@ sub workStopJob {
 	return 0 if $i < 0;
 
 	# Execute the job type's stop function if defined
+	$$::job{'finish'} = time();
 	my $stop = 'stop' . $$::job{'type'};
 	&$stop if defined &$stop;
 
@@ -773,7 +774,7 @@ sub workStopJob {
 	$entry .= "   Type      : " . $$::job{'type'}      . "\n";
 	$entry .= "   User      : " . $$::job{'user'}      . "\n";
 	$entry .= "   Start     : " . $$::job{'start'}     . "\n";
-	$entry .= "   Finish    : " . time()               . "\n";
+	$entry .= "   Finish    : " . $$::job{'finish'}    . "\n";
 	$entry .= "   Progress  : " . $progress            . "\n";
 	$entry .= "   Revisions : " . $$::job{'revisions'} . "\n";
 	$entry .= "   Length    : " . $$::job{'length'}    . "\n";
