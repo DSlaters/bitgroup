@@ -2,7 +2,7 @@
 use Expect;
 require( '/var/www/tools/wikid.conf' );
 require( '/var/www/tools/wiki.pl' );
-$bak_user = $name unless defined $bak_user;
+$bak_user = lc $name unless defined $bak_user;
 $wikiuser = $name unless defined $wikiuser;
 
 for $dir ( @bak_paths ) {
