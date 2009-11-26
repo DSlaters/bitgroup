@@ -30,7 +30,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.7.4'; # 2009-11-26
+$::ver      = '3.7.5'; # 2009-11-26
 $::dir      = $Bin;
 $::log      = "$::dir/$::daemon.log";
 $::wkfile   = "$::dir/$::daemon.work";
@@ -504,7 +504,7 @@ sub onFileChanged {
 
 sub onStartJob {
 	$::job = $$::data{'args'};
-	$$::job{'type'} = $$data{'type'};
+	$$::job{'type'} = $$::data{'type'};
 	workStartJob( $$::job{'type'}, -e $$::job{'id'} ? $$::job{'id'} : undef );
 }
 
