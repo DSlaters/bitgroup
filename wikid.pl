@@ -30,7 +30,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.7.5'; # 2009-11-26
+$::ver      = '3.7.6'; # 2009-11-26
 $::dir      = $Bin;
 $::log      = "$::dir/$::daemon.log";
 $::wkfile   = "$::dir/$::daemon.work";
@@ -503,13 +503,12 @@ sub onFileChanged {
 # $::script, $::site, $::event, $::data available
 
 sub onStartJob {
-	$::job = $$::data{'args'};
-	$$::job{'type'} = $$::data{'type'};
+	%$::job = %{$$::data{'args'}};
 	workStartJob( $$::job{'type'}, -e $$::job{'id'} ? $$::job{'id'} : undef );
 }
 
 sub onStopJob {
-	my $id = $::data;
+	my $id = $$::data{'args'};
 	return if workSetJobFromId( $id ) < 0;
 	$$::job{'errors'} = "Job cancelled\n" . $$::job{'errors'};
 	if ( workStopJob( $id ) ) {
@@ -520,7 +519,7 @@ sub onStopJob {
 }
 
 sub onPauseJobToggle {
-	my $id = $::data;
+	my $id = $$::data{'args'};
 	workSetJobFromId( $id );
 	$$::job{'paused'} = $$::job{'paused'} ? 0 : 1;
 	workSave();
@@ -651,7 +650,7 @@ sub doRestart {
 }
 
 # Stop
-sub doRestart {
+sub doStop {
 	logIRC( "Stopping..." );
 	logAdd( "Closing handles..." );
 	serverDisconnect $_ for keys %$::streams;
@@ -768,6 +767,7 @@ sub workStartJob {
 		# Add the new job to the work hash
 		$$::job{'id'}        = $id;
 		$$::job{'type'}      = $type;
+		$$::job{'wiki'}      = $::script ? $::script : $::wiki;
 		$$::job{'user'}      = $::wikiuser;
 		$$::job{'start'}     = time();
 		$$::job{'finish'}    = 0;
