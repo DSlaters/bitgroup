@@ -132,7 +132,7 @@ while( 1 ) {
 	# Execute a job from the current work
 	workExecute();
 	
-	sleep( 0.1 );
+	sleep( 0.5 );
 
 	# Housekeeping every 100 iterations
 	if ( defined $::dbuser && ++$n % 100 == 0 ) {
