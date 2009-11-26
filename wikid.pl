@@ -503,12 +503,13 @@ sub onFileChanged {
 # $::script, $::site, $::event, $::data available
 
 sub onStartJob {
-	$::job = $::data;
+	$::job = $$::data{'args'};
+	$$::job{'type'} = $$data{'type'};
 	workStartJob( $$::job{'type'}, -e $$::job{'id'} ? $$::job{'id'} : undef );
 }
 
 sub onStopJob {
-	my $id = $$::data{'id'};
+	my $id = $::data;
 	return if workSetJobFromId( $id ) < 0;
 	$$::job{'errors'} = "Job cancelled\n" . $$::job{'errors'};
 	if ( workStopJob( $id ) ) {
@@ -519,7 +520,7 @@ sub onStopJob {
 }
 
 sub onPauseJobToggle {
-	my $id = $$::data{'id'};
+	my $id = $::data;
 	workSetJobFromId( $id );
 	$$::job{'paused'} = $$::job{'paused'} ? 0 : 1;
 	workSave();
