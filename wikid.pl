@@ -16,7 +16,7 @@ use HTTP::Request;
 use LWP::UserAgent;
 use Expect;
 use Net::SCP::Expect;
-use Net::XMPP;
+#use Net::XMPP;
 use IO::Socket;
 use IO::Select;
 use MIME::Base64;
@@ -30,7 +30,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.7.2'; # 2009-11-26
+$::ver      = '3.7.4'; # 2009-11-26
 $::dir      = $Bin;
 $::log      = "$::dir/$::daemon.log";
 $::wkfile   = "$::dir/$::daemon.work";
@@ -646,6 +646,17 @@ sub doRestart {
 	$::server->shutdown(2);
 	$::ircsock->shutdown(2);
 	spawn "start";
+	exit(0);
+}
+
+# Stop
+sub doRestart {
+	logIRC( "Stopping..." );
+	logAdd( "Closing handles..." );
+	serverDisconnect $_ for keys %$::streams;
+	logAdd( "Stopping listeners..." );
+	$::server->shutdown(2);
+	$::ircsock->shutdown(2);
 	exit(0);
 }
 
