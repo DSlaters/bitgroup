@@ -30,7 +30,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.6.13'; # 2009-11-23
+$::ver      = '3.6.14'; # 2009-11-26
 $::dir      = $Bin;
 $::log      = "$::dir/$::daemon.log";
 $::wkfile   = "$::dir/$::daemon.work";
@@ -789,6 +789,8 @@ sub workStopJob {
 	for ( 0 .. $#::work ) { push @tmp, $::work[$_] if $i ne $_ }
 	@::work = @tmp;
 	workSave();
+	
+	delete $$::job{$id};
 	1;
 }
 
