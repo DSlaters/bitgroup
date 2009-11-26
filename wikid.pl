@@ -30,7 +30,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.6.14'; # 2009-11-26
+$::ver      = '3.7.2'; # 2009-11-26
 $::dir      = $Bin;
 $::log      = "$::dir/$::daemon.log";
 $::wkfile   = "$::dir/$::daemon.work";
@@ -324,37 +324,57 @@ sub serverProcessMessage {
 sub ircInitialise {
 	return unless $::ircserver;
 
+	# If retrying connection, return unless retry period expired
+	if ( defined $::ircLastTry ) {
+		return unless time() - $::ircLastTry > 30;
+	}
+
+	# Attempt connection with the IRC server
 	$::ircsock = IO::Socket::INET->new(
 		PeerAddr => $::ircserver,
 		PeerPort => $::ircport,
 		Proto    => 'tcp'
-	) or die "could not connect to the IRC server ($ircserver:$ircport)";
+	);
 
-	print $::ircsock "PASS $ircpass\nNICK $ircuser\nUSER $ircuser 0 0 :$::daemon\n";
+	# If connected, do login sequence
+	if ( $::ircsock ) {
+		print $::ircsock "PASS $ircpass\nNICK $ircuser\nUSER $ircuser 0 0 :$::daemon\n";
+		while ( <$::ircsock> ) {
 
-	while ( <$::ircsock> ) {
+			# if the server asks for a ping
+			print $::ircsock "PONG :" . ( split( / :/, $_ ) )[1] if /^PING/;
 
-		# if the server asks for a ping
-		print $::ircsock "PONG :" . ( split( / :/, $_ ) )[1] if /^PING/;
-
-		# end of MOTD section
-		if ( / (376|422) / ) {
-			print $::ircsock "NICKSERV :identify $ircuser $ircpass\n";
-			last;
+			# end of MOTD section
+			if ( / (376|422) / ) {
+				print $::ircsock "NICKSERV :identify $ircuser $ircpass\n";
+				last;
+			}
 		}
+
+		# Set up listener on the socket
+		$::ircselect = new IO::Select $::ircsock;
+
+		# Don't retry anymore
+		$::ircLastTry = undef;
+
+		# Wait for a few secs and join the channel
+		sleep 3;
+		print $::ircsock "JOIN $ircchannel\n";
+		logAdd( "$ircuser connected to $ircserver:$ircport" );
 	}
 
-	# Wait for a few secs and join the channel
-	sleep 3;
-	print $::ircsock "JOIN $ircchannel\n";
-
-	$::ircselect = new IO::Select $::ircsock;
-	logAdd( "$ircuser connected to $ircserver:$ircport" );
+	# Connecting to the IRC server failed, try again soon
+	else {
+		 logAdd( "Couldn't connect to the IRC server ($ircserver:$ircport), will try again soon..." );
+		 $::ircLastTry = time();
+	}
 }
 
 # Handle streams from select list needing attention
 sub ircHandleConnections {
 	return unless $::ircserver;
+	ircInitialise() if defined $::ircLastTry;
+	return unless $::ircselect;
 	for my $handle ( $::ircselect->can_read( 1 ) ) {
 		my $stream = fileno $handle;
 		if ( sysread $handle, my $data, 100 ) {
@@ -411,11 +431,19 @@ sub ircHandleConnections {
 		# Stream closed, try reconnecting
 		else {
 			logAdd( "Disconnected from $::ircserver:$::ircport" );
-			serverDisconnect( $handle );
-			sleep 5;
+			ircDisconnect( $handle );
 			ircInitialise();
 		}
 	}
+}
+
+# Close an IRC handle and clean up
+sub ircDisconnect {
+	my $handle = shift;
+	$::ircselect->remove( $handle );
+	delete $::streams{$stream};
+	$handle->close();
+	logAdd( "IRC Stream$stream disconnected." );
 }
 
 # Output a comment into the IRC channel
