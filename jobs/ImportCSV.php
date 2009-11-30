@@ -7,7 +7,7 @@ if ( !defined( 'MEDIAWIKI' ) ) die( 'Not an entry point.' );
 $wgImportCSVDataDir = dirname( __FILE__ ) . '/data';
 
 $wgHooks['WikidAdminTypeFormRender_ImportCSV'][] = 'wfImportCSV_Render';
-$wgHooks['WikidAdminTypeFormProcess_ImportCSV'][] = 'wfImportCSV_Process'
+$wgHooks['WikidAdminTypeFormProcess_ImportCSV'][] = 'wfImportCSV_Process';
 
 /**
  * Render a form in Special:WikidAdmin for the AAPImport type

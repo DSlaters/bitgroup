@@ -30,7 +30,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.7.6'; # 2009-11-26
+$::ver      = '3.7.7'; # 2009-11-30
 $::dir      = $Bin;
 $::log      = "$::dir/$::daemon.log";
 $::wkfile   = "$::dir/$::daemon.work";
@@ -677,17 +677,27 @@ sub doUpdate {
 
 # Read in or initialise the persistent work hash
 sub workInitialise {
+
+	# Load existing work file or create a new empty one
 	if ( -e $::wkfile ) {
 		workLoad();
 	} else {
 		@::work = ();
 		$::wptr = 0;
-		for ( keys %:: ) { push @types, $1 if defined &$_ and /^main(\w+)$/ }
-		workSave();
-		my $msg = "Work file created with job types " . join ', ', @types;
+		my $msg = "New work file created";
 		logAdd( $msg );
 		logIRC( $msg );
 	}
+	
+	# Rebuild installed work types
+	@::types = ();
+	for ( keys %:: ) { push @::types, $1 if defined &$_ and /^main(\w+)$/ }
+	my $msg = "Installed job types: " . join ', ', @::types;
+	logAdd( $msg );
+	logIRC( $msg );
+
+	# Save any changes
+	workSave();
 }
 
 # Set the global $::job hash from passed job ID
