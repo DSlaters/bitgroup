@@ -30,7 +30,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.7.8'; # 2009-12-01
+$::ver      = '3.7.9'; # 2009-12-01
 $::dir      = $Bin;
 $::log      = "$::dir/$::daemon.log";
 $::wkfile   = "$::dir/$::daemon.work";
@@ -633,8 +633,25 @@ sub doUpdateAccount {
 
 # Output information about self
 sub doInfo {
+	
+	# General info
 	logIRC( "I'm a $::daemon version $::ver listening on port $::port." );
+
+	# Job info
 	logIRC( "There are currently $n jobs in progress" ) unless ( $n = $#::work ) < 0;
+	my $jobs = $#::types < 0 ? 'none' : join ', ', @::types;
+	logIRC( "Installed job types: $jobs" );
+
+	# Events info
+	my @events = ();
+	for ( keys %:: ) { push @events, $1 if defined &$_ and /^on(\w+)$/ }
+	logIRC( "Event handlers: " . join ', ', @events );
+
+	# Actions info
+	my @actions = ();
+	for ( keys %:: ) { push @actions, $1 if defined &$_ and /^do(\w+)$/ }
+	logIRC( "Known actions: " . join ', ', @actions );
+
 }
 
 # Restart
