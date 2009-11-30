@@ -79,3 +79,5 @@ sub stopImportCSV {
 	unlink "$file.idx";
 	1;
 }
+
+1;
