@@ -30,7 +30,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.7.7'; # 2009-11-30
+$::ver      = '3.7.8'; # 2009-12-01
 $::dir      = $Bin;
 $::log      = "$::dir/$::daemon.log";
 $::wkfile   = "$::dir/$::daemon.work";
@@ -692,9 +692,11 @@ sub workInitialise {
 	# Rebuild installed work types
 	@::types = ();
 	for ( keys %:: ) { push @::types, $1 if defined &$_ and /^main(\w+)$/ }
-	my $msg = "Installed job types: " . join ', ', @::types;
-	logAdd( $msg );
-	logIRC( $msg );
+	if ( $#::types >= 0 ) {
+		my $msg = "Installed job types: " . join ', ', @::types;
+		logAdd( $msg );
+		logIRC( $msg );
+	}
 
 	# Save any changes
 	workSave();
