@@ -51,7 +51,7 @@ sub mainImportCSV {
 	open INPUT, "<$file";
 	seek INPUT, $offset, 0;
 	my @data = split /\t/, <INPUT>;
-	s/^\s*(.+?)\s*$/$1/s for @data;
+	s/^\s*(.*?)\s*$/$1/s for @data;
 	close INPUT;
 
 	# If this is the first row, define the columns
