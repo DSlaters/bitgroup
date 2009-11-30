@@ -11,11 +11,15 @@ sub initImportCSV {
 	my $file = $$::job{'file'};
 
 	# Index the byte offsets of each line in the source file
-	my @index = ( 0 );
-	if ( open INPUT, '<', $file ) {
-		push @index, tell INPUT while <INPUT>;
+	my $offset = 0;
+	if ( open INPUT, "<$file" && open INDEX, "+>$file.idx" ) {
+		while ( <INPUT> ) {
+			print INDEX pack 'N', $offset;
+			$offset = tell INPUT;
+		}
+		close INPUT;
+		close INDEX;
     }
-    close INPUT;
     
 	# Couldn't open file
     else {
@@ -38,9 +42,22 @@ sub mainImportCSV {
 	$$::job{'status'} = "Processing record $ptr";
 
 	# Read the current line from the input file
-	open INPUT, '<', $file;
 	seek INPUT, $offset, 0;
 	read INPUT, $line, $length;
+	close INPUT;
+
+	# Find the offset to the current line from the index file
+	open INDEX, "<$file.idx";
+	my $size = length pack 'N', 0;
+	seek INDEX, $size * $wptr, 0;
+	read INDEX, my $offset, $size;
+	$offset = unpack( 'N', $offset );
+	close INDEX;
+
+	# Read the CSV record from the indexed offset
+	open INPUT, "<$file";
+	seek INPUT, $offset, 0;
+	my $data = <INPUT>;
 	close INPUT;
 
 	# If this is the first row, define the columns
