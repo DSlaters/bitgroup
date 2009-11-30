@@ -6,8 +6,6 @@
 #
 
 sub initImportCSV {
-	$$::job{'titles'} = {};
-	$$::job{'work'} = [];
 	my $file = $$::job{'file'};
 
 	# Index the byte offsets of each line in the source file
@@ -16,6 +14,7 @@ sub initImportCSV {
 		while ( <INPUT> ) {
 			print INDEX pack 'N', $offset;
 			$offset = tell INPUT;
+			$$::job{'length'}++;
 		}
 		close INPUT;
 		close INDEX;
@@ -27,24 +26,15 @@ sub initImportCSV {
 		workStopJob();
 	}	
 
-	$$::job{'index'} = \@index;
-	$$::job{'length'} = $#index;
-
 	1;
 }
 
+# Import the next line from the input CSV file
 sub mainImportCSV {
-	my $wiki   = $$::job{'wiki'};
-	my $file   = $$::job{'file'};
-	my $wptr   = $$::job{'wptr'};
-	my $offset = $$::job{'index'}[$wptr];
-	my $length = $$::job{'index'}[$wptr + 1] - $offset;
-	$$::job{'status'} = "Processing record $ptr";
-
-	# Read the current line from the input file
-	seek INPUT, $offset, 0;
-	read INPUT, $line, $length;
-	close INPUT;
+	my $wiki = $$::job{'wiki'};
+	my $file = $$::job{'file'};
+	my $wptr = $$::job{'wptr'};
+	my $tmpl = $$::job{'template'};
 
 	# Find the offset to the current line from the index file
 	open INDEX, "<$file.idx";
@@ -54,25 +44,38 @@ sub mainImportCSV {
 	$offset = unpack( 'N', $offset );
 	close INDEX;
 
-	# Read the CSV record from the indexed offset
+	# Read the CSV record from the indexed offset into an array
 	open INPUT, "<$file";
 	seek INPUT, $offset, 0;
-	my $data = <INPUT>;
+	my @data = split /\t/, <INPUT>;
+	s/^\s*(.+?)\s*$/$1/s for @data;
 	close INPUT;
 
 	# If this is the first row, define the columns
-	if ( $wptr == 0 ) {
-	}
-	
+	if ( $wptr == 0 ) { $$::job{'cols'} = \@data }
+
 	# Otherwise construct record as wikitext and insert into wiki
 	else {
+
+		# Construct the template syntax
+		my $title = wikiGuid();
+		my @cols = @{ $$::job{'cols'} };
+		my $text = "\{\{$tmpl\n";
+		$text .= " | $cols[$_] = $data[$_]\n" for 0 .. $#cols;
+		$text .= "\}\}";
+
+		# Import into the wiki
 		my $cur = wikiRawPage( $wiki, $title );
-		$$::job{'revisions'}++ if wikiEdit( $wiki, $title, $text, "Content imported from \"$file\"" ) && $cur ne $text;
+		$$::job{'revisions'}++ if wikiEdit( $wiki, $title, $text, "Content imported from \"$file\"" ) and $cur ne $text;
 	}
 
+	$$::job{'status'} = "Record $ptr imported";
 	1;
 }
 
+# Remove the index file when the job is finished or stopped
 sub stopImportCSV {
+	my $file = $$::job{'file'};
+	unlink "$file.idx";
 	1;
 }
