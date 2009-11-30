@@ -7,22 +7,25 @@
 
 sub initImportCSV {
 	my $file = $$::job{'file'};
+	my $errors = 0;
 
-	# Index the byte offsets of each line in the source file
+	# List the byte offsets of each line of the source file in an index file
 	my $offset = 0;
-	if ( open INPUT, "<$file" && open INDEX, "+>$file.idx" ) {
-		while ( <INPUT> ) {
-			print INDEX pack 'N', $offset;
-			$offset = tell INPUT;
-			$$::job{'length'}++;
-		}
+	if ( open INPUT, "<$file" ) {
+		if ( open INDEX, "+>$file.idx" ) {
+			while ( <INPUT> ) {
+				print INDEX pack 'N', $offset;
+				$offset = tell INPUT;
+				$$::job{'length'}++;
+			}
+			close INDEX;
+		} else { $errors++ && workLogError( "Couldn't create and index file \"$file.idx\"" ) }
 		close INPUT;
-		close INDEX;
-    }
+    } else { $errors++ && workLogError( "Couldn't open input file \"$file\"" ) }
     
-	# Couldn't open file
-    else {
-		workLogError( "Couldn't open input file \"$file\", job aborted!" );
+	# Report errors and stop job if error count non zero
+    if ( $errors > 0 ) {
+		workLogError( "$errors errors were encountered, job aborted!" );
 		workStopJob();
 	}	
 
