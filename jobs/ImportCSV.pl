@@ -5,54 +5,35 @@
 # @author Aran Dunkley http://www.organicdesign.co.nz/nad
 #
 
+# Set the file pointer to start of the file (i.e. first line)
 sub initImportCSV {
 	my $file = $$::job{'file'};
-	my $errors = 0;
-
-	# List the byte offsets of each line of the source file in an index file
-	my $offset = 0;
-	if ( open INPUT, "<$file" ) {
-		if ( open INDEX, "+>$file.idx" ) {
-			while ( <INPUT> ) {
-				print INDEX pack 'N', $offset;
-				$offset = tell INPUT;
-				$$::job{'length'}++;
-			}
-			close INDEX;
-		} else { $errors++ && workLogError( "Couldn't create and index file \"$file.idx\"" ) }
-		close INPUT;
-    } else { $errors++ && workLogError( "Couldn't open input file \"$file\"" ) }
-    
-	# Report errors and stop job if error count non zero
-    if ( $errors > 0 ) {
-		workLogError( "$errors errors were encountered, job aborted!" );
-		workStopJob();
-	}	
-
+	my $lines = qx( wc -l "$file" );
+	$$::job{'fptr'} = 0;
+	$$::job{'length'} = int( $lines );
 	1;
 }
 
-# Import the next line from the input CSV file
+# Import the current line from the input CSV file
 sub mainImportCSV {
 	my $wiki = $$::job{'wiki'};
 	my $file = $$::job{'file'};
+	my $fptr = $$::job{'fptr'};
 	my $wptr = $$::job{'wptr'};
 	my $tmpl = $$::job{'template'};
-
-	# Find the offset to the current line from the index file
-	open INDEX, "<$file.idx";
-	my $size = length pack 'N', 0;
-	seek INDEX, $size * $wptr, 0;
-	read INDEX, my $offset, $size;
-	$offset = unpack( 'N', $offset );
-	close INDEX;
+	my @data = ();
 
 	# Read the CSV record from the indexed offset into an array
-	open INPUT, "<$file";
-	seek INPUT, $offset, 0;
-	my @data = split /\t/, <INPUT>;
-	s/^\s*(.*?)\s*$/$1/s for @data;
-	close INPUT;
+	if ( open INPUT, "<$file" ) {
+		seek INPUT, $fptr, 0;
+		@data = split /\t/, <INPUT>;
+		$$::job{'fptr'} = tell INPUT;
+		s/^\s*(.*?)\s*$/$1/s for @data;
+		close INPUT;
+	} else {
+		workLogError( "Couldn't read input file \"$file\", job aborted!" );
+		workStopJob();
+	}
 
 	# If this is the first row, define the columns and a reverse lookup
 	if ( $wptr == 0 ) {
