@@ -14,7 +14,8 @@ $wgHooks['WikidAdminTypeFormProcess_ImportCSV'][] = 'wfImportCSV_Process';
  */
 function wfImportCSV_Render( &$html ) {
 	global $wgImportCSVDataDir;
-	$html = 'Template name: <input name="template" /><br />';
+	$html = 'Title format: <input name="format" /><br />';
+	$html .= 'Template name: <input name="template" /><br />';
 	$html .= 'Use an existing file: <select name="file"><option />';
 	foreach ( glob( "$wgImportCSVDataDir/*" ) as $file ) $html .= '<option>' . basename( $file ) . '</option>';
 	$html .= '</select><br />Or upload a new file:<br /><input name="upload" type="file" />';
@@ -27,6 +28,7 @@ function wfImportCSV_Render( &$html ) {
 function wfImportCSV_Process( &$job, &$start ) {
 	global $wgImportCSVDataDir, $wgRequest, $wgSiteNotice;
 	$job['template'] = $wgRequest->getText( 'template' );
+	$job['title'] = $wgRequest->getText( 'format' );
 
 	# Handle upload if one specified, otherwise use existing one (if specified)
 	if ( $target = basename( $_FILES['upload']['name'] ) ) {

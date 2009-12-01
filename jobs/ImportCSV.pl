@@ -54,14 +54,24 @@ sub mainImportCSV {
 	s/^\s*(.*?)\s*$/$1/s for @data;
 	close INPUT;
 
-	# If this is the first row, define the columns
-	if ( $wptr == 0 ) { $$::job{'cols'} = \@data }
+	# If this is the first row, define the columns and a reverse lookup
+	if ( $wptr == 0 ) {
+		$$::job{'cols'} = \@data;
+		my %lut = ();
+		$lut{lc $data[$_]} = $_ for 0 .. $#data;
+		$$::job{'lut'} = \%lut;
+	}
 
 	# Otherwise construct record as wikitext and insert into wiki
 	else {
 
+		# Determine title for the record
+		my $title = $$::job{'title'};
+		if ( $title ) {
+			$title =~ s/\$(\w+)/ jobImportCSVBuildTitle( $1, \@data ) /eg;
+		} else { $title = wikiGuid() }
+
 		# Construct the template syntax
-		my $title = wikiGuid();
 		my @cols = @{ $$::job{'cols'} };
 		my $text = "\{\{$tmpl\n";
 		$text .= " | $cols[$_] = $data[$_]\n" for 0 .. $#cols;
@@ -74,6 +84,18 @@ sub mainImportCSV {
 
 	$$::job{'status'} = "Record $ptr imported";
 	1;
+}
+
+# Replace a token from the title format string with data
+# - named indexes are case-insensitive
+# - removes double spaces from result
+sub jobImportCSVBuildTitle {
+	my $i = shift;
+	my $data = shift;
+	my %lut = %{$$::job{'lut'}};
+	my $title = $$data[ $i =~ /\D/ ? $lut{lc $i} : $i - 1 ];
+	$title =~ s/ +/ /g;
+	return $title;
 }
 
 # Remove the index file when the job is finished or stopped
