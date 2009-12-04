@@ -16,7 +16,7 @@
 #   - get namespaces
 #   - get messages used in patterns (and make methods use messages in their regexp's so lang-independent)
 
-$::wikipl_version = '1.9.1'; # 2009-07-09
+$::wikipl_version = '1.10.1'; # 2009-12-04
 
 use HTTP::Request;
 use LWP::UserAgent;
@@ -44,6 +44,7 @@ sub wikiMove;
 sub wikiExamineBraces;
 sub wikiGuid;
 sub wikiGetConfig;
+sub wikiAllPages;
 
 # Set up a global client for making HTTP requests as a browser
 $::client = LWP::UserAgent->new(
@@ -630,4 +631,17 @@ sub wikiGuid {
 sub wikiGetConfig {
 	my $var = shift;
 	return $1 if qx( cat /var/www/extensions/wikia.php|grep $var ) =~ /'(.+)'/;
+}
+
+# Return a list of all page titles in the passed namespace
+sub wikiAllPages {
+	my $wiki = shift;
+	my $ns = shift;
+	$ns = 0 unless $ns;
+	$wiki =~ s/index.php/api.php/;
+	my $url = "$wiki?action=query&list=allpages&format=json&apfilterredir=nonredirects&apnamespace=$ns&aplimit=100000";
+	my $json = $::client->get( $url )->content;
+	my @list = $json =~ /"title":"(.+?[^\\])"/g;
+	s/\\"/"/g for @list;
+	return @list;
 }
