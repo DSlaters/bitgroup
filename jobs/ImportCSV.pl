@@ -79,10 +79,7 @@ sub jobImportCSVBuildTitle {
 	return $title;
 }
 
-# Remove the index file when the job is finished or stopped
 sub stopImportCSV {
-	my $file = $$::job{'file'};
-	unlink "$file.idx";
 	1;
 }
 
