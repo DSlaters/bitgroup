@@ -4,19 +4,23 @@
  */
 if ( !defined( 'MEDIAWIKI' ) ) die( 'Not an entry point.' );
 
-$wgHooks['WikidAdminTypeFormRender_ImportCSV'][] = 'wfImportCSV_Render';
-$wgHooks['WikidAdminTypeFormProcess_ImportCSV'][] = 'wfImportCSV_Process';
+$wgHooks['WikidAdminTypeFormRender_ModifyRecords'][] = 'wfModifyRecords_Render';
+$wgHooks['WikidAdminTypeFormProcess_ModifyRecords'][] = 'wfModifyRecords_Process';
 
 /**
  * Render a form in Special:WikidAdmin for the AAPImport type
  */
 function wfModifyRecords_Render( &$html ) {
-	global $wgImportCSVDataDir;
-	$html = 'Title format: <input name="format" /><br />';
-	$html .= 'Template name: <input name="template" /><br />';
-	$html .= 'Use an existing file: <select name="file"><option />';
-	foreach ( glob( "$wgImportCSVDataDir/*" ) as $file ) $html .= '<option>' . basename( $file ) . '</option>';
-	$html .= '</select><br />Or upload a new file:<br /><input name="upload" type="file" />';
+	$html = '<table>';
+	$html .= '<tr><td>Action:</td><td><select name="wpChangeType">';
+	$html .= '<option value="name">Change a record name and all values referencing it</option>';
+	$html .= '<option value="name">Change all occurences of a particular value</option>';
+	$html .= '<option value="name">Change a field name and all references to it</option>';
+	$html .= '<option value="name">Change the name of a record type and all references to it</option>';
+	$html .= '</select></td></tr>';
+	$html .= '<tr><td>From:</td><td><input name="wpFrom" /></td></tr>';
+	$html .= '<tr><td>To:</td><td><input name="wpTo" /></td></tr>';
+	$html .= '</table>';
 	return true;
 }
 
