@@ -125,28 +125,29 @@ sub wikiEdit {
 			$response->content =~ m|<input type='hidden' value="(.+?)" name="wpEditToken" />|g
 			)) {
 
-			# Got token etc, now submit an edit-form
-			my %form = (
-				wpEditToken => $1,
-				wpTextbox1  => $content,
-				wpSummary   => $comment,
-				wpSave      => 'Save page'
-			);
-			$form{wpMinoredit} = 1 if $minor;
+				# Got token etc, now submit an edit-form
+				my %form = (
+					wpEditToken => $1,
+					wpTextbox1  => $content,
+					wpSummary   => $comment,
+					wpSave      => 'Save page'
+				);
+				$form{wpMinoredit} = 1 if $minor;
 
-			my $tokens = @{[$response->content =~ m|(<input type='hidden'.+type="hidden" value=".*?" />)|gs]};
+				my $tokens = @{[$response->content =~ m|(<input type='hidden'.+type="hidden" value=".*?" />)|gs]};
 
-			# Grabbing fields separately as hidden input order may vary in global regex
-			$response->content =~ m|<input type='hidden' value="(.*?)" name="wpSection" />|     && ($form{wpSection} = $1);
-			$response->content =~ m|<input type='hidden' value="(.*?)" name="wpStarttime" />|   && ($form{wpStarttime} = $1);
-			$response->content =~ m|<input type='hidden' value="(.*?)" name="wpEdittime" />|    && ($form{wpEdittime} = $1);
-			$response->content =~ m|<input name="wpAutoSummary" type="hidden" value="(.*?)" />| && ($form{wpAutoSummary} = $1);
-			$response = $::client->post("$wiki?title=$title&action=submit", \%form);
+				# Grabbing fields separately as hidden input order may vary in global regex
+				$response->content =~ m|<input type='hidden' value="(.*?)" name="wpSection" />|     && ($form{wpSection} = $1);
+				$response->content =~ m|<input type='hidden' value="(.*?)" name="wpStarttime" />|   && ($form{wpStarttime} = $1);
+				$response->content =~ m|<input type='hidden' value="(.*?)" name="wpEdittime" />|    && ($form{wpEdittime} = $1);
+				$response->content =~ m|<input name="wpAutoSummary" type="hidden" value="(.*?)" />| && ($form{wpAutoSummary} = $1);
+				$response = $::client->post("$wiki?title=$title&action=submit", \%form);
 
-			if ($response->content =~ /<!-- start content -->Someone else has changed this page/) {
-				$err = 'EDIT CONFLICT';
-				$retries = 0;
-			} else { $success = !$response->is_error }
+				if ($response->content =~ /<!-- start content -->Someone else has changed this page/) {
+					$err = 'EDIT CONFLICT';
+					$retries = 0;
+				} else { $success = !$response->is_error }
+
 			} else { $err = $response->is_success ? 'MATCH FAILED' : 'RQST FAILED' }
 		if ($success) { $retries = 0; logAdd "\"$title\" updated." }
 		else { logAdd "$err: Couldn't edit \"$title\" on $wiki!\n" }
