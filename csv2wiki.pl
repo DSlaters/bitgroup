@@ -43,77 +43,85 @@ if ( open JOB,'<',$ARGV[0] ) {
 	}
 	close JOB;
 } else { die "Couldn't parse job file!" }
- 
-
-# Open CSV file and read in headings line
-if ( open CSV, '<', $::csv ) {
-	$_ = <CSV>;
-	/^\s*(.+?)\s*$/;
-	@headings = split /$::sep/i, $1;
-} else { die "Could not open CSV file!" }
- 
+  
 # Log in to the wiki
 wikiLogin( $::wiki, $::user, $::pass ) or exit;
 
-
-# Get the parameters from the first row of the input file
-my $head = <CSV>;
-$head =~ s/^\s*(.+?)\s*$/$1/g;
-@fields = split /$::sep/, $head;
-
 # Process the records
+my $wptr = 0;
 while my $row ( <CSV> ) {
+	$row =~ s/^\s*(.+?)\s*$/$1/g;
+
+	# If this is the first row, define the columns and a reverse lookup
+	if ( $wptr == 0 ) {
+		my @cols = split /$::sep/, $row;
+		%::lut = ();
+		$::lut{lc $data[$_]} = $_ for 0 .. $#data;
+	}
 
 	# Build the record as wikitext template syntax
-	my $tmpl = "{{$template";
-	my $i    = 0;
-	my $last = '';
-	for my $value ( split /$::sep/, $row ) {
-		$value =~ s/^\s*(.+?)\s*$/$1/g;
-		if ( $field = $fields[$i] ) {
-			$tmpl .= "\n | $field = $value";
-			$last = $field;
-		} else {
-			$tmpl .= $::multisep . $value;
-			$field = $last;
+	else {
+		my $tmpl = "{{$template";
+		my $i    = 0;
+		my $last = '';
+		for my $value ( split /$::sep/, $row ) {
+			$value =~ s/^\s*(.+?)\s*$/$1/g;
+			if ( $field = $fields[$i] ) {
+				$tmpl .= "\n | $field = $value";
+				$last = $field;
+			} else {
+				$tmpl .= $::multisep . $value;
+				$field = $last;
+			}
+			$i++;
 		}
-		$i++;
+		$tmpl .= "\n}}";
+
+		print "Processing record ".$n++."\n";
+		if ( $::debug ) {
+			print "\$tmpl = $tmpl\n";
+			die   "[\$::debug set exiting]\n" ;
+		}
+
+		# Determine title for the record
+		$title ? $title =~ s/\$(\w+)/ buildTitle( $1, \@data ) /eg : $title = wikiGuid();
+
+		# Find the template in the wikitext if exists
+		for ( examineBraces( $text ) ) {
+			( $pos, $len ) = ( $_->{OFFSET}, $_->{LENGTH} ) if $_->{NAME} eq $template;
+		}
+
+		# Replace, prepend or append the template into the current text 
+		if ( defined $pos ) {
+			$text = substr $text, $pos, $len, $tmpl;
+		} else {
+			$text = $append ? "$text\n$tmpl" : "$tmpl\n$text";
+		}
+
+		# Update the article
+		$done = wikiEdit(
+			$::wiki,
+			$::prefix . $record[$::title],
+			$text,
+			"[[Template:$::template|$::template]] replacement using csv2wiki.pl"
+		);
 	}
-	$tmpl .= "\n}}";
 
-	print "Processing record ".$n++."\n";
-	if ( $::debug ) {
-	    print "\$tmpl = $tmpl\n";
-	    die   "[\$::debug set exiting]\n" ;
-	}
-
-	# Get the current text of the wiki article to be created/updated
-	$text = wikiRawPage( $::wiki,$record[$::title], 0 );
-
-	# Find the template in the wikitext if exists
-	for ( examineBraces( $text ) ) {
-		( $pos, $len ) = ( $_->{OFFSET}, $_->{LENGTH} ) if $_->{NAME} eq $template;
-	}
-
-	# Replace, prepend or append the template into the current text 
-	if ( defined $pos ) {
-		$text = substr $text, $pos, $len, $tmpl;
-	} else {
-		$text = $append ? "$text\n$tmpl" : "$tmpl\n$text";
-	}
-
-	# Update the article
-	$done = wikiEdit(
-		$::wiki,
-		$::prefix . $record[$::title],
-		$text,
-		"[[Template:$::template|$::template]] replacement using csv2wiki.pl"
-	);
-
+	$wptr++;
 }
  
 close CSV;
 
+# Replace a token from the title format string with data
+# - named indexes are case-insensitive
+# - removes double spaces from result
+sub buildTitle {
+	my $i = shift;
+	my $data = shift;
+	my $title = $$data[ $i =~ /\D/ ? $::lut{lc $i} : $i - 1 ];
+	$title =~ s/ +/ /g;
+	return $title;
+}
 
 # Returns a hash of brace structures
 # - see http://www.organicdesign.co.nz/MediaWiki_code_snippets
