@@ -7,56 +7,55 @@
 # Todo
 # Make it so that if there is no title then it increments
 # $hashref = { $wikitext =~ /\{{3}(.+?)(\|.*?)?\}{3}/g }
-require( 'wiki.pl' );
+require( '/var/www/tools/wiki.pl' );
 
-$::csv2wiki_version = '2.0.1'; # 2009-12-15
+$csv2wiki_version = '2.0.1'; # 2009-12-15
  
 # Job, log and error files
 $ARGV[0] or die "No job file specified!";
 $ARGV[0] =~ /^(.+?)(\..+?)?$/;
 
-# Set a debug conditional
-$::debug = 0;
+$log = "$1.log";
+$err = "$1.err";
+$sep = ",";
+$multisep = "\n";
+$title = 0;
+$template = "Record";
+$prefix = "";
+$append = 0;
 
-$::log = "$1.log";
-$::err = "$1.err";
-$::sep = ",";
-$::multisep = "\n";
-$::title = 0;
-$::template = "Record";
-$::prefix = "";
-$::append = 0;
- 
 # Parse the job file
-if ( open JOB,'<',$ARGV[0] ) {
+if ( open JOB, '<', $ARGV[0] ) {
 	for ( <JOB> ) {
-		if ( /^\*?\s*\$?csv\s*[:=]\s*['"]?(.+?)['"]?;?\s*$/i )          { $::csv = $1 }
-		if ( /^\*?\s*\$?wiki\s*[:=]\s*['"]?(.+?)['"]?;?\s*$/i )         { $::wiki = $1 }
-		if ( /^\*?\s*\$?user\s*[:=]\s*['"]?(.+?)['"]?;?\s*$/i )         { $::user = $1 }
-		if ( /^\*?\s*\$?pass\s*[:=]\s*['"]?(.+?)['"]?;?\s*$/i )         { $::pass = $1 }
-		if ( /^\*?\s*\$?sep(arator)?\s*[:=]\s*['"]?(.+?)['"]?;?\s*$/i ) { $::sep = $2 }
-		if ( /^\*?\s*\$?multisep\s*[:=]\s*['"]?(.+?)['"]?;?\s*$/i )     { $::multisep = $1 }
-		if ( /^\*?\s*\$?title\s*[:=]\s*['"]?(.+?)['"]?;?\s*$/i )        { $::title = $1 }
-		if ( /^\*?\s*\$?template\s*[:=]\s*['"]?(.+?)['"]?;?\s*$/i )     { $::template = $1 } 
-		if ( /^\*?\s*\$?prefix\s*[:=]\s*['"]?(.+?)['"]?;?\s*$/i )       { $::prefix = $1 }
-		if ( /^\*?\s*\$?append\s*[:=]\s*['"]?(.+?)['"]?;?\s*$/i )       { $::append = $1 }
+		if ( /^\*?\s*\$?csv\s*[:=]\s*['"]?(.+?)['"]?;?\s*$/i )          { $csv = $1 }
+		if ( /^\*?\s*\$?wiki\s*[:=]\s*['"]?(.+?)['"]?;?\s*$/i )         { $wiki = $1 }
+		if ( /^\*?\s*\$?user\s*[:=]\s*['"]?(.+?)['"]?;?\s*$/i )         { $user = $1 }
+		if ( /^\*?\s*\$?pass\s*[:=]\s*['"]?(.+?)['"]?;?\s*$/i )         { $pass = $1 }
+		if ( /^\*?\s*\$?sep(arator)?\s*[:=]\s*['"]?(.+?)['"]?;?\s*$/i ) { $sep = $2 }
+		if ( /^\*?\s*\$?multisep\s*[:=]\s*['"]?(.+?)['"]?;?\s*$/i )     { $multisep = $1 }
+		if ( /^\*?\s*\$?title\s*[:=]\s*['"]?(.+?)['"]?;?\s*$/i )        { $title = $1 }
+		if ( /^\*?\s*\$?template\s*[:=]\s*['"]?(.+?)['"]?;?\s*$/i )     { $template = $1 } 
+		if ( /^\*?\s*\$?prefix\s*[:=]\s*['"]?(.+?)['"]?;?\s*$/i )       { $prefix = $1 }
+		if ( /^\*?\s*\$?append\s*[:=]\s*['"]?(.+?)['"]?;?\s*$/i )       { $append = $1 }
 	}
 	close JOB;
 } else { die "Couldn't parse job file!" }
   
-# Log in to the wiki
-wikiLogin( $::wiki, $::user, $::pass ) or exit;
+# Log in to the wiki and open input file
+wikiLogin( $wiki, $user, $pass ) or die "Couldn't log $user in to $wiki";
+open CSV, '<', $csv or die "Couldn't open input file '$csv'!";
 
 # Process the records
+my %lut = ();
 my $wptr = 0;
-while my $row ( <CSV> ) {
+while ( my $row = <CSV> ) {
+	print "Processing row $wptr\n";
 	$row =~ s/^\s*(.+?)\s*$/$1/g;
 
 	# If this is the first row, define the columns and a reverse lookup
 	if ( $wptr == 0 ) {
-		my @cols = split /$::sep/, $row;
-		%::lut = ();
-		$::lut{lc $data[$_]} = $_ for 0 .. $#data;
+		my @cols = split /$sep/, $row;
+		$lut{lc $data[$_]} = $_ for 0 .. $#data;
 	}
 
 	# Build the record as wikitext template syntax
@@ -64,27 +63,25 @@ while my $row ( <CSV> ) {
 		my $tmpl = "{{$template";
 		my $i    = 0;
 		my $last = '';
-		for my $value ( split /$::sep/, $row ) {
+		for my $value ( split /$sep/, $row ) {
 			$value =~ s/^\s*(.+?)\s*$/$1/g;
 			if ( $field = $fields[$i] ) {
 				$tmpl .= "\n | $field = $value";
 				$last = $field;
 			} else {
-				$tmpl .= $::multisep . $value;
+				$tmpl .= $multisep . $value;
 				$field = $last;
 			}
 			$i++;
 		}
 		$tmpl .= "\n}}";
 
-		print "Processing record ".$n++."\n";
-		if ( $::debug ) {
-			print "\$tmpl = $tmpl\n";
-			die   "[\$::debug set exiting]\n" ;
-		}
-
 		# Determine title for the record
-		$title ? $title =~ s/\$(\w+)/ buildTitle( $1, \@data ) /eg : $title = wikiGuid();
+		if ( $title ) {
+			$title =~ s/\$(\w+)/ buildTitle( $1, \@data ) /eg;
+		} else {
+			$title = wikiGuid();
+		}
 
 		# Find the template in the wikitext if exists
 		for ( examineBraces( $text ) ) {
@@ -99,12 +96,8 @@ while my $row ( <CSV> ) {
 		}
 
 		# Update the article
-		$done = wikiEdit(
-			$::wiki,
-			$::prefix . $record[$::title],
-			$text,
-			"[[Template:$::template|$::template]] replacement using csv2wiki.pl"
-		);
+		my $comment = "[[Template:$::template|$::template]] replacement using csv2wiki.pl";
+		wikiEdit( $wiki, $title, $text, $comment );
 	}
 
 	$wptr++;
