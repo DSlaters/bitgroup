@@ -1,13 +1,9 @@
 #!/usr/bin/perl
-# - based on wiki.pl{{perl}}{{Category:Robots}}
 # - Licenced under LGPL (http://www.gnu.org/copyleft/lesser.html)
 # - Authors: [http://www.organicdesign.co.nz/Nad Nad], [http://www.organicdesign.co.nz/Sven Sven]
-# - Source: http://www.organicdesign.co.nz/wiki.pl
+# - Source:  http://www.organicdesign.co.nz/wiki.pl
 # - Started: 2008-03-16
-# - Updated: 2009-02-27
-# - Tested versions: 1.6.10, 1.8.4, 1.9.3, 1.10.2, 1.11.0, 1.12.rc1, 1.13.2, 1.14.0
-# http://www.mediawiki.org/wiki/Manual:Parameters_to_index.php#What_to_do
-# - Provides details on required name fields in forms
+# - Tested versions: 1.6.10, 1.8.4, 1.9.3, 1.10.2, 1.11.0, 1.12.rc1, 1.13.2, 1.14.0, 1.15.1, 1.16.0
 
 # NOTES REGARDING CHANGING TO PERL PACKAGE AND ADDING API SUPPORT
 # - constructor:
@@ -16,7 +12,7 @@
 #   - get namespaces
 #   - get messages used in patterns (and make methods use messages in their regexp's so lang-independent)
 
-$::wikipl_version = '1.10.1'; # 2009-12-04
+$::wikipl_version = '1.10.2'; # 2009-12-15
 
 use HTTP::Request;
 use LWP::UserAgent;
