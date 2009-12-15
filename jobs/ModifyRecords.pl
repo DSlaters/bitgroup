@@ -27,6 +27,18 @@ sub mainModifyRecords {
 	my $text  = wikiRawPage( $wiki, $title );
 	my $last  = $text;
 
+	# Change all occurrences of a particular value to a different value
+	# - accounts for lists
+	elsif ( $type eq 'value' ) {
+		
+	}
+	
+	elsif ( $type eq 'field' ) {
+	}
+	
+	elsif ( $type eq 'name' ) {
+	}
+
 	# Write back the article content if changed
 	if ( $text ne $last ) {
 		my $comment = 'Field values change';
