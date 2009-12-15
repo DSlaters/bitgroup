@@ -21,7 +21,7 @@ $sep = ",";
 $multisep = "\n";
 $title = 0;
 $template = "Record";
-$prefix = "";
+$replace = 0;
 $append = 0;
 $titleformat = "";
 
@@ -36,7 +36,7 @@ if ( open JOB, '<', $ARGV[0] ) {
 		if ( /^\*?\s*\$?multisep\s*[:=]\s*['"]?(.+?)['"]?;?\s*$/i )     { $multisep = $1 }
 		if ( /^\*?\s*\$?title\s*[:=]\s*['"]?(.+?)['"]?;?\s*$/i )        { $titleformat = $1 }
 		if ( /^\*?\s*\$?template\s*[:=]\s*['"]?(.+?)['"]?;?\s*$/i )     { $template = $1 } 
-		if ( /^\*?\s*\$?prefix\s*[:=]\s*['"]?(.+?)['"]?;?\s*$/i )       { $prefix = $1 }
+		if ( /^\*?\s*\$?replace\s*[:=]\s*['"]?(.+?)['"]?;?\s*$/i )      { $replace = $1 }
 		if ( /^\*?\s*\$?append\s*[:=]\s*['"]?(.+?)['"]?;?\s*$/i )       { $append = $1 }
 	}
 	close JOB;
@@ -83,17 +83,22 @@ while ( my $row = <CSV> ) {
 			$title = wikiGuid();
 		}
 
-		# Find the template in the wikitext if exists
-		$text = wikiRawPage( $wiki, $title );
-		for ( wikiExamineBraces( $text ) ) {
-			( $pos, $len ) = ( $_->{OFFSET}, $_->{LENGTH} ) if $_->{NAME} eq $template;
-		}
-
-		# Replace, prepend or append the template into the current text 
-		if ( defined $pos ) {
-			substr $text, $pos, $len, $tmpl;
+		if ( $replace ) {
+			$text = $tmpl;
 		} else {
-			$text = $append ? "$text\n$tmpl" : "$tmpl\n$text";
+
+			# Find the template in the wikitext if exists
+			$text = wikiRawPage( $wiki, $title );
+			for ( wikiExamineBraces( $text ) ) {
+				( $pos, $len ) = ( $_->{OFFSET}, $_->{LENGTH} ) if $_->{NAME} eq $template;
+			}
+
+			# Replace, prepend or append the template into the current text 
+			if ( defined $pos ) {
+				substr $text, $pos, $len, $tmpl;
+			} else {
+				$text = $append ? "$text\n$tmpl" : "$tmpl\n$text";
+			}
 		}
 
 		# Update the article
