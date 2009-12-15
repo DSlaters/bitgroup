@@ -52,29 +52,26 @@ my %lut = ();
 my $wptr = 0;
 while ( my $row = <CSV> ) {
 	$row =~ s/^\s*['"]?(.+?)['"]?\s*$/$1/g;
-	my @data = split /['"]?\s*$sep\s*['"]?/, $row;
+	my @data = split /['"]?$sep['"]?/, $row;
 
 	# If this is the first row, define the columns and a reverse lookup
 	if ( $wptr == 0 ) {
-		@fields = ( @data );
+		for ( @data ) {
+			s/\W+/_/g;
+			s/^_+//;
+			s/_+$//;
+			push @fields, $_;
+		}
 		$lut{lc $data[$_]} = $_ for 0 .. $#data;
 	}
 
 	# Build the record as wikitext template syntax
 	else {
 		my $tmpl = "{{$template";
-		my $i    = 0;
-		my $last = '';
-		for my $value ( @data ) {
-			$value =~ s/^\s*(.+?)\s*$/$1/g;
-			if ( $field = $fields[$i] ) {
-				$tmpl .= "\n | $field = $value";
-				$last = $field;
-			} else {
-				$tmpl .= $multisep . $value;
-				$field = $last;
-			}
-			$i++;
+		my $i = -1;
+		for ( @data ) {
+			s/^\s*(.+?)\s*$/$1/g;
+			$tmpl .= $fields[++$i] ? "\n | $fields[$i] = $_" : ( $_ ? $multisep . $_ : '' );
 		}
 		$tmpl .= "\n}}";
 
@@ -87,13 +84,14 @@ while ( my $row = <CSV> ) {
 		}
 
 		# Find the template in the wikitext if exists
-		for ( examineBraces( $text ) ) {
+		$text = wikiRawPage( $wiki, $title );
+		for ( wikiExamineBraces( $text ) ) {
 			( $pos, $len ) = ( $_->{OFFSET}, $_->{LENGTH} ) if $_->{NAME} eq $template;
 		}
 
 		# Replace, prepend or append the template into the current text 
 		if ( defined $pos ) {
-			$text = substr $text, $pos, $len, $tmpl;
+			substr $text, $pos, $len, $tmpl;
 		} else {
 			$text = $append ? "$text\n$tmpl" : "$tmpl\n$text";
 		}
@@ -120,23 +118,3 @@ sub buildTitle {
 	return $title;
 }
 
-# Returns a hash of brace structures
-# - see http://www.organicdesign.co.nz/MediaWiki_code_snippets
-sub examineBraces {
-	my $content = shift;
-	my @braces  = ();
-	my @depths  = ();
-	my $depth   = 0;
-	while ( $content =~ m/\G.*?(\{\{\s*([#a-z0-9_]*:?)|\}\})/sig ) {
-		my $offset = pos( $content ) - length( $2 ) - 2;
-		if ( $1 eq '}}' ) {
-			$brace = $braces[$depths[$depth - 1]];
-			$$brace{LENGTH} = $offset - $$brace{OFFSET} + 2;
-			$$brace{DEPTH}  = $depth--;
-		} else {
-			push @braces, { NAME => $2, OFFSET => $offset };
-			$depths[$depth++] = $#braces;
-		}
-	}
-	return @braces;
-}
