@@ -23,6 +23,7 @@ $title = 0;
 $template = "Record";
 $prefix = "";
 $append = 0;
+$titleformat = "";
 
 # Parse the job file
 if ( open JOB, '<', $ARGV[0] ) {
@@ -33,7 +34,7 @@ if ( open JOB, '<', $ARGV[0] ) {
 		if ( /^\*?\s*\$?pass\s*[:=]\s*['"]?(.+?)['"]?;?\s*$/i )         { $pass = $1 }
 		if ( /^\*?\s*\$?sep(arator)?\s*[:=]\s*['"]?(.+?)['"]?;?\s*$/i ) { $sep = $2 }
 		if ( /^\*?\s*\$?multisep\s*[:=]\s*['"]?(.+?)['"]?;?\s*$/i )     { $multisep = $1 }
-		if ( /^\*?\s*\$?title\s*[:=]\s*['"]?(.+?)['"]?;?\s*$/i )        { $title = $1 }
+		if ( /^\*?\s*\$?title\s*[:=]\s*['"]?(.+?)['"]?;?\s*$/i )        { $titleformat = $1 }
 		if ( /^\*?\s*\$?template\s*[:=]\s*['"]?(.+?)['"]?;?\s*$/i )     { $template = $1 } 
 		if ( /^\*?\s*\$?prefix\s*[:=]\s*['"]?(.+?)['"]?;?\s*$/i )       { $prefix = $1 }
 		if ( /^\*?\s*\$?append\s*[:=]\s*['"]?(.+?)['"]?;?\s*$/i )       { $append = $1 }
@@ -46,15 +47,16 @@ wikiLogin( $wiki, $user, $pass ) or die "Couldn't log $user in to $wiki";
 open CSV, '<', $csv or die "Couldn't open input file '$csv'!";
 
 # Process the records
+my @fields = ();
 my %lut = ();
 my $wptr = 0;
 while ( my $row = <CSV> ) {
-	print "Processing row $wptr\n";
-	$row =~ s/^\s*(.+?)\s*$/$1/g;
+	$row =~ s/^\s*['"]?(.+?)['"]?\s*$/$1/g;
+	my @data = split /['"]?\s*$sep\s*['"]?/, $row;
 
 	# If this is the first row, define the columns and a reverse lookup
 	if ( $wptr == 0 ) {
-		my @cols = split /$sep/, $row;
+		@fields = ( @data );
 		$lut{lc $data[$_]} = $_ for 0 .. $#data;
 	}
 
@@ -63,7 +65,7 @@ while ( my $row = <CSV> ) {
 		my $tmpl = "{{$template";
 		my $i    = 0;
 		my $last = '';
-		for my $value ( split /$sep/, $row ) {
+		for my $value ( @data ) {
 			$value =~ s/^\s*(.+?)\s*$/$1/g;
 			if ( $field = $fields[$i] ) {
 				$tmpl .= "\n | $field = $value";
@@ -77,6 +79,7 @@ while ( my $row = <CSV> ) {
 		$tmpl .= "\n}}";
 
 		# Determine title for the record
+		my $title = $titleformat;
 		if ( $title ) {
 			$title =~ s/\$(\w+)/ buildTitle( $1, \@data ) /eg;
 		} else {
@@ -96,6 +99,7 @@ while ( my $row = <CSV> ) {
 		}
 
 		# Update the article
+		print "Processing row $wptr ($title)\n";
 		my $comment = "[[Template:$::template|$::template]] replacement using csv2wiki.pl";
 		wikiEdit( $wiki, $title, $text, $comment );
 	}
