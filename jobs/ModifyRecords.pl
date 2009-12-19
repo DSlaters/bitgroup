@@ -49,12 +49,6 @@ sub mainModifyRecords {
 	1;
 }
 
-sub stopModifyRecords {
-	1;
-}
-
-1;
-
 # Replace a record value accounting for lists
 sub jobModifyRecordsReplaceValue {
 	my $value = shift;
@@ -63,3 +57,9 @@ sub jobModifyRecordsReplaceValue {
 	$value =~ s/^$from$/$to/m;
 	return $value;
 }
+
+sub stopModifyRecords {
+	1;
+}
+
+1;
