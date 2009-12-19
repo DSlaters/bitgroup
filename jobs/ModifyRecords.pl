@@ -18,24 +18,26 @@ sub initModifyRecords {
 
 # Import the current line from the input CSV file
 sub mainModifyRecords {
-	my $wiki  = $$::job{'wiki'};
-	my $wptr  = $$::job{'wptr'};
-	my $type  = $$::job{'ChangeType'};
-	my $from  = $$::job{'From'};
-	my $to    = $$::job{'To'};
-	my $title = $$::job{'titles'}[$$::job{'wptr'}];
-	my $text  = wikiRawPage( $wiki, $title );
-	my $last  = $text;
+	my $wiki    = $$::job{'wiki'};
+	my $wptr    = $$::job{'wptr'};
+	my $type    = $$::job{'ChangeType'};
+	my $from    = $$::job{'From'};
+	my $to      = $$::job{'To'};
+	my $title   = $$::job{'titles'}[$$::job{'wptr'}];
+	my $text    = wikiRawPage( $wiki, $title );
+	my $last    = $text;
+	my $comment = '';
 
 	# Change all occurrences of a particular value to a different value
 	# - accounts for lists
 	elsif ( $type eq 'value' ) {
-		
+		s/^\s*\|\s*(\W+)\s*=\s*$from\s*$/ | $1 = $to/gm;
+		$comment = "ModifyRecords: \"$from\" value changed to \"$to\"";
 	}
-	
+
 	elsif ( $type eq 'field' ) {
 	}
-	
+
 	elsif ( $type eq 'name' ) {
 	}
 
