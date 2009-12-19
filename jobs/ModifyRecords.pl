@@ -7,12 +7,9 @@
 
 # Set the file pointer to start of the file (i.e. first line)
 sub initModifyRecords {
-	my $wiki = $$::job{'wiki'};
-	my @titles = wikiAllPages( $wiki );
-	$$::job{'titles'}    = \@titles;
-	$$::job{'length'}    = $#titles;
-	$$::job{'wptr'}      = 0;
-	$$::job{'revisions'} = 0;
+	my @titles = wikiAllPages( $$::job{'wiki'} );
+	$$::job{'titles'} = \@titles;
+	$$::job{'length'} = $#titles;
 	1;
 }
 
@@ -29,9 +26,9 @@ sub mainModifyRecords {
 	my $comment = '';
 
 	# Change all occurrences of a particular value to a different value
-	# - accounts for lists
+	# - accounts for lists <---------------------------------------------------------------------- ! ! !
 	elsif ( $type eq 'value' ) {
-		s/^\s*\|\s*(\W+)\s*=\s*$from\s*$/ | $1 = $to/gm;
+		$text =~ s/^\s*\|\s*(\w+)\s*=\s*([^\|\}]*)/ " | $1 = " . jobModifyRecordsReplaceValue( $2, $from, $to ) /gem;
 		$comment = "ModifyRecords: \"$from\" value changed to \"$to\"";
 	}
 
@@ -57,3 +54,12 @@ sub stopModifyRecords {
 }
 
 1;
+
+# Replace a record value accounting for lists
+sub jobModifyRecordsReplaceValue {
+	my $value = shift;
+	my $from  = shift;
+	my $to    = shift;
+	$value =~ s/^$from$/$to/m;
+	return $value;
+}
