@@ -30,7 +30,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.7.9'; # 2009-12-01
+$::ver      = '3.7.10'; # 2009-12-21
 $::dir      = $Bin;
 $::log      = "$::dir/$::daemon.log";
 $::wkfile   = "$::dir/$::daemon.work";
@@ -44,8 +44,9 @@ if ( -e '/var/www/domains/localhost/LocalSettings.php' ) {
 	$::short  = $1 if $ls =~ /\$wgShortName\s*=\s*['"](.+?)["']/;
 }
 
-# IRC server
-$ircserver  = 'irc.organicdesign.co.nz';
+# Defaults
+$dnsdomain  = 'organicdesign.tv';
+$ircserver  = 'irc.organicdesign.tv';
 $ircport    = 6667;
 $ircchannel = '#organicdesign';
 $ircpass    = '*****';
@@ -132,17 +133,28 @@ while( 1 ) {
 	# Execute a job from the current work
 	workExecute();
 	
-	sleep( 1 );
+	# Per-minute housekeeping
+	if ( ++$n % 60 == 0 ) {
 
-	# Housekeeping every 100 iterations
-	if ( defined $::dbuser && ++$n % 100 == 0 ) {
-		my $q = $::db->prepare( 'SELECT 0' );
-		unless ( $q->execute() ) {
-			logAdd( 'DB connection gone away, reconnecting...' );
-			dbConnect();
+		# Keep wiki DB connection alive
+		if ( defined $::dbuser ) {
+			my $q = $::db->prepare( 'SELECT 0' );
+			unless ( $q->execute() ) {
+				logAdd( 'DB connection gone away, reconnecting...' );
+				dbConnect();
+			}
 		}
 	}
 
+	# 10 minutely housekeeping
+	if ( $n % 600 == 0 ) {
+	}
+
+	# Hourly housekeeping
+	if ( $n % 3600 == 0 ) {
+	}
+
+	sleep( 1 );
 }
 
 
