@@ -153,7 +153,7 @@ while( 1 ) {
 		if ( defined $::dnspass ) {
 			my $host = lc $::name;
 			my $response = $::client->get( "http://dynamicdns.park-your-domain.com/update?host=$host&domain=$dnsdomain&password=$dnspass" );
-			logAdd( $response->content );
+			logAdd( "DDNS update error: $1" ) if $response->content =~ m/<Err1>(.+?)<\/Err1>/;
 		}
 	}
 
