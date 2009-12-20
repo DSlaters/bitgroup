@@ -134,7 +134,7 @@ while( 1 ) {
 	workExecute();
 	
 	# Per-minute housekeeping
-	if ( $n++ % 60 == 0 ) {
+	if ( $n % 60 == 0 ) {
 
 		# Keep wiki DB connection alive
 		if ( defined $::dbuser ) {
@@ -162,6 +162,7 @@ while( 1 ) {
 	}
 
 	sleep( 1 );
+	$n++;
 }
 
 
