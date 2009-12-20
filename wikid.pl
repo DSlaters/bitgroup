@@ -150,7 +150,7 @@ while( 1 ) {
 	if ( $n % 600 == 0 ) {
 		
 		# Update the dynamic dns
-		if ( defined $::dnspwd ) {
+		if ( defined $::dnspass ) {
 			my $host = lc $::name;
 			$::client->get( "http://dynamicdns.park-your-domain.com/update?host=$host&domain=$dnsdomain&password=$dnspass" );
 		}
