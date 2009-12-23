@@ -27,7 +27,7 @@ sub mainModifyRecords {
 
 	# Change all occurrences of a particular value to a different value
 	# - accounts for lists <---------------------------------------------------------------------- ! ! !
-	elsif ( $type eq 'value' ) {
+	if ( $type eq 'value' ) {
 		$text =~ s/^\s*\|\s*(\w+)\s*=\s*([^\|\}]*)/ " | $1 = " . jobModifyRecordsReplaceValue( $2, $from, $to ) /gem;
 		$comment = "ModifyRecords: \"$from\" value changed to \"$to\"";
 	}
