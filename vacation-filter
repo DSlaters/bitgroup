@@ -27,6 +27,7 @@ if
 	)
 then
 	vacation
+        from $local_part\@foo.bar
 	subject "Out of office auto-reply"
 endif
 
