@@ -16,6 +16,7 @@ use HTTP::Request;
 use LWP::UserAgent;
 use Expect;
 use Net::SCP::Expect;
+use Crypt::CBC
 #use Net::XMPP;
 use IO::Socket;
 use IO::Select;
@@ -30,7 +31,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.7.10'; # 2009-12-21
+$::ver      = '3.7.11'; # 2009-12-28
 $::dir      = $Bin;
 $::log      = "$::dir/$::daemon.log";
 $::wkfile   = "$::dir/$::daemon.work";
