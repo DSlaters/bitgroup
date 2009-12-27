@@ -1,0 +1,43 @@
+# Unique name for this bot
+$name         = 'FooBot';
+
+# The local wiki associated with this bot
+$wiki         = 'http://wiki.foo.bar/wiki/index.php';
+$wikiuser     = 'FooBot'; # defaults to $name
+$wikipass     = '******';
+$wgDBuser     = 'foobot';
+$wgDBpassword = '******';
+
+# Set if bots are to reside in an IRC channel
+$ircserver    = 'irc.foo.bar'; # defaults to irc.organicdesign.tv
+$ircpass      = '******';
+
+# Set if using a namecheap.com domain for dynamic DNS
+$dnsdomain    = 'foo.bar'; # defaults to organicdesign.tv
+$dnspass      = '****************************';
+
+# Set this if this bot is part of a distributed ring of bots
+# Note: the connection is made over SSH using $wikiuser and $wikipass
+#       this is done because there will be a corresponding unix user
+#       on all peers in the network due to the user propagation and
+#       account synchronisation
+$peer = 'bar.baz:1729';
+
+# Set this if distributed backup of large file-structures is required
+@bak_paths = (
+	'/home',
+	'/shared/tech'
+);
+
+# Set this if disk usage of file-structures is to be reported into the local wiki
+@stat_paths = (
+	'/home/*',
+	'/shared/*'
+);
+
+# Set this to important configuration files that need to be backed up
+@config_paths = (
+	'/var/www/vhosts',
+	'/etc/exim4/virtual.domains',
+	'/etc/exim4/virtual.users'
+);
