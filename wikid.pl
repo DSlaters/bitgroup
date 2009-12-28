@@ -31,7 +31,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.8.1'; # 2009-12-28
+$::ver      = '3.8.2'; # 2009-12-28
 $::dir      = $Bin;
 $::log      = "$::dir/$::daemon.log";
 $::wkfile   = "$::dir/$::daemon.work";
@@ -63,6 +63,16 @@ $::port   = $port if $port;
 $wikiuser = $::name unless $wikiuser;
 $ircuser  = $::name unless $ircuser;
 
+# If --rpc, send data down the running instance's event pipe and exit
+if ( $ARGV[0] eq '--rpc' ) {
+	my $data = serialize( { 'wgScript' => $wiki, 'wgSitename' => 'RPC', 'args' => $ARGV[1] } );
+	my $sock = IO::Socket::INET->new( PeerAddr => 'localhost', PeerPort => $port, Proto => 'tcp' );
+	print $sock "GET RpcDoAction?$data HTTP/1.0\n\n\x00" if $sock;
+	sleep 1;
+	qx( tail -n 1 $Bin/$daemon.log );
+	exit 0;
+}
+
 # Run as a daemon (see daemonise.pl article for more details and references regarding perl daemons)
 open STDIN, '/dev/null';
 open STDOUT, ">>$::log";
@@ -72,14 +82,6 @@ exit if $pid;
 setsid or die "Can't start a new session: $!";
 umask 0;
 $0 = "$::daemon ($::name)";
-
-# Check if this is a command-line RPC call
-if ( $ARGV[0] eq '--rpc' ) {
-	my $data = serialize( { 'wgScript' => $wiki, 'wgSitename' => 'RpcMessage', 'data' => $ARGV[1] } );
-	my $sock = IO::Socket::INET->new( PeerAddr => 'localhost', PeerPort => $port, Proto => 'tcp' );
-	print $sock "GET RpcMessage?$data HTTP/1.0\n\n\x00" if $sock;
-	exit( 0 )
-}
 
 # Install the service into init.d and rc2-5.d if --install arg passed
 if ( $ARGV[0] eq '--install' ) {
@@ -94,7 +96,7 @@ if ( $ARGV[0] eq '--remove' ) {
 	unlink "/etc/rc$_.d/S99$::daemon" for 2..5;
 	unlink "/etc/init.d/$::daemon.sh";
 	logAdd( "$::daemon.sh removed from /etc/init.d" );
-	exit( 0 );
+	exit 0;
 }
 
 # Initialise services, current work, logins and connections
@@ -531,6 +533,34 @@ sub onFileChanged {
 # WIKI EVENTS
 # $::script, $::site, $::event, $::data available
 
+# Run an action sent from another peer
+sub onRpcDoAction {
+
+	# Decrypt $::data
+	my $cipher = Crypt::CBC->new( -key => $::netpass, -cipher => 'Blowfish' ); 
+	my @args = unserialise( $cipher->decrypt( decode_base64( $$::data{'args'} ) ) );
+
+	# Extract the arguments
+	my $from   = $$::data{'from'}   = $args[0];
+	my $to     = $$::data{'to'}     = $args[1];
+	my $action = $$::data{'action'} = $args[2];
+
+	# Run the action
+	if ( defined &$action ) {
+		&$action( @args );
+	} else {
+		logAdd( "No such action \"$action\" requested over RPC by $from" );
+	}
+
+	# If the "to" field is empty, send the action to the next peer (unless next is the original sender)
+	unless ( $to or $::peer eq $from ) {
+		shift @args;
+		shift @args;
+		rpcSendAction( $::peer, @args );
+	}
+
+}
+
 sub onStartJob {
 	%$::job = %{$$::data{'args'}};
 	workStartJob( $$::job{'type'}, -e $$::job{'id'} ? $$::job{'id'} : undef );
@@ -578,11 +608,6 @@ sub onAddNewAccount {
 		doUpdateAccount( $user, $pass );
 		rpcBroadcastAction( 'UpdateAccount', $user, $pass );
 	}
-}
-
-sub onRpcMessage {
-	my $data = $$::data{'data'};
-	# Unencrypt data and call doUpdateAccount
 }
 
 sub onRevisionInsertComplete {
@@ -754,11 +779,15 @@ sub rpcBroadcastAction {
 
 # Define the job type for sending an action to another peer
 sub initRpcSendAction {
-	my $to = shift;
-	my $action = shift;
+	my @args = shift;
+	my $to = $args[0];
+	my $action = $args[1];
+
+	# Add "from" to args
+	my $host = lc $::name;
+	unshift @args, "$host.$::dnsdomain:$::port";
 
 	# Resolve peer and port of recipient
-	my @args = shift;
 	if ( $to =~ /^(.+):([0-9]+)$/ ) {
 		$$::job{'peer'} = $1;
 		$$::job{'port'} = $2;
@@ -773,12 +802,19 @@ sub initRpcSendAction {
 		return 1;
 	}
 
+	# Encrypt the data so its not stored in the work hash or sent in clear text
+	$cipher = Crypt::CBC->new( -key => $::netpass, -cipher => 'Blowfish' );
+	my $data = encode_base64( $cipher->encrypt( serialize( @args ) ) );
+
 	# Initiate the job
 	my $peer = $$::job{'peer'};
 	my $port = $$::job{'port'};
-	logAdd( "initRpcSendAction: \"$action\" sent to $peer:$port" );
-	$$::job{'to'} = $to;
-	$$::job{'wait'} = 0;
+	logAdd( "initRpcSendAction: \"$action\" queued for sending to $peer:$port" );
+	$$::job{'to'}     = $to;
+	$$::job{'action'} = $action;
+	$$::job{'data'}   = $data;
+	$$::job{'wait'}   = 0;
+
 	1;
 }
 
@@ -793,10 +829,39 @@ sub mainRpcSendAction {
 	my $pass = $::wikipass;
 	my $peer = $$::job{'peer'};
 	my $port = $$::job{'port'};
-	my $exp = Expect->spawn( "ssh -p $port $user\@$peer" );
-	$exp->expect( 5,
-		[ qr/password:/ => sub { my $exp = shift; $exp->send( "$pass\n" ); exp_continue; } ],
-		[ qr/\/home\/$user\$/ => sub { my $exp = shift; $exp->send( $cmd ); exp_continue; } ]
+	my $data = $$::job{'data'};
+	my $exp  = Expect->spawn( "ssh -p $port $user\@$peer" );
+	$exp->expect( 30,
+
+		# Enter the password to log in to the remote peer
+		[ qr/password:/ => sub {
+			my $exp = shift;
+			$exp->send( "$pass\n" );
+			exp_continue;
+		} ],
+
+		# Issue the RPC command ($data has a trailing newline)
+		[ qr/\/home\/$user\$/ => sub {
+			my $exp = shift;
+			$exp->send( "$Bin/wikid.pl --rpc $data" );
+			exp_continue;
+		} ],
+
+		# Match successful result
+		[ qr/success/ => sub {
+			my $exp = shift;
+			$exp->send( "$Bin/wikid.pl --rpc $data" );
+			logAdd( "mainRPCSendAction: $action successfully sent to $peer:$port" );
+			exp_continue;
+		} ],
+
+		# Match failed result
+		[ qr/fail/ => sub {
+			my $exp = shift;
+			$exp->send( "$Bin/wikid.pl --rpc $data" );
+			logAdd( "mainRPCSendAction: failed to send $action to $peer:$port" );
+			exp_continue;
+		} ]
 	);
 	$exp->soft_close();
 		
