@@ -31,7 +31,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.8.0'; # 2009-12-28
+$::ver      = '3.8.1'; # 2009-12-28
 $::dir      = $Bin;
 $::log      = "$::dir/$::daemon.log";
 $::wkfile   = "$::dir/$::daemon.work";
@@ -73,6 +73,14 @@ setsid or die "Can't start a new session: $!";
 umask 0;
 $0 = "$::daemon ($::name)";
 
+# Check if this is a command-line RPC call
+if ( $ARGV[0] eq '--rpc' ) {
+	my $data = serialize( { 'wgScript' => $wiki, 'wgSitename' => 'RpcMessage', 'data' => $ARGV[1] } );
+	my $sock = IO::Socket::INET->new( PeerAddr => 'localhost', PeerPort => $port, Proto => 'tcp' );
+	print $sock "GET RpcMessage?$data HTTP/1.0\n\n\x00" if $sock;
+	exit( 0 )
+}
+
 # Install the service into init.d and rc2-5.d if --install arg passed
 if ( $ARGV[0] eq '--install' ) {
 	writeFile( my $target = "/etc/init.d/$::daemon.sh", "#!/bin/sh\n/usr/bin/perl $::dir/$::daemon.pl\n" );
@@ -86,7 +94,7 @@ if ( $ARGV[0] eq '--remove' ) {
 	unlink "/etc/rc$_.d/S99$::daemon" for 2..5;
 	unlink "/etc/init.d/$::daemon.sh";
 	logAdd( "$::daemon.sh removed from /etc/init.d" );
-	exit(0);
+	exit( 0 );
 }
 
 # Initialise services, current work, logins and connections
@@ -572,6 +580,11 @@ sub onAddNewAccount {
 	}
 }
 
+sub onRpcMessage {
+	my $data = $$::data{'data'};
+	# Unencrypt data and call doUpdateAccount
+}
+
 sub onRevisionInsertComplete {
 	my %revision = %{$$::data{'args'}[0]};
 	return if $revision{'mMinorEdit'};
@@ -741,12 +754,56 @@ sub rpcBroadcastAction {
 
 # Define the job type for sending an action to another peer
 sub initRpcSendAction {
+	my $to = shift;
+	my $action = shift;
 
+	# Resolve peer and port of recipient
+	my @args = shift;
+	if ( $to =~ /^(.+):([0-9]+)$/ ) {
+		$$::job{'peer'} = $1;
+		$$::job{'port'} = $2;
+	}
+	elsif ( $::peer =~ /^(.+):([0-9]+)$/ ) {
+		$$::job{'peer'} = $1;
+		$$::job{'port'} = $2;
+	}
+	else {
+		logAdd( "initRpcSendAction: invalid recipient, \"$action\" action not propagated!" );
+		workStopJob();
+		return 1;
+	}
+
+	# Initiate the job
+	my $peer = $$::job{'peer'};
+	my $port = $$::job{'port'};
+	logAdd( "initRpcSendAction: \"$action\" sent to $peer:$port" );
+	$$::job{'to'} = $to;
+	$$::job{'wait'} = 0;
+	1;
 }
 
 # Try and send the action, set time for next retry if unsuccessful
 sub mainRpcSendAction {
 
+	# Bail if not ready for a retry
+	return if $$::job{'wait'}-- > 0;
+
+	# Attempt to shell in
+	my $user = $::wikiuser;
+	my $pass = $::wikipass;
+	my $peer = $$::job{'peer'};
+	my $port = $$::job{'port'};
+	my $exp = Expect->spawn( "ssh -p $port $user\@$peer" );
+	$exp->expect( 5,
+		[ qr/password:/ => sub { my $exp = shift; $exp->send( "$pass\n" ); exp_continue; } ],
+		[ qr/\/home\/$user\$/ => sub { my $exp = shift; $exp->send( $cmd ); exp_continue; } ]
+	);
+	$exp->soft_close();
+		
+	# Stop job
+	workStopJob();
+
+	1;
 }
 
 
