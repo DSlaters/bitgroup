@@ -16,7 +16,7 @@ use HTTP::Request;
 use LWP::UserAgent;
 use Expect;
 use Net::SCP::Expect;
-use Crypt::CBC
+use Crypt::CBC;
 #use Net::XMPP;
 use IO::Socket;
 use IO::Select;
@@ -31,7 +31,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.7.11'; # 2009-12-28
+$::ver      = '3.8.0'; # 2009-12-28
 $::dir      = $Bin;
 $::log      = "$::dir/$::daemon.log";
 $::wkfile   = "$::dir/$::daemon.work";
@@ -559,13 +559,17 @@ sub onPrefsPasswordAudit {
 		my $user = $$::data{'args'}[0]{'mName'};
 		my $pass = $$::data{'args'}[1];
 		doUpdateAccount( $user, $pass );
+		rpcBroadcastAction( 'UpdateAccount', $user, $pass );
 	}
 }
 
 sub onAddNewAccount {
 	my $user = $$::data{'args'}[0]{'mName'};
 	my $pass = $$::data{'REQUEST'}{'wpPassword'};
-	doUpdateAccount( $user, $pass ) if $user and $pass;
+	if ( $user and $pass ) {
+		doUpdateAccount( $user, $pass );
+		rpcBroadcastAction( 'UpdateAccount', $user, $pass );
+	}
 }
 
 sub onRevisionInsertComplete {
@@ -709,6 +713,42 @@ sub doUpdate {
 		$exp->soft_close();
 	}
 }
+
+
+#---------------------------------------------------------------------------------------------------------#
+# RPC
+
+# Execute the passed action on another peer
+sub rpcSendAction {
+	my $to = shift;
+	my @args = shift;
+
+	# Encrypt the args
+	# $cipher = Crypt::CBC->new( -key => 'my secret key', -cipher => 'Blowfish' );
+	# $ciphertext = $cipher->encrypt( "This data is hush hush" );
+	# $plaintext  = $cipher->decrypt( $ciphertext );
+
+	# Start the transfer to the next peer as a persistent job
+	# %$::job = %{$$::data{'args'}};
+	# workStartJob( $$::job{'type'}, -e $$::job{'id'} ? $$::job{'id'} : undef );
+
+}
+
+# Execute the passed action on all other peers
+sub rpcBroadcastAction {
+	rpcSendAction( '', @_ );
+}
+
+# Define the job type for sending an action to another peer
+sub initRpcSendAction {
+
+}
+
+# Try and send the action, set time for next retry if unsuccessful
+sub mainRpcSendAction {
+
+}
+
 
 #---------------------------------------------------------------------------------------------------------#
 # JOBS
