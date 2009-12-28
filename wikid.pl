@@ -31,7 +31,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.8.2'; # 2009-12-28
+$::ver      = '3.8.3'; # 2009-12-29
 $::dir      = $Bin;
 $::log      = "$::dir/$::daemon.log";
 $::wkfile   = "$::dir/$::daemon.work";
@@ -756,36 +756,27 @@ sub doUpdate {
 #---------------------------------------------------------------------------------------------------------#
 # RPC
 
-# Execute the passed action on another peer
-sub rpcSendAction {
-	my $to = shift;
-	my @args = shift;
-
-	# Encrypt the args
-	# $cipher = Crypt::CBC->new( -key => 'my secret key', -cipher => 'Blowfish' );
-	# $ciphertext = $cipher->encrypt( "This data is hush hush" );
-	# $plaintext  = $cipher->decrypt( $ciphertext );
-
-	# Start the transfer to the next peer as a persistent job
-	# %$::job = %{$$::data{'args'}};
-	# workStartJob( $$::job{'type'}, -e $$::job{'id'} ? $$::job{'id'} : undef );
-
-}
-
-# Execute the passed action on all other peers
+# Broadcast actions are just normal RPC with an empty "to" arg
 sub rpcBroadcastAction {
 	rpcSendAction( '', @_ );
 }
 
-# Define the job type for sending an action to another peer
-sub initRpcSendAction {
-	my @args = shift;
-	my $to = $args[0];
+# Encrypt the action and its arguments and start a job to send them
+sub rpcSendAction {
+	my @args   = shift;
+	my $to     = $args[0];
 	my $action = $args[1];
 
 	# Add "from" to args
 	my $host = lc $::name;
-	unshift @args, "$host.$::dnsdomain:$::port";
+	my $from = "$host.$::dnsdomain:$::port";
+	unshift @args, $from;
+
+	# Initialise the job hash
+	%$::job = ();
+	$$::job{'from'} = $from;
+	$$::job{'to'}   = $to;
+	$$::job{'wait'} = 0;
 
 	# Resolve peer and port of recipient
 	if ( $to =~ /^(.+):([0-9]+)$/ ) {
@@ -798,24 +789,19 @@ sub initRpcSendAction {
 	}
 	else {
 		logAdd( "initRpcSendAction: invalid recipient, \"$action\" action not propagated!" );
-		workStopJob();
 		return 1;
 	}
 
 	# Encrypt the data so its not stored in the work hash or sent in clear text
 	$cipher = Crypt::CBC->new( -key => $::netpass, -cipher => 'Blowfish' );
-	my $data = encode_base64( $cipher->encrypt( serialize( @args ) ) );
+	$$::job{'data'} = encode_base64( $cipher->encrypt( serialize( @args ) ) );
 
-	# Initiate the job
+	# Start the job
+	workStartJob( $$::job{'type'}, -e $$::job{'id'} ? $$::job{'id'} : undef );
+
 	my $peer = $$::job{'peer'};
 	my $port = $$::job{'port'};
 	logAdd( "initRpcSendAction: \"$action\" queued for sending to $peer:$port" );
-	$$::job{'to'}     = $to;
-	$$::job{'action'} = $action;
-	$$::job{'data'}   = $data;
-	$$::job{'wait'}   = 0;
-
-	1;
 }
 
 # Try and send the action, set time for next retry if unsuccessful
