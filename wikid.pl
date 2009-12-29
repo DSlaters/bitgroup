@@ -33,7 +33,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.8.4'; # 2009-12-29
+$::ver      = '3.8.5'; # 2009-12-29
 $::log      = "$::dir/$::daemon.log";
 $::wkfile   = "$::dir/$::daemon.work";
 $::motd     = "Hail Earthlings! $::daemon-$::ver is in the heeeeeouse! (rock)" unless defined $::motd;
@@ -652,6 +652,11 @@ sub doUpdateAccount {
 	# if the @users array exists, bail unless user is in it
 	return if defined @::users and not grep /$user/i, @::users;
 
+	# Update/create the local wiki account if non existent or not up to date
+	# - this can happen if its an RPC action from another peer
+	# - update directly in DB so that the event doesn't propagate again
+	wikiUpdateAccount( $::wiki, $user, $pass, $::db );
+
 	# If unix account exists, change its password
 	if ( -d "/home/$user" ) {
 		logIRC( "Updating unix account details for user \"$user\"" );
@@ -690,11 +695,6 @@ sub doUpdateAccount {
 		$exp->soft_close();
 	}
 
-	# Restart samba
-	#logIRC( ":Restarting Samba server..." );
-	#$exp = Expect->spawn( "/etc/init.d/samba restart" );
-	#$exp->soft_close();
-	
 	logIRC( "Done." );
 }
 
