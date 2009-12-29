@@ -250,6 +250,7 @@ sub start {
 	qx( "/etc/init.d/$::daemon.sh" );
 }
 
+# Establish a connection to the local wiki DB
 sub dbConnect {
 	$::db = DBI->connect( "DBI:mysql:$::dbname", $::dbuser, $::dbpass );
 	my $msg = defined $::db ? "Connected '$::dbuser' to DBI:mysql:$::dbname" : "Could not connect '$::dbuser' to '$::dbname': " . DBI->errstr;

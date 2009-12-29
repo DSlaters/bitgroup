@@ -667,6 +667,11 @@ sub wikiUpdateAccount {
 
 	# DB connection supplied, update directly
 	if ( $db ) {
+		#my $query = $db->prepare( 'SELECT 0' );
+		#$query->execute();
+		#while ( my @row = $query->fetchrow_array ) {
+		#}
+		#$query->finish;
 	}
 
 	# No DB connection supplied, use HTTP
