@@ -8,6 +8,8 @@ $organisation = 'Foo Inc.';
 $wiki         = 'http://wiki.foo.bar/wiki/index.php';
 $wikiuser     = 'FooBot'; # defaults to $name
 $wikipass     = '******';
+$wgDBname     = 'foo';
+$wgDBprefix   = 'foo_';
 $wgDBuser     = 'foobot';
 $wgDBpassword = '******';
 
