@@ -1,6 +1,9 @@
 # Unique name for this bot
 $name         = 'FooBot';
 
+# The organisation this bot is a part of if any
+$organisation = 'Foo Inc.';
+
 # The local wiki associated with this bot
 $wiki         = 'http://wiki.foo.bar/wiki/index.php';
 $wikiuser     = 'FooBot'; # defaults to $name
