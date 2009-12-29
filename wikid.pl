@@ -602,16 +602,13 @@ sub onPrefsPasswordAudit {
 		my $user = $$::data{'args'}[0]{'mName'};
 		my $pass = $$::data{'args'}[1];
 		doUpdateAccount( $user, $pass );
-		rpcBroadcastAction( 'UpdateAccount', $user, $pass );
 	}
 }
 
 sub onAddNewAccount {
 	my $user = $$::data{'args'}[0]{'mName'};
 	my $pass = $$::data{'REQUEST'}{'wpPassword'};
-	if ( $user and $pass ) {
-		doUpdateAccount( $user, $pass );
-		rpcBroadcastAction( 'UpdateAccount', $user, $pass );
+	doUpdateAccount( $user, $pass ) if $user and $pass;
 	}
 }
 
@@ -648,15 +645,30 @@ sub onRevisionInsertComplete {
 sub doUpdateAccount {
 	my $user = lc shift;
 	my $pass = shift;
+	my @args = shift;
 	$user =~ s/ /_/g;
 
 	# if the @users array exists, bail unless user is in it
 	return if defined @::users and not grep /$user/i, @::users;
 
-	# Update/create the local wiki account if non existent or not up to date
-	# - this can happen if its an RPC action from another peer
-	# - update directly in DB so that the event doesn't propagate again
-	wikiUpdateAccount( $::wiki, $user, $pass, $::db );
+	# If there are args then this is from RPC so we may need to create/update the local wiki account
+	if ( defined @args ) {
+
+		# Update/create the local wiki account if non existent or not up to date
+		# - this can happen if its an RPC action from another peer
+		# - update directly in DB so that the event doesn't propagate again
+		wikiUpdateAccount( $::wiki, $user, $pass, $::db );
+	}
+
+	# Otherwise this is a local wiki account event and needs to be propagated over RPC
+	else {
+
+		# Obtain all the info for this user
+		@args = ();
+
+		# Propagate the action and its args
+		rpcBroadcastAction( 'UpdateAccount', $user, $pass, @args );
+	}
 
 	# If unix account exists, change its password
 	if ( -d "/home/$user" ) {

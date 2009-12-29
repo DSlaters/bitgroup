@@ -462,8 +462,8 @@ sub wikiProtect {
 
 			%form = (
 				"wpEditToken"       => $1,
-				"mwProtect-expiry"  => $expiry   || "",
-				"mwProtect-reason"  => $comment  || "",
+				"mwProtect-expiry"  => $expiry  || "",
+				"mwProtect-reason"  => $comment || "",
 			);
 
 			$form{"mwProtect-level-$_"} = $restrictions->{$_} for keys %{$restrictions};
