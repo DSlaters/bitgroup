@@ -12,7 +12,7 @@
 #   - get namespaces
 #   - get messages used in patterns (and make methods use messages in their regexp's so lang-independent)
 
-$::wikipl_version = '1.10.4'; # 2009-12-23
+$::wikipl_version = '1.10.5'; # 2009-12-29
 
 use HTTP::Request;
 use LWP::UserAgent;
@@ -41,6 +41,7 @@ sub wikiExamineBraces;
 sub wikiGuid;
 sub wikiGetConfig;
 sub wikiAllPages;
+sub wikiUpdateAccount;
 
 # Set up a global client for making HTTP requests as a browser
 $::client = LWP::UserAgent->new(
@@ -655,4 +656,22 @@ sub wikiAllPages {
 	s/\\"/"/g for @list;
 	return @list;
 }
+
+# Create or update a user account
+sub wikiUpdateAccount {
+	my $wiki = shift;
+	my $user = shift;
+	my $pass = shift;
+	my $db   = shift;
+	my @args = shift;
+
+	# DB connection supplied, update directly
+	if ( $db ) {
+	}
+
+	# No DB connection supplied, use HTTP
+	else {
+	}
+}
+
 
