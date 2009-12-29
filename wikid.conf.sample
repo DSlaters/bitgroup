@@ -27,6 +27,9 @@ $network      = 'FooBarNet';
 $netpass      = '****************************';
 $peer         = 'bar.baz:1729';
 
+# Set this to users that should replicate, or remove if all should
+@users        = ( 'Foo', 'Bar', 'Baz' );
+
 # Set this if distributed backup of large file-structures is required
 @bak_paths    = (
 	'/home',
