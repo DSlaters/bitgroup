@@ -7,20 +7,20 @@
 
 # Set the file pointer to start of the file (i.e. first line)
 sub initModifyRecords {
-	my @titles = wikiAllPages( $$::job{'wiki'} );
-	$$::job{'titles'} = \@titles;
-	$$::job{'length'} = $#titles;
+	my @titles = wikiAllPages( $$::job{wiki} );
+	$$::job{titles} = \@titles;
+	$$::job{length} = $#titles;
 	1;
 }
 
 # Import the current line from the input CSV file
 sub mainModifyRecords {
-	my $wiki    = $$::job{'wiki'};
-	my $wptr    = $$::job{'wptr'};
-	my $type    = $$::job{'ChangeType'};
-	my $from    = $$::job{'From'};
-	my $to      = $$::job{'To'};
-	my $title   = $$::job{'titles'}[$$::job{'wptr'}];
+	my $wiki    = $$::job{wiki};
+	my $wptr    = $$::job{wptr};
+	my $type    = $$::job{ChangeType};
+	my $from    = $$::job{From};
+	my $to      = $$::job{To};
+	my $title   = $$::job{titles}[$$::job{wptr}];
 	my $text    = wikiRawPage( $wiki, $title );
 	my $last    = $text;
 	my $comment = '';
@@ -42,10 +42,10 @@ sub mainModifyRecords {
 	if ( $text ne $last ) {
 		my $comment = 'Field values change';
 		wikiEdit( $wiki, $title, $text, $comment, 1 );
-		$$::job{'revisions'}++;
+		$$::job{revisions}++;
 	}
 
-	$$::job{'status'} = int( $$::job{'revisions'} ) . " items changed, processing \"$title\"";
+	$$::job{status} = int( $$::job{revisions} ) . " items changed, processing \"$title\"";
 	1;
 }
 
