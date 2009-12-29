@@ -33,7 +33,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.8.5'; # 2009-12-29
+$::ver      = '3.8.6'; # 2009-12-30
 $::log      = "$::dir/$::daemon.log";
 $::wkfile   = "$::dir/$::daemon.work";
 $::motd     = "Hail Earthlings! $::daemon-$::ver is in the heeeeeouse! (rock)" unless defined $::motd;
@@ -643,31 +643,36 @@ sub onRevisionInsertComplete {
 # - users must be in the wiki group for their passwd to be valid (updatable by this action)
 # - the samba passwords are built from the system passwords
 sub doUpdateAccount {
-	my $user = lc shift;
-	my $pass = shift;
-	my @args = shift;
+	my $user  = lc shift;
+	my $pass  = shift;
+	my %prefs = shift;
 	$user =~ s/ /_/g;
 
 	# if the @users array exists, bail unless user is in it
 	return if defined @::users and not grep /$user/i, @::users;
 
 	# If there are args then this is from RPC so we may need to create/update the local wiki account
-	if ( defined @args ) {
+	if ( defined %prefs ) {
 
 		# Update/create the local wiki account if non existent or not up to date
 		# - this can happen if its an RPC action from another peer
 		# - update directly in DB so that the event doesn't propagate again
-		wikiUpdateAccount( $::wiki, $user, $pass, $::db );
+		wikiUpdateAccount( $::wiki, $user, $pass, $::db, %prefs );
 	}
 
 	# Otherwise this is a local wiki account event and needs to be propagated over RPC
 	else {
 
-		# Obtain all the info for this user
-		@args = ();
+		# Obtain all the info for this user (if DB connection available)
+		if ( $::db ) {
+			my $query = $::db->prepare( 'SELECT * from ' . $::dbpre . 'user where user_name = "' . ucfirst( $user ) . '"' );
+			$query->execute();
+			%prefs = %{ $query->fetchrow_hashref };
+			$query->finish;
+		}
 
 		# Propagate the action and its args
-		rpcBroadcastAction( 'UpdateAccount', $user, $pass, @args );
+		rpcBroadcastAction( 'UpdateAccount', $user, $pass, %prefs );
 	}
 
 	# If unix account exists, change its password
