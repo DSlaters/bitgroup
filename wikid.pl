@@ -10,29 +10,30 @@
 # - copyright © 2007 Aran Dunkley
 # - license GNU General Public Licence 2.0 or later
 #
+qx( cd /var/www/tools );
+$::dir = '/var/www/tools';
+
+# Dependencies
 use POSIX qw(strftime setsid);
-use FindBin qw($Bin);
 use HTTP::Request;
 use LWP::UserAgent;
 use Expect;
 use Net::SCP::Expect;
 use Crypt::CBC;
-#use Net::XMPP;
 use IO::Socket;
 use IO::Select;
 use MIME::Base64;
 use Sys::Hostname;
 use DBI;
 use PHP::Serialization qw(serialize unserialize);
-require "$Bin/wiki.pl";
+require "$::dir/wiki.pl";
 
 # Daemon parameters
 $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.8.3'; # 2009-12-29
-$::dir      = $Bin;
+$::ver      = '3.8.4'; # 2009-12-29
 $::log      = "$::dir/$::daemon.log";
 $::wkfile   = "$::dir/$::daemon.work";
 $::motd     = "Hail Earthlings! $::daemon-$::ver is in the heeeeeouse! (rock)" unless defined $::motd;
@@ -53,7 +54,7 @@ $ircchannel = '#organicdesign';
 $ircpass    = '*****';
 
 # Override default with config file (this is included again at the end so that it can replace event functions)
-require "$Bin/$::daemon.conf";
+require "$::dir/$::daemon.conf";
 $::dbname = $wgDBname if defined $wgDBname;
 $::dbuser = $wgDBuser if defined $wgDBuser;
 $::dbpass = $wgDBpassword if defined $wgDBpassword;
@@ -65,30 +66,33 @@ $ircuser  = $::name unless $ircuser;
 
 # If --rpc, send data down the running instance's event pipe and exit
 if ( $ARGV[0] eq '--rpc' ) {
+	die "No data supplied!" unless $ARGV[1];
+	die "Data not encrypted!" unless decode_base64( $ARGV[1] ) =~ /^Salted__/;
 	my $data = serialize( { 'wgScript' => $wiki, 'wgSitename' => 'RPC', 'args' => $ARGV[1] } );
 	my $sock = IO::Socket::INET->new( PeerAddr => 'localhost', PeerPort => $port, Proto => 'tcp' );
 	print $sock "GET RpcDoAction?$data HTTP/1.0\n\n\x00" if $sock;
 	sleep 1;
-	qx( tail -n 1 $Bin/$daemon.log );
+	print qx( tail -n 1 $::dir/$daemon.log );
 	exit 0;
 }
 
 # Run as a daemon (see daemonise.pl article for more details and references regarding perl daemons)
 open STDIN, '/dev/null';
-open STDOUT, ">>$::log";
-open STDERR, ">>$::log";
+open STDOUT, ">>$log";
+open STDERR, ">>$log";
 defined ( my $pid = fork ) or die "Can't fork: $!";
 exit if $pid;
 setsid or die "Can't start a new session: $!";
 umask 0;
-$0 = "$::daemon ($::name)";
+$0 = "$daemon ($name)";
 
 # Install the service into init.d and rc2-5.d if --install arg passed
 if ( $ARGV[0] eq '--install' ) {
-	writeFile( my $target = "/etc/init.d/$::daemon.sh", "#!/bin/sh\n/usr/bin/perl $::dir/$::daemon.pl\n" );
-	symlink $target, "/etc/rc$_.d/S99$::daemon" for 2..5;
-	chmod 0755, "/etc/init.d/$::daemon.sh";
-	logAdd( "$::daemon.sh added to /etc/init.d" );
+	writeFile( my $target = "/etc/init.d/$daemon", "#!/bin/sh\n/usr/bin/perl $::dir/$daemon.pl\n" );
+	symlink $target, "/etc/rc$_.d/S99$daemon" for 2..5;
+	symlink "$::dir/$daemon.pl", "/usr/bin/$daemon";
+	chmod 0755, "/etc/init.d/$daemon";
+	logAdd( "$::daemon added to /etc/init.d and /usr/bin" );
 }
 
 # Remove the named service and exit
@@ -536,7 +540,7 @@ sub onFileChanged {
 # Run an action sent from another peer
 sub onRpcDoAction {
 
-	# Decrypt $::data
+	# Decrypt $::data if encrypted
 	my $cipher = Crypt::CBC->new( -key => $::netpass, -cipher => 'Blowfish' ); 
 	my @args = unserialise( $cipher->decrypt( decode_base64( $$::data{'args'} ) ) );
 
@@ -817,42 +821,43 @@ sub mainRpcSendAction {
 	my $port = $$::job{'port'};
 	my $data = $$::job{'data'};
 	my $exp  = Expect->spawn( "ssh -p $port $user\@$peer" );
+	my $ssh  = 0;
 	$exp->expect( 30,
 
 		# Enter the password to log in to the remote peer
 		[ qr/password:/ => sub {
 			my $exp = shift;
 			$exp->send( "$pass\n" );
+			$ssh = 1;
 			exp_continue;
 		} ],
 
 		# Issue the RPC command ($data has a trailing newline)
 		[ qr/\/home\/$user\$/ => sub {
 			my $exp = shift;
-			$exp->send( "$Bin/wikid.pl --rpc $data" );
+			$exp->send( "wikid --rpc $data" );
 			exp_continue;
 		} ],
 
 		# Match successful result
 		[ qr/success/ => sub {
 			my $exp = shift;
-			$exp->send( "$Bin/wikid.pl --rpc $data" );
 			logAdd( "mainRPCSendAction: $action successfully sent to $peer:$port" );
-			exp_continue;
 		} ],
 
 		# Match failed result
 		[ qr/fail/ => sub {
 			my $exp = shift;
-			$exp->send( "$Bin/wikid.pl --rpc $data" );
 			logAdd( "mainRPCSendAction: failed to send $action to $peer:$port" );
-			exp_continue;
 		} ]
 	);
 	$exp->soft_close();
 		
-	# Stop job
-	workStopJob();
+	# Stop job if the command was executed on the remote host (even if it failed)
+	workStopJob() if $ssh;
+
+	# If the SSH connection was not established try again in 5min or so
+	$$::job{'wait'} = 300 unless $ssh;
 
 	1;
 }
@@ -1054,4 +1059,4 @@ sub workLogError {
 
 
 # Include the config again so that it can replace default functions
-require "$Bin/$::daemon.conf";
+require "$::dir/$::daemon.conf";
