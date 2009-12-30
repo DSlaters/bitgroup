@@ -660,8 +660,7 @@ sub wikiAllPages {
 
 # Create or update a user account
 sub wikiUpdateAccount {
-	my( $wiki, $user, $pass, $db ) = shift;
-	my %prefs = @_;
+	my( $wiki, $user, $pass, $db, %prefs ) = @_;
 
 	# DB connection supplied, update directly
 	if ( defined $db ) {
