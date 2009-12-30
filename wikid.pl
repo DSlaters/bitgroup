@@ -152,7 +152,7 @@ while( 1 ) {
 	if ( $n % 60 == 0 ) {
 
 		# Keep wiki DB connection alive
-		if ( defined $::dbuser ) {
+		if ( defined $::db ) {
 			my $q = $::db->prepare( 'SELECT 0' );
 			unless ( $q->execute() ) {
 				logAdd( 'DB connection gone away, reconnecting...' );
