@@ -33,7 +33,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.8.7'; # 2009-12-30
+$::ver      = '3.8.8'; # 2009-12-31
 $::log      = "$::dir/$::daemon.log";
 $::wkfile   = "$::dir/$::daemon.work";
 $::motd     = "Hail Earthlings! $::daemon-$::ver is in the heeeeeouse! (rock)" unless defined $::motd;
@@ -807,7 +807,7 @@ sub rpcSendAction {
 		$$::job{peer} = $1;
 		$$::job{port} = $2;
 	}
-	elsif ( $::peer =~ /^(.+):([0-9]+)$/ ) {
+	elsif ( $::netpeer =~ /^(.+):([0-9]+)$/ ) {
 		$$::job{peer} = $1;
 		$$::job{port} = $2;
 	}
