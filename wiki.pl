@@ -709,6 +709,7 @@ sub wikiUpdateAccount {
 
 	# No DB connection supplied, use HTTP
 	else {
+		die "HTTP account update/create not implemented yet.";
 	}
 }
 
