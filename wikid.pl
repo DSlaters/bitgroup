@@ -668,6 +668,8 @@ sub doUpdateAccount {
 			my $query = $::db->prepare( 'SELECT * from ' . $::dbpre . 'user where user_name = "' . ucfirst( $user ) . '"' );
 			$query->execute();
 			%prefs = %{ $query->fetchrow_hashref };
+			$prefs{user_id} = undef;
+			$prefs{user_password} = undef;
 			$query->finish;
 		}
 

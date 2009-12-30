@@ -17,6 +17,7 @@ $::wikipl_version = '1.10.6'; # 2009-12-30
 use HTTP::Request;
 use LWP::UserAgent;
 use POSIX qw(strftime);
+use Digest::MD5 qw(md5 md5_hex md5_base64);
 
 sub wikiLogin;
 sub wikiLogout;
@@ -659,35 +660,51 @@ sub wikiAllPages {
 
 # Create or update a user account
 sub wikiUpdateAccount {
-	my( $wiki, $user, $pass, $db, %prefs ) = shift;
+	my( $wiki, $user, $pass, $db ) = shift;
+	my %prefs = @_;
 
 	# DB connection supplied, update directly
 	if ( defined $db ) {
 
-		# Build the values into a format compatible with SET
-		my @values = ();
-		while ( ($k, $v ) = each( %prefs ) ) { push @values, "$k='$v'" unless $k eq 'user_id' }
-		my $values = join ',', @values;
+		# If prefs were supplied, update or create the row
+		if ( defined %prefs ) {
 
-		# Get the user id if the user already exists
+			# Build the prefs into a format compatible with SET
+			my $values = '';
+			$values .= ",$k='$v'" while ($k, $v ) = each %prefs;
+
+			# Get the user id if the user already exists
+			my $query = $db->prepare( 'SELECT user_id from ' . $::dbpre . 'user where user_name="' . ucfirst( $user ) . '"' );
+			$query->execute();
+			my $id = $row[0] if $row = $query->fetchrow;
+			$query->finish;
+
+			# Update the values in the existing row if the id was found
+			if ( defined $id ) {
+				my $query = $db->prepare( 'UPDATE ' . $::dbpre . 'user SET ' . $values . 'where user_id=' . $id );
+				$query->execute();
+				$query->finish;
+			}
+
+			# Otherwise insert the values into a new row
+			else {
+				my $query = $db->prepare( 'INSERT INTO ' . $::dbpre . 'user SET ' . $values );
+				$query->execute();
+				$query->finish;
+			}
+		}
+
+		# Get the row (reading again incase it was just inserted)
 		my $query = $db->prepare( 'SELECT user_id from ' . $::dbpre . 'user where user_name="' . ucfirst( $user ) . '"' );
 		$query->execute();
 		my $id = $row[0] if $row = $query->fetchrow;
 		$query->finish;
 
-		# Update the values in the existing row if the id was found
-		if ( defined $id ) {
-			my $query = $db->prepare( 'UPDATE ' . $::dbpre . 'user SET ' . $values . 'where user_id=' . $id );
-			$query->execute();
-			$query->finish;
-		}
-
-		# Otherwise insert the values into a new row
-		else {
-			my $query = $db->prepare( 'INSERT INTO ' . $::dbpre . 'user SET ' . $values );
-			$query->execute();
-			$query->finish;
-		}
+		# Set the password for the id
+		my $encpass = md5_base64( '1-' . md5_base64( $pass ) );
+		my $query = $db->prepare( 'UPDATE ' . $::dbpre . 'user SET user_password="' . $encpass . '" WHERE user_id=' . $id );
+		$query->execute();
+		$query->finish;
 	}
 
 	# No DB connection supplied, use HTTP
