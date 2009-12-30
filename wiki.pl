@@ -661,6 +661,8 @@ sub wikiAllPages {
 # Create or update a user account
 sub wikiUpdateAccount {
 	my( $wiki, $user, $pass, $db, %prefs ) = @_;
+	my $User = ucfirst $user;
+	my @row = ();
 
 	# DB connection supplied, update directly
 	if ( defined $db ) {
@@ -669,13 +671,14 @@ sub wikiUpdateAccount {
 		if ( defined %prefs ) {
 
 			# Build the prefs into a format compatible with SET
-			my $values = '';
-			$values .= ",$k='$v'" while ( $k, $v ) = each %prefs;
+			my @values = ();
+			push @values, "$k='$v'" while ( $k, $v ) = each %prefs;
+			my $values = join ',', @values;
 
 			# Get the user id if the user already exists
-			my $query = $db->prepare( 'SELECT user_id FROM ' . $::dbpre . 'user WHERE user_name="' . ucfirst( $user ) . '"' );
+			my $query = $db->prepare( 'SELECT user_id FROM ' . $::dbpre . 'user WHERE user_name="' . $User . '"' );
 			$query->execute();
-			my $id = $row[0] if $row = $query->fetchrow_array;
+			my $id = $row[0] if @row = $query->fetchrow;
 			$query->finish;
 
 			# Update the values in the existing row if the id was found
@@ -687,17 +690,16 @@ sub wikiUpdateAccount {
 
 			# Otherwise insert the values into a new row
 			else {
-				my $query = $db->prepare( 'INSERT INTO ' . $::dbpre . 'user SET ' . $values );
+				my $query = $db->prepare( 'INSERT INTO ' . $::dbpre . 'user SET user_name="' . $User . '",' . $values );
 				$query->execute();
 				$query->finish;
 			}
 		}
 
 		# Get the row (reading again incase it was just inserted)
-		my $query = $db->prepare( 'SELECT user_id FROM ' . $::dbpre . 'user WHERE user_name="' . ucfirst( $user ) . '"' );
+		my $query = $db->prepare( 'SELECT user_id FROM ' . $::dbpre . 'user WHERE user_name="' . $User . '"' );
 		$query->execute();
 		my $id = $row[0] if @row = $query->fetchrow;
-		print "\n\nid=$id\n\n";
 		$query->finish;
 
 		# Set the password for the id
