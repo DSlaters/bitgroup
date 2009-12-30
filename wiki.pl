@@ -673,14 +673,14 @@ sub wikiUpdateAccount {
 			$values .= ",$k='$v'" while ( $k, $v ) = each %prefs;
 
 			# Get the user id if the user already exists
-			my $query = $db->prepare( 'SELECT user_id from ' . $::dbpre . 'user where user_name="' . ucfirst( $user ) . '"' );
+			my $query = $db->prepare( 'SELECT user_id FROM ' . $::dbpre . 'user WHERE user_name="' . ucfirst( $user ) . '"' );
 			$query->execute();
-			my $id = $row[0] if $row = $query->fetchrow;
+			my $id = $row[0] if $row = $query->fetchrow_array;
 			$query->finish;
 
 			# Update the values in the existing row if the id was found
 			if ( defined $id ) {
-				my $query = $db->prepare( 'UPDATE ' . $::dbpre . 'user SET ' . $values . 'where user_id=' . $id );
+				my $query = $db->prepare( 'UPDATE ' . $::dbpre . 'user SET ' . $values . 'WHERE user_id=' . $id );
 				$query->execute();
 				$query->finish;
 			}
@@ -694,9 +694,10 @@ sub wikiUpdateAccount {
 		}
 
 		# Get the row (reading again incase it was just inserted)
-		my $query = $db->prepare( 'SELECT user_id from ' . $::dbpre . 'user where user_name="' . ucfirst( $user ) . '"' );
+		my $query = $db->prepare( 'SELECT user_id FROM ' . $::dbpre . 'user WHERE user_name="' . ucfirst( $user ) . '"' );
 		$query->execute();
-		my $id = $row[0] if $row = $query->fetchrow;
+		my $id = $row[0] if @row = $query->fetchrow;
+		print "\n\nid=$id\n\n";
 		$query->finish;
 
 		# Set the password for the id
