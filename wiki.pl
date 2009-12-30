@@ -17,7 +17,7 @@ $::wikipl_version = '1.10.6'; # 2009-12-30
 use HTTP::Request;
 use LWP::UserAgent;
 use POSIX qw(strftime);
-use Digest::MD5 qw(md5 md5_hex md5_base64);
+use Digest::MD5 qw(md5_hex);
 
 sub wikiLogin;
 sub wikiLogout;
@@ -671,7 +671,7 @@ sub wikiUpdateAccount {
 
 			# Build the prefs into a format compatible with SET
 			my $values = '';
-			$values .= ",$k='$v'" while ($k, $v ) = each %prefs;
+			$values .= ",$k='$v'" while ( $k, $v ) = each %prefs;
 
 			# Get the user id if the user already exists
 			my $query = $db->prepare( 'SELECT user_id from ' . $::dbpre . 'user where user_name="' . ucfirst( $user ) . '"' );
@@ -701,7 +701,7 @@ sub wikiUpdateAccount {
 		$query->finish;
 
 		# Set the password for the id
-		my $encpass = md5_base64( '1-' . md5_base64( $pass ) );
+		my $encpass = md5_hex( $id . '-' . md5_hex( $pass ) );
 		my $query = $db->prepare( 'UPDATE ' . $::dbpre . 'user SET user_password="' . $encpass . '" WHERE user_id=' . $id );
 		$query->execute();
 		$query->finish;
