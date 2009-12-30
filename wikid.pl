@@ -609,7 +609,6 @@ sub onAddNewAccount {
 	my $user = $$::data{args}[0]{mName};
 	my $pass = $$::data{REQUEST}{wpPassword};
 	doUpdateAccount( $user, $pass ) if $user and $pass;
-	}
 }
 
 sub onRevisionInsertComplete {
