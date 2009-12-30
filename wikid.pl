@@ -647,6 +647,7 @@ sub doUpdateAccount {
 	my $pass  = shift;
 	my %prefs = @_;
 	$user =~ s/ /_/g;
+	my $User = ucfirst $user;
 
 	# if the @users array exists, bail unless user is in it
 	return if defined @::users and not grep /$user/i, @::users;
@@ -665,7 +666,7 @@ sub doUpdateAccount {
 
 		# Obtain all the info for this user (if DB connection available)
 		if ( $::db ) {
-			my $query = $::db->prepare( 'SELECT * from ' . $::dbpre . 'user where user_name = "' . ucfirst( $user ) . '"' );
+			my $query = $::db->prepare( 'SELECT * from ' . $::dbpre . 'user where user_name = "' . $User . '"' );
 			$query->execute();
 			%prefs = %{ $query->fetchrow_hashref };
 			$prefs{user_id} = undef;
