@@ -247,7 +247,7 @@ sub spawn {
 
 # Function to start an instance of this daemon
 sub start {
-	qx( "/etc/init.d/$::daemon.sh" );
+	qx( $::daemon );
 }
 
 # Establish a connection to the local wiki DB
