@@ -33,7 +33,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.8.6'; # 2009-12-30
+$::ver      = '3.8.7'; # 2009-12-30
 $::log      = "$::dir/$::daemon.log";
 $::wkfile   = "$::dir/$::daemon.work";
 $::motd     = "Hail Earthlings! $::daemon-$::ver is in the heeeeeouse! (rock)" unless defined $::motd;
@@ -216,15 +216,15 @@ sub writeFile {
 # Read in and execute a snippet
 sub declare {
 	$::subname = shift;
-	if (open FH,'<',$::subname) {
-		logAdd("Declaring \"$::subname\"") unless $@;
+	if ( open FH, '<', $::subname ) {
+		logAdd( "Declaring \"$::subname\"" ) unless $@;
 		binmode FH;
-		sysread FH, (my $code), -s $::subname;
+		sysread FH, ( my $code ), -s $::subname;
 		close FH;
 		eval $code;
-		logAdd("\"$::subname\" failed: $@") if $@;
+		logAdd( "\"$::subname\" failed: $@" ) if $@;
 	}
-	else { logAdd("Couldn't declare $::subname!") }
+	else { logAdd( "Couldn't declare $::subname!" ) }
 	$::subname = '';
 }
 
@@ -233,16 +233,16 @@ sub spawn {
 	my $subname = shift;
 	my $subref = eval '\&$subname';
 	$SIG{CHLD} = 'IGNORE';
-	if (defined(my $pid = fork)) {
-		if ($pid) { logAdd("Spawned child ($pid) for \"$subname\"") }
+	if ( defined( my $pid = fork ) ) {
+		if ( $pid ) { logAdd( "Spawned child ($pid) for \"$subname\"" ) }
 		else {
 			$::subname = $subname;
 			$0 = "$::daemon: $::name ($subname)";
-			&$subref(@_);
+			&$subref( @_ );
 			exit;
 		}
 	}
-	else { logAdd("Cannot fork a child for \"$subname\": $!") }
+	else { logAdd( "Cannot fork a child for \"$subname\": $!" ) }
 }
 
 # Function to start an instance of this daemon
@@ -332,8 +332,8 @@ sub serverProcessMessage {
 		if ( $::data = $title =~ /^(.+?)\?(.+)$/s ? $2 : '' ) {
 			$title    = $1;
 			$::data   = unserialize( $::data );
-			$::script = $$::data{'wgScript'};
-			$::site   = $$::data{'wgSitename'};
+			$::script = $$::data{wgScript};
+			$::site   = $$::data{wgSitename};
 			$::event  = "on$title";
 			if ( $::script and defined &$::event ) {
 				logAdd( "Processing \"$title\" hook from $::site" );
@@ -543,12 +543,12 @@ sub onRpcDoAction {
 
 	# Decrypt $::data if encrypted
 	my $cipher = Crypt::CBC->new( -key => $::netpass, -cipher => 'Blowfish' ); 
-	my @args = unserialise( $cipher->decrypt( decode_base64( $$::data{'args'} ) ) );
+	my @args = unserialise( $cipher->decrypt( decode_base64( $$::data{args} ) ) );
 
 	# Extract the arguments
-	my $from   = $$::data{'from'}   = $args[0];
-	my $to     = $$::data{'to'}     = $args[1];
-	my $action = $$::data{'action'} = $args[2];
+	my $from   = $$::data{from}   = $args[0];
+	my $to     = $$::data{to}     = $args[1];
+	my $action = $$::data{action} = $args[2];
 
 	# Run the action
 	if ( defined &$action ) {
@@ -567,14 +567,14 @@ sub onRpcDoAction {
 }
 
 sub onStartJob {
-	%$::job = %{$$::data{'args'}};
-	workStartJob( $$::job{'type'}, -e $$::job{'id'} ? $$::job{'id'} : undef );
+	%$::job = %{$$::data{args}};
+	workStartJob( $$::job{type}, -e $$::job{id} ? $$::job{id} : undef );
 }
 
 sub onStopJob {
-	my $id = $$::data{'args'};
+	my $id = $$::data{args};
 	return if workSetJobFromId( $id ) < 0;
-	$$::job{'errors'} = "Job cancelled\n" . $$::job{'errors'};
+	$$::job{errors} = "Job cancelled\n" . $$::job{errors};
 	if ( workStopJob( $id ) ) {
 		my $msg = "Job $id cancelled";
 		logIRC( $msg );
@@ -583,45 +583,45 @@ sub onStopJob {
 }
 
 sub onPauseJobToggle {
-	my $id = $$::data{'args'};
+	my $id = $$::data{args};
 	workSetJobFromId( $id );
-	$$::job{'paused'} = $$::job{'paused'} ? 0 : 1;
+	$$::job{paused} = $$::job{paused} ? 0 : 1;
 	workSave();
-	$msg = "Job $id " . ( $$::job{'paused'} ? '' : 'un' ) . "paused";
+	$msg = "Job $id " . ( $$::job{paused} ? '' : 'un' ) . "paused";
 	logIRC( $msg );
 	logAdd( $msg );
 }
 
 sub onUserLoginComplete {
-	my $user = $$::data{'args'}[0]{'mName'};
+	my $user = $$::data{args}[0]{mName};
 	logIRC( "$user logged in to $::site" ) if $user;
 }
 
 sub onPrefsPasswordAudit {
-	if ( $$::data{'args'}[2] eq 'success' ) {
-		my $user = $$::data{'args'}[0]{'mName'};
-		my $pass = $$::data{'args'}[1];
+	if ( $$::data{args}[2] eq 'success' ) {
+		my $user = $$::data{args}[0]{mName};
+		my $pass = $$::data{args}[1];
 		doUpdateAccount( $user, $pass );
 	}
 }
 
 sub onAddNewAccount {
-	my $user = $$::data{'args'}[0]{'mName'};
-	my $pass = $$::data{'REQUEST'}{'wpPassword'};
+	my $user = $$::data{args}[0]{mName};
+	my $pass = $$::data{REQUEST}{wpPassword};
 	doUpdateAccount( $user, $pass ) if $user and $pass;
 	}
 }
 
 sub onRevisionInsertComplete {
-	my %revision = %{$$::data{'args'}[0]};
-	return if $revision{'mMinorEdit'};
-	my $id       = $revision{'mId'};
-	my $page     = $revision{'mPage'};
-	my $user     = $revision{'mUserText'};
-	my $parent   = $revision{'mParentId'};
-	my $comment  = $revision{'mComment'};
-	my $title    = $$::data{'REQUEST'}{'title'};
-	my $wgServer = $$::data{'wgServer'};
+	my %revision = %{$$::data{args}[0]};
+	return if $revision{mMinorEdit};
+	my $id       = $revision{mId};
+	my $page     = $revision{mPage};
+	my $user     = $revision{mUserText};
+	my $parent   = $revision{mParentId};
+	my $comment  = $revision{mComment};
+	my $title    = $$::data{REQUEST}{title};
+	my $wgServer = $$::data{wgServer};
 	if ( $page and $user ) {
 		if ( lc $user ne lc $wikiuser ) {
 			my $action = $parent ? 'changed' : 'created';
@@ -645,7 +645,7 @@ sub onRevisionInsertComplete {
 sub doUpdateAccount {
 	my $user  = lc shift;
 	my $pass  = shift;
-	my %prefs = shift;
+	my %prefs = @_;
 	$user =~ s/ /_/g;
 
 	# if the @users array exists, bail unless user is in it
@@ -759,7 +759,7 @@ sub doStop {
 	logAdd( "Stopping listeners..." );
 	$::server->shutdown(2);
 	$::ircsock->shutdown(2);
-	exit(0);
+	exit 0;
 }
 
 # Update
@@ -796,18 +796,18 @@ sub rpcSendAction {
 
 	# Initialise the job hash
 	%$::job = ();
-	$$::job{'from'} = $from;
-	$$::job{'to'}   = $to;
-	$$::job{'wait'} = 0;
+	$$::job{from} = $from;
+	$$::job{to}   = $to;
+	$$::job{wait} = 0;
 
 	# Resolve peer and port of recipient
 	if ( $to =~ /^(.+):([0-9]+)$/ ) {
-		$$::job{'peer'} = $1;
-		$$::job{'port'} = $2;
+		$$::job{peer} = $1;
+		$$::job{port} = $2;
 	}
 	elsif ( $::peer =~ /^(.+):([0-9]+)$/ ) {
-		$$::job{'peer'} = $1;
-		$$::job{'port'} = $2;
+		$$::job{peer} = $1;
+		$$::job{port} = $2;
 	}
 	else {
 		logAdd( "initRpcSendAction: invalid recipient, \"$action\" action not propagated!" );
@@ -816,13 +816,13 @@ sub rpcSendAction {
 
 	# Encrypt the data so its not stored in the work hash or sent in clear text
 	$cipher = Crypt::CBC->new( -key => $::netpass, -cipher => 'Blowfish' );
-	$$::job{'data'} = encode_base64( $cipher->encrypt( serialize( @args ) ) );
+	$$::job{data} = encode_base64( $cipher->encrypt( serialize( @args ) ) );
 
 	# Start the job
-	workStartJob( $$::job{'type'}, -e $$::job{'id'} ? $$::job{'id'} : undef );
+	workStartJob( $$::job{type}, -e $$::job{id} ? $$::job{id} : undef );
 
-	my $peer = $$::job{'peer'};
-	my $port = $$::job{'port'};
+	my $peer = $$::job{peer};
+	my $port = $$::job{port};
 	logAdd( "initRpcSendAction: \"$action\" queued for sending to $peer:$port" );
 }
 
@@ -830,14 +830,14 @@ sub rpcSendAction {
 sub mainRpcSendAction {
 
 	# Bail if not ready for a retry
-	return if $$::job{'wait'}-- > 0;
+	return if $$::job{wait}-- > 0;
 
 	# Attempt to shell in
 	my $user = $::wikiuser;
 	my $pass = $::wikipass;
-	my $peer = $$::job{'peer'};
-	my $port = $$::job{'port'};
-	my $data = $$::job{'data'};
+	my $peer = $$::job{peer};
+	my $port = $$::job{port};
+	my $data = $$::job{data};
 	my $exp  = Expect->spawn( "ssh -p $port $user\@$peer" );
 	my $ssh  = 0;
 	$exp->expect( 30,
@@ -875,7 +875,7 @@ sub mainRpcSendAction {
 	workStopJob() if $ssh;
 
 	# If the SSH connection was not established try again in 5min or so
-	$$::job{'wait'} = 300 unless $ssh;
+	$$::job{wait} = 300 unless $ssh;
 
 	1;
 }
@@ -918,7 +918,7 @@ sub workSetJobFromId {
 	my $i = -1;
 	$::job = undef;
 	for ( 0 .. $#::work ) {
-		if ( $::work[$_]{'id'} eq $id ) {
+		if ( $::work[$_]{id} eq $id ) {
 			$::job = $::work[$_];
 			$i = $_;
 		}
@@ -941,18 +941,18 @@ sub workExecute {
 	$::job = $::work[$::wptr++%($#::work+1)];
 
 	# Bail if the job is paused
-	return if $$::job{'paused'};
+	return if $$::job{paused};
 
 	# Bail if the job has no "main" to call
-	my $main = 'main' . $$::job{'type'};
+	my $main = 'main' . $$::job{type};
 	return unless defined &$main;
 
 	# Call the job's "main" and check for success
 	if ( &$main == 1 ) {
 
 		# Increment the *job* work pointer and stop if finished
-		if ( ++$$::job{'wptr'} >= $$::job{'length'} ) {
-			my $id = $$::job{'id'};
+		if ( ++$$::job{wptr} >= $$::job{length} ) {
+			my $id = $$::job{id};
 			my $msg = "Job $id has finished successfully";
 			logAdd( $msg );
 			logIRC( $msg );
@@ -965,7 +965,7 @@ sub workExecute {
 	} else {
 
 		# Log an error and stop the job if its "main" doesn't return success
-		my $msg = "$main() did not return success on iteration " . $$::job{'wptr'};
+		my $msg = "$main() did not return success on iteration " . $$::job{wptr};
 		workLogError( $msg );
 		workStopJob();
 		logAdd( $msg );
@@ -986,18 +986,18 @@ sub workStartJob {
 	if ( defined &$main ) {
 
 		# Add the new job to the work hash
-		$$::job{'id'}        = $id;
-		$$::job{'type'}      = $type;
-		$$::job{'wiki'}      = $::script ? $::script : $::wiki;
-		$$::job{'user'}      = $::wikiuser;
-		$$::job{'start'}     = time();
-		$$::job{'finish'}    = 0;
-		$$::job{'progress'}  = 0;
-		$$::job{'revisions'} = 0;
-		$$::job{'length'}    = 0;
-		$$::job{'paused'}    = 0;
-		$$::job{'status'}    = '';
-		$$::job{'errors'}    = '';
+		$$::job{id}        = $id;
+		$$::job{type}      = $type;
+		$$::job{wiki}      = $::script ? $::script : $::wiki;
+		$$::job{user}      = $::wikiuser;
+		$$::job{start}     = time();
+		$$::job{finish}    = 0;
+		$$::job{progress}  = 0;
+		$$::job{revisions} = 0;
+		$$::job{length}    = 0;
+		$$::job{paused}    = 0;
+		$$::job{status}    = '';
+		$$::job{errors}    = '';
 		push @::work, $::job;
 
 		# Execute the init if defined
@@ -1017,30 +1017,30 @@ sub workStartJob {
 # - if no job ID is passed, then the ID of $::job is used
 sub workStopJob {
 	my $id = shift;
-	$id = $$::job{'id'} unless $id;
+	$id = $$::job{id} unless $id;
 	my $i = workSetJobFromId( $id );
 	return 0 if $i < 0;
 
 	# Execute the job type's stop function if defined
-	$$::job{'finish'} = time();
-	my $stop = 'stop' . $$::job{'type'};
+	$$::job{finish} = time();
+	my $stop = 'stop' . $$::job{type};
 	&$stop if defined &$stop;
 
 	# Update progress
-	my $progress = $$::job{'length'} ? $$::job{'wptr'} . ' of ' . $$::job{'length'} : $$::job{'wptr'};
-	if ( $$::job{'wptr'} == $$::job{'length'} && $$::job{'length'} > 0 ) { $progress = "Job completed" }
+	my $progress = $$::job{length} ? $$::job{wptr} . ' of ' . $$::job{length} : $$::job{wptr};
+	if ( $$::job{wptr} == $$::job{length} && $$::job{length} > 0 ) { $progress = "Job completed" }
 
 	# Append final job info to log
 	$entry  = "[$id]\n";
-	$entry .= "   Type      : " . $$::job{'type'}      . "\n";
-	$entry .= "   User      : " . $$::job{'user'}      . "\n";
-	$entry .= "   Start     : " . $$::job{'start'}     . "\n";
-	$entry .= "   Finish    : " . $$::job{'finish'}    . "\n";
-	$entry .= "   Progress  : " . $progress            . "\n";
-	$entry .= "   Revisions : " . $$::job{'revisions'} . "\n";
-	$entry .= "   Length    : " . $$::job{'length'}    . "\n";
-	$entry .= "   Status    : " . $$::job{'status'}    . "\n";
-	$entry .= "   Errors    : " . $$::job{'errors'}    . "\n\n";
+	$entry .= "   Type      : " . $$::job{type}      . "\n";
+	$entry .= "   User      : " . $$::job{user}      . "\n";
+	$entry .= "   Start     : " . $$::job{start}     . "\n";
+	$entry .= "   Finish    : " . $$::job{finish}    . "\n";
+	$entry .= "   Progress  : " . $progress          . "\n";
+	$entry .= "   Revisions : " . $$::job{revisions} . "\n";
+	$entry .= "   Length    : " . $$::job{length}    . "\n";
+	$entry .= "   Status    : " . $$::job{status}    . "\n";
+	$entry .= "   Errors    : " . $$::job{errors}    . "\n\n";
 	open WKLOGH, '>>', "$::wkfile.log" or die "Can't open $::wkfile.log for writing!";
 	print WKLOGH $entry;
 	close WKLOGH;
@@ -1071,7 +1071,7 @@ sub workSave {
 # Add a line to a jobs error log
 sub workLogError {
 	my $err = shift;
-	$$::job{'errors'} .= $$::job{'errors'} ? "|$err" : $err;
+	$$::job{errors} .= $$::job{errors} ? "|$err" : $err;
 	return $err;
 }
 
