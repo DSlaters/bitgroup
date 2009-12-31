@@ -33,7 +33,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.8.19'; # 2009-12-31
+$::ver      = '3.8.20'; # 2009-01-01
 $::log      = "$::dir/$::daemon.log";
 $::wkfile   = "$::dir/$::daemon.work";
 $::motd     = "Hail Earthlings! $::daemon-$::ver is in the heeeeeouse! (rock)" unless defined $::motd;
@@ -827,29 +827,17 @@ sub mainRpcSendAction {
 
 	# Attempt to shell in
 	my $user = lc $::wikiuser;
-	my $pass = $::wikipass;
 	my $peer = $$::job{peer};
 	my $port = $$::job{port};
 	my $args = $$::job{args};
-	my $exp  = Expect->spawn( "ssh -p $port $user\@$peer" );
+	my $exp  = Expect->spawn( "ssh -p $port $user\@$peer 'wikid --rpc $args'" );
 	my $ssh  = 0;
 	$exp->expect( 30,
-
-		# Enter the password to log in to the remote peer
 		[ qr/password:/ => sub {
 			my $exp = shift;
-			$exp->send( "$pass\n" );
+			$exp->send( $::wikipass . "\n" );
 			$ssh = 1;
-			exp_continue;
 		} ],
-
-		# Issue the RPC command
-		# - this is last so that 
-		[ qr/$user\@/ => sub {
-			my $exp = shift;
-			$exp->send( "wikid --rpc $args\n" );
-			$exp->send( "exit\n" );
-		} ]
 	);
 	$exp->soft_close();
 		
