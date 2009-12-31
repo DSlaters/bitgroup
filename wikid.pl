@@ -788,14 +788,13 @@ sub rpcBroadcastAction {
 
 # Encrypt the action and its arguments and start a job to send them
 sub rpcSendAction {
-	my @args   = @_;
-	my $to     = $args[0];
-	my $action = $args[1];
+	my $to     = $_[0];
+	my $action = $_[1];
 
 	# Add "from" to args
 	my $host = lc $::name;
 	my $from = "$host.$::dnsdomain:$::port";
-	unshift @args, $from;
+	my @args = ( $from, @_ );
 
 	# Initialise the job hash
 	%$::job = ();
