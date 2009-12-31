@@ -543,7 +543,7 @@ sub onRpcDoAction {
 	# Decrypt $::data if encrypted
 	my $cipher = Crypt::CBC->new( -key => $::netpass, -cipher => 'Blowfish' ); 
 	my @args = unserialize( $cipher->decrypt( decode_base64( $$::data{args} ) ) );
-
+logAdd('args: '.join(',',@args));
 	# Extract the arguments
 	my $from   = $$::data{from}   = $args[0];
 	my $to     = $$::data{to}     = $args[1];
