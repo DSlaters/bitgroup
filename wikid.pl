@@ -795,7 +795,7 @@ sub rpcSendAction {
 	my $host = lc $::name;
 	my $from = "$host.$::dnsdomain:$::port";
 	my @args = ( $from, @_ );
-
+logAdd('sendArgs:'.join(',',@args));
 	# Initialise the job hash
 	%$::job = ();
 	$$::job{from} = $from;
