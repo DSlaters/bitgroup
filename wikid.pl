@@ -650,8 +650,6 @@ sub doUpdateAccount {
 		# Update/create the local wiki account if non existent or not up to date
 		# - this can happen if its an RPC action from another peer
 		# - update directly in DB so that the event doesn't propagate again
-		logAdd( "wikiUpdateAccount for $user:$pass" );
-		logAdd( "Prefs: ".join(',',keys %prefs));
 		wikiUpdateAccount( $::wiki, $user, $pass, $::db, %prefs );
 	}
 
@@ -663,7 +661,8 @@ sub doUpdateAccount {
 			my $query = $::db->prepare( 'SELECT * from ' . $::dbpre . 'user where user_name = "' . $User . '"' );
 			$query->execute();
 			%prefs = %{ $query->fetchrow_hashref };
-			$prefs{user_id} = undef;
+			$prefs{user_id}       = undef;
+			$prefs{user_name}     = undef;
 			$prefs{user_password} = undef;
 			$query->finish;
 		}
