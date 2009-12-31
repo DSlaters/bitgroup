@@ -33,7 +33,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.8.11'; # 2009-12-31
+$::ver      = '3.8.12'; # 2009-12-31
 $::log      = "$::dir/$::daemon.log";
 $::wkfile   = "$::dir/$::daemon.work";
 $::motd     = "Hail Earthlings! $::daemon-$::ver is in the heeeeeouse! (rock)" unless defined $::motd;
@@ -543,7 +543,7 @@ sub onRpcDoAction {
 
 	# Decrypt $::data if encrypted
 	my $cipher = Crypt::CBC->new( -key => $::netpass, -cipher => 'Blowfish' ); 
-	my @args = unserialise( $cipher->decrypt( decode_base64( $$::data{args} ) ) );
+	my @args = unserialize( $cipher->decrypt( decode_base64( $$::data{args} ) ) );
 
 	# Extract the arguments
 	my $from   = $$::data{from}   = $args[0];
@@ -850,13 +850,6 @@ sub mainRpcSendAction {
 			exp_continue;
 		} ],
 
-		# Issue the RPC command ($data has a trailing newline)
-		[ qr/$user\@/ => sub {
-			my $exp = shift;
-			$exp->send( "wikid --rpc $data" );
-			exp_continue;
-		} ],
-
 		# Match successful result
 		[ qr/success/ => sub {
 			my $exp = shift;
@@ -868,6 +861,15 @@ sub mainRpcSendAction {
 			my $exp = shift;
 			logAdd( "mainRPCSendAction: failed to send $action to $peer:$port" );
 		} ]
+
+		# Issue the RPC command
+		# - $data has a trailing newline
+		# - this is last so that 
+		[ qr/$user\@/ => sub {
+			my $exp = shift;
+			$exp->send( "wikid --rpc $data" );
+			exp_continue;
+		} ],
 	);
 	$exp->soft_close();
 		
