@@ -33,7 +33,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.8.10'; # 2009-12-31
+$::ver      = '3.8.11'; # 2009-12-31
 $::log      = "$::dir/$::daemon.log";
 $::wkfile   = "$::dir/$::daemon.work";
 $::motd     = "Hail Earthlings! $::daemon-$::ver is in the heeeeeouse! (rock)" unless defined $::motd;
@@ -833,7 +833,7 @@ sub mainRpcSendAction {
 	return if $$::job{wait}-- > 0;
 
 	# Attempt to shell in
-	my $user = $::wikiuser;
+	my $user = lc $::wikiuser;
 	my $pass = $::wikipass;
 	my $peer = $$::job{peer};
 	my $port = $$::job{port};
