@@ -33,7 +33,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.8.13'; # 2009-12-31
+$::ver      = '3.8.14'; # 2009-12-31
 $::log      = "$::dir/$::daemon.log";
 $::wkfile   = "$::dir/$::daemon.work";
 $::motd     = "Hail Earthlings! $::daemon-$::ver is in the heeeeeouse! (rock)" unless defined $::motd;
@@ -72,7 +72,6 @@ if ( $ARGV[0] eq '--rpc' ) {
 	my $sock = IO::Socket::INET->new( PeerAddr => 'localhost', PeerPort => $port, Proto => 'tcp' );
 	print $sock "GET RpcDoAction?$data HTTP/1.0\n\n\x00" if $sock;
 	sleep 1;
-	print qx( tail -n 1 $::dir/$daemon.log );
 	exit 0;
 }
 
@@ -850,24 +849,11 @@ sub mainRpcSendAction {
 			exp_continue;
 		} ],
 
-		# Match successful result
-		[ qr/success/ => sub {
-			my $exp = shift;
-			logAdd( "mainRPCSendAction: $action successfully sent to $peer:$port" );
-		} ],
-
-		# Match failed result
-		[ qr/fail/ => sub {
-			my $exp = shift;
-			logAdd( "mainRPCSendAction: failed to send $action to $peer:$port" );
-		} ],
-
 		# Issue the RPC command
 		# - this is last so that 
 		[ qr/$user\@/ => sub {
 			my $exp = shift;
 			$exp->send( "wikid --rpc $data\n" );
-			exp_continue;
 		} ]
 	);
 	$exp->soft_close();
