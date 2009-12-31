@@ -644,15 +644,16 @@ sub onRevisionInsertComplete {
 sub doUpdateAccount {
 	my $user  = lc shift;
 	my $pass  = shift;
-	my %prefs = @_;
+	my %prefs = (@_);
 	$user =~ s/ /_/g;
 	my $User = ucfirst $user;
 
 	# if the @users array exists, bail unless user is in it
 	return if defined @::users and not grep /$user/i, @::users;
 
-	# If there are args then this is from RPC so we may need to create/update the local wiki account
-	if ( defined %prefs ) {
+	# If there are prefs then this is from RPC so we may need to create/update the local wiki account
+	my @npref = keys %prefs;
+	if ( $#npref >= 0 ) {
 
 		# Update/create the local wiki account if non existent or not up to date
 		# - this can happen if its an RPC action from another peer
