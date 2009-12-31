@@ -33,7 +33,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.8.15'; # 2009-12-31
+$::ver      = '3.8.16'; # 2009-12-31
 $::log      = "$::dir/$::daemon.log";
 $::wkfile   = "$::dir/$::daemon.work";
 $::motd     = "Hail Earthlings! $::daemon-$::ver is in the heeeeeouse! (rock)" unless defined $::motd;
@@ -443,7 +443,7 @@ sub ircHandleConnections {
 						logAdd( "[IRC/$nick] $text" ) if $ircserver eq '127.0.0.1';
 
 						# Perform an action if it exists
-						if ( $text =~ /^($ircuser|$::daemon) (.+)(\s+(.+))?$/i ) {
+						if ( $text =~ /^($ircuser|$::daemon) do (.+)(\s+(.+))?$/i ) {
 							$title = ucfirst $2;
 							$::args = $4;
 							$::action = "do$title";
