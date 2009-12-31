@@ -33,7 +33,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.8.18'; # 2009-12-31
+$::ver      = '3.8.19'; # 2009-12-31
 $::log      = "$::dir/$::daemon.log";
 $::wkfile   = "$::dir/$::daemon.work";
 $::motd     = "Hail Earthlings! $::daemon-$::ver is in the heeeeeouse! (rock)" unless defined $::motd;
@@ -545,24 +545,16 @@ sub onRpcDoAction {
 	my @args   = @{ unserialize( $cipher->decrypt( decode_base64( $$::data{args} ) ) ) };
 
 	# Extract the arguments
-	my $from   = $$::data{from}   = $args[0];
-	my $to     = $$::data{to}     = $args[1];
-	my $action = $$::data{action} = $args[2];
+	my $from   = $$::data{from}   = shift @args;
+	my $to     = $$::data{to}     = shift @args;
+	my $action = $$::data{action} = shift @args;
 	my $func   = "do$action";
 
 	# Run the action
-	if ( defined &$func ) {
-		&$func( @args );
-	} else {
-		logAdd( "No such action \"$action\" requested over RPC by $from" );
-	}
+	defined &$func ? &$func( @args ) : logAdd( "No such action \"$action\" requested over RPC by $from" );
 
 	# If the "to" field is empty, send the action to the next peer (unless next is the original sender)
-	unless ( $to or $::peer eq $from ) {
-		shift @args;
-		shift @args;
-		rpcSendAction( $::peer, @args );
-	}
+	rpcSendAction( $::peer, $action, @args ) unless $to or $::peer eq $from;
 
 }
 
