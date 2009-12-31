@@ -33,7 +33,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.8.14'; # 2009-12-31
+$::ver      = '3.8.15'; # 2009-12-31
 $::log      = "$::dir/$::daemon.log";
 $::wkfile   = "$::dir/$::daemon.work";
 $::motd     = "Hail Earthlings! $::daemon-$::ver is in the heeeeeouse! (rock)" unless defined $::motd;
@@ -854,6 +854,7 @@ sub mainRpcSendAction {
 		[ qr/$user\@/ => sub {
 			my $exp = shift;
 			$exp->send( "wikid --rpc $data\n" );
+			$exp->send( "exit\n" );
 		} ]
 	);
 	$exp->soft_close();
