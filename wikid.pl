@@ -951,7 +951,7 @@ sub workExecute {
 	if ( &$main == 1 ) {
 
 		# Increment the *job* work pointer and stop if finished
-		if ( $$::job{length} >= 0 && ++$$::job{wptr} >= $$::job{length} ) {
+		if ( $$::job{length} > 0 && ++$$::job{wptr} >= $$::job{length} ) {
 			my $id = $$::job{id};
 			my $msg = "Job $id has finished successfully";
 			logAdd( $msg );
