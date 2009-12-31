@@ -548,10 +548,11 @@ sub onRpcDoAction {
 	my $from   = $$::data{from}   = $args[0];
 	my $to     = $$::data{to}     = $args[1];
 	my $action = $$::data{action} = $args[2];
+	my $func   = "do$action";
 
 	# Run the action
-	if ( defined &$action ) {
-		&$action( @args );
+	if ( defined &$func ) {
+		&$func( @args );
 	} else {
 		logAdd( "No such action \"$action\" requested over RPC by $from" );
 	}
@@ -818,7 +819,7 @@ sub rpcSendAction {
 
 	# Encrypt the data so its not stored in the work hash or sent in clear text
 	$cipher = Crypt::CBC->new( -key => $::netpass, -cipher => 'Blowfish' );
-	$$::job{data} = encode_base64( $cipher->encrypt( serialize( @args ) ), '' );
+	$$::job{args} = encode_base64( $cipher->encrypt( serialize( @args ) ), '' );
 
 	# Start the job
 	workStartJob( 'RpcSendAction' );
