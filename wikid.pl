@@ -33,7 +33,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.8.12'; # 2009-12-31
+$::ver      = '3.8.13'; # 2009-12-31
 $::log      = "$::dir/$::daemon.log";
 $::wkfile   = "$::dir/$::daemon.work";
 $::motd     = "Hail Earthlings! $::daemon-$::ver is in the heeeeeouse! (rock)" unless defined $::motd;
@@ -819,7 +819,7 @@ sub rpcSendAction {
 
 	# Encrypt the data so its not stored in the work hash or sent in clear text
 	$cipher = Crypt::CBC->new( -key => $::netpass, -cipher => 'Blowfish' );
-	$$::job{data} = encode_base64( $cipher->encrypt( serialize( @args ) ) );
+	$$::job{data} = encode_base64( $cipher->encrypt( serialize( @args ) ), '' );
 
 	# Start the job
 	workStartJob( 'RpcSendAction' );
