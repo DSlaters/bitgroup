@@ -33,7 +33,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.8.9'; # 2009-12-31
+$::ver      = '3.8.10'; # 2009-12-31
 $::log      = "$::dir/$::daemon.log";
 $::wkfile   = "$::dir/$::daemon.work";
 $::motd     = "Hail Earthlings! $::daemon-$::ver is in the heeeeeouse! (rock)" unless defined $::motd;
@@ -821,11 +821,8 @@ sub rpcSendAction {
 	$$::job{data} = encode_base64( $cipher->encrypt( serialize( @args ) ) );
 
 	# Start the job
-	workStartJob( $$::job{type}, -e $$::job{id} ? $$::job{id} : undef );
-
-	my $peer = $$::job{peer};
-	my $port = $$::job{port};
-	logAdd( "initRpcSendAction: \"$action\" queued for sending to $peer:$port" );
+	workStartJob( $action );
+	logAdd( "initRpcSendAction: \"$action\" queued for sending to $$::job{peer}:$$::job{port}" );
 }
 
 # Try and send the action, set time for next retry if unsuccessful
