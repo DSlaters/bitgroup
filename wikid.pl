@@ -860,7 +860,7 @@ sub mainRpcSendAction {
 		[ qr/fail/ => sub {
 			my $exp = shift;
 			logAdd( "mainRPCSendAction: failed to send $action to $peer:$port" );
-		} ]
+		} ],
 
 		# Issue the RPC command
 		# - $data has a trailing newline
@@ -869,7 +869,7 @@ sub mainRpcSendAction {
 			my $exp = shift;
 			$exp->send( "wikid --rpc $data" );
 			exp_continue;
-		} ],
+		} ]
 	);
 	$exp->soft_close();
 		
