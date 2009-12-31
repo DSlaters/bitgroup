@@ -674,6 +674,7 @@ sub doUpdateAccount {
 		}
 
 		# Propagate the action and its args
+		logAdd( "Calling rpcBroadcastAction( 'UpdateAccount', '$user', '$pass', \%prefs )" );
 		rpcBroadcastAction( 'UpdateAccount', $user, $pass, %prefs );
 	}
 
