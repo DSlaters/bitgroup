@@ -674,7 +674,6 @@ sub doUpdateAccount {
 		}
 
 		# Propagate the action and its args
-		logAdd( "Calling rpcBroadcastAction( 'UpdateAccount', '$user', '$pass', \%prefs )" );
 		rpcBroadcastAction( 'UpdateAccount', $user, $pass, %prefs );
 	}
 
@@ -822,7 +821,7 @@ sub rpcSendAction {
 	$$::job{data} = encode_base64( $cipher->encrypt( serialize( @args ) ) );
 
 	# Start the job
-	workStartJob( $action );
+	workStartJob( 'RpcSendAction' );
 	logAdd( "initRpcSendAction: \"$action\" queued for sending to $$::job{peer}:$$::job{port}" );
 }
 
