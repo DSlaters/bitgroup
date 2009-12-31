@@ -658,6 +658,8 @@ sub doUpdateAccount {
 		# Update/create the local wiki account if non existent or not up to date
 		# - this can happen if its an RPC action from another peer
 		# - update directly in DB so that the event doesn't propagate again
+		logAdd( "wikiUpdateAccount for $user:$pass" );
+		logAdd( "Prefs: ".join(',',keys %prefs));
 		wikiUpdateAccount( $::wiki, $user, $pass, $::db, %prefs );
 	}
 
