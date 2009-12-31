@@ -33,7 +33,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.8.17'; # 2009-12-31
+$::ver      = '3.8.18'; # 2009-12-31
 $::log      = "$::dir/$::daemon.log";
 $::wkfile   = "$::dir/$::daemon.work";
 $::motd     = "Hail Earthlings! $::daemon-$::ver is in the heeeeeouse! (rock)" unless defined $::motd;
@@ -542,8 +542,8 @@ sub onRpcDoAction {
 
 	# Decrypt $::data if encrypted
 	my $cipher = Crypt::CBC->new( -key => $::netpass, -cipher => 'Blowfish' ); 
-	my @args = unserialize( $cipher->decrypt( decode_base64( $$::data{args} ) ) );
-logAdd('args: '.join(',',@args));
+	my @args   = @{ unserialize( $cipher->decrypt( decode_base64( $$::data{args} ) ) ) };
+
 	# Extract the arguments
 	my $from   = $$::data{from}   = $args[0];
 	my $to     = $$::data{to}     = $args[1];
@@ -794,8 +794,8 @@ sub rpcSendAction {
 	# Add "from" to args
 	my $host = lc $::name;
 	my $from = "$host.$::dnsdomain:$::port";
-	my @args = ( $from, @_ );
-logAdd('sendArgs:'.join(',',@args));
+	my $args = [ $from, @_ ];
+
 	# Initialise the job hash
 	%$::job = ();
 	$$::job{from} = $from;
@@ -818,7 +818,7 @@ logAdd('sendArgs:'.join(',',@args));
 
 	# Encrypt the data so its not stored in the work hash or sent in clear text
 	$cipher = Crypt::CBC->new( -key => $::netpass, -cipher => 'Blowfish' );
-	$$::job{args} = encode_base64( $cipher->encrypt( serialize( @args ) ), '' );
+	$$::job{args} = encode_base64( $cipher->encrypt( serialize( $args ) ), '' );
 
 	# Start the job
 	workStartJob( 'RpcSendAction' );
