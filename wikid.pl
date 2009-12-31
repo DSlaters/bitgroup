@@ -851,7 +851,7 @@ sub mainRpcSendAction {
 		} ],
 
 		# Issue the RPC command ($data has a trailing newline)
-		[ qr/\/home\/$user\$/ => sub {
+		[ qr/$user\@/ => sub {
 			my $exp = shift;
 			$exp->send( "wikid --rpc $data" );
 			exp_continue;
