@@ -33,7 +33,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.8.8'; # 2009-12-31
+$::ver      = '3.8.9'; # 2009-12-31
 $::log      = "$::dir/$::daemon.log";
 $::wkfile   = "$::dir/$::daemon.work";
 $::motd     = "Hail Earthlings! $::daemon-$::ver is in the heeeeeouse! (rock)" unless defined $::motd;
@@ -787,7 +787,7 @@ sub rpcBroadcastAction {
 
 # Encrypt the action and its arguments and start a job to send them
 sub rpcSendAction {
-	my @args   = shift;
+	my @args   = @_;
 	my $to     = $args[0];
 	my $action = $args[1];
 
