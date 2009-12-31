@@ -863,11 +863,10 @@ sub mainRpcSendAction {
 		} ],
 
 		# Issue the RPC command
-		# - $data has a trailing newline
 		# - this is last so that 
 		[ qr/$user\@/ => sub {
 			my $exp = shift;
-			$exp->send( "wikid --rpc $data" );
+			$exp->send( "wikid --rpc $data\n" );
 			exp_continue;
 		} ]
 	);
