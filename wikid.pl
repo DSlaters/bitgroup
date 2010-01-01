@@ -33,7 +33,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.9.0'; # 2009-01-01
+$::ver      = '3.9.1'; # 2009-01-01
 $::log      = "$::dir/$::daemon.log";
 $::wkfile   = "$::dir/$::daemon.work";
 $::motd     = "Hail Earthlings! $::daemon-$::ver is in the heeeeeouse! (rock)" unless defined $::motd;
@@ -554,7 +554,7 @@ sub onRpcDoAction {
 	defined &$func ? &$func( @args ) : logAdd( "No such action \"$action\" requested over RPC by $from" );
 
 	# If the "to" field is empty (a broadcast message), send the action to the next peer
-	rpcSendAction( $from, $action, @args ) unless $to;
+	rpcSendAction( $from, $::netpeer, $action, @args ) unless $to;
 
 }
 
