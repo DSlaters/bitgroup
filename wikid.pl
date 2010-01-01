@@ -543,18 +543,22 @@ sub onRpcDoAction {
 	# Decrypt $::data if encrypted
 	my $cipher = Crypt::CBC->new( -key => $::netpass, -cipher => 'Blowfish' ); 
 	my @args   = @{ unserialize( $cipher->decrypt( decode_base64( $$::data{args} ) ) ) };
-
+logAdd('args:'.join(',',@args));
 	# Extract the arguments
 	my $from   = $$::data{from}   = shift @args;
 	my $to     = $$::data{to}     = shift @args;
 	my $action = $$::data{action} = shift @args;
 	my $func   = "do$action";
 
-	# Run the action
-	defined &$func ? &$func( @args ) : logAdd( "No such action \"$action\" requested over RPC by $from" );
+	if ( $action ) {
 
-	# If the "to" field is empty (a broadcast message), send the action to the next peer
-	rpcSendAction( $from, $::netpeer, $action, @args ) unless $to;
+		# Run the action
+		defined &$func ? &$func( @args ) : logAdd( "No such action \"$action\" requested over RPC by $from" );
+
+		# If the "to" field is empty (a broadcast message), send the action to the next peer
+		rpcSendAction( $from, $::netpeer, $action, @args ) unless $to;
+
+	} else { logAdd( "No action specified!" ) }
 
 }
 
