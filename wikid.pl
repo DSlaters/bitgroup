@@ -33,7 +33,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.9.1'; # 2009-01-01
+$::ver      = '3.9.2'; # 2009-01-01
 $::log      = "$::dir/$::daemon.log";
 $::wkfile   = "$::dir/$::daemon.work";
 $::motd     = "Hail Earthlings! $::daemon-$::ver is in the heeeeeouse! (rock)" unless defined $::motd;
@@ -543,7 +543,7 @@ sub onRpcDoAction {
 	# Decrypt $::data if encrypted
 	my $cipher = Crypt::CBC->new( -key => $::netpass, -cipher => 'Blowfish' ); 
 	my @args   = @{ unserialize( $cipher->decrypt( decode_base64( $$::data{args} ) ) ) };
-logAdd('args:'.join(',',@args));
+
 	# Extract the arguments
 	my $from   = $$::data{from}   = shift @args;
 	my $to     = $$::data{to}     = shift @args;
@@ -849,8 +849,10 @@ sub mainRpcSendAction {
 
 	# If the SSH connection was not established try again in 5min or so
 	unless ( $ssh ) {
-		logAdd( "Could not establish SSH connection with $peer, queuing for retry soon" );
-		$$::job{wait} = time() + 60;
+		my $msg = "RpcSendAction job could not establish an SSH connection with $peer, retrying in 5 minutes";
+		logAdd( $msg );
+		logIRC( $msg );
+		$$::job{wait} = time() + 300;
 	}
 
 	1;
