@@ -819,7 +819,7 @@ sub rpcSendAction {
 sub mainRpcSendAction {
 
 	# Bail if not ready for a retry
-	return 1 if $$::job{wait}-- > 0;
+	return 1 if $$::job{wait} > time();
 
 	# Get args for the remote command
 	my $user = lc $::wikiuser;
@@ -845,7 +845,7 @@ sub mainRpcSendAction {
 	# If the SSH connection was not established try again in 5min or so
 	unless ( $ssh ) {
 		logAdd( "Could not establish SSH connection with $peer, queuing for retry soon" );
-		$$::job{wait} = 300;
+		$$::job{wait} = time() + 60;
 	}
 
 	1;
