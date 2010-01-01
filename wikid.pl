@@ -819,7 +819,7 @@ sub rpcSendAction {
 sub mainRpcSendAction {
 
 	# Bail if not ready for a retry
-	return if $$::job{wait}-- > 0;
+	return 1 if $$::job{wait}-- > 0;
 
 	# Attempt to shell in
 	my $user = lc $::wikiuser;
