@@ -12,7 +12,7 @@
 #   - get namespaces
 #   - get messages used in patterns (and make methods use messages in their regexp's so lang-independent)
 
-$::wikipl_version = '1.10.6'; # 2009-12-30
+$::wikipl_version = '1.10.7'; # 2009-01-01
 
 use HTTP::Request;
 use LWP::UserAgent;
@@ -672,10 +672,10 @@ sub wikiUpdateAccount {
 
 			# Build the prefs into a format compatible with SET
 			my @values = ();
-			$prefs{user_id}       = undef;
-			$prefs{user_name}     = undef;
-			$prefs{user_password} = undef;
-			push @values, "$k='$v'" while ( $k, $v ) = each %prefs;
+			delete $prefs{user_id};
+			delete $prefs{user_name};
+			delete $prefs{user_password};
+			push @values, "$k='$v'" while( $k, $v ) = each %prefs;
 			my $values = join ',', @values;
 
 			# Get the user id if the user already exists
