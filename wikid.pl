@@ -821,13 +821,15 @@ sub mainRpcSendAction {
 	# Bail if not ready for a retry
 	return 1 if $$::job{wait}-- > 0;
 
-	# Attempt to shell in
+	# Get args for the remote command
 	my $user = lc $::wikiuser;
 	my $peer = $$::job{peer};
 	my $port = $$::job{port};
 	my $args = $$::job{args};
-	my $exp  = Expect->spawn( "ssh -p $port $user\@$peer 'wikid --rpc $args'" );
 	my $ssh  = 0;
+
+	# Attempt to execute the command remotely over SSH
+	my $exp  = Expect->spawn( "ssh -p $port $user\@$peer 'wikid --rpc $args'" );
 	$exp->expect( 30,
 		[ qr/password:/ => sub {
 			my $exp = shift;
