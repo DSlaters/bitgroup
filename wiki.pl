@@ -672,6 +672,9 @@ sub wikiUpdateAccount {
 
 			# Build the prefs into a format compatible with SET
 			my @values = ();
+			$prefs{user_id}       = undef;
+			$prefs{user_name}     = undef;
+			$prefs{user_password} = undef;
 			push @values, "$k='$v'" while ( $k, $v ) = each %prefs;
 			my $values = join ',', @values;
 

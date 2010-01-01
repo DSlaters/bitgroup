@@ -661,9 +661,6 @@ sub doUpdateAccount {
 			my $query = $::db->prepare( 'SELECT * from ' . $::dbpre . 'user where user_name = "' . $User . '"' );
 			$query->execute();
 			%prefs = %{ $query->fetchrow_hashref };
-			$prefs{user_id}       = undef;
-			$prefs{user_name}     = undef;
-			$prefs{user_password} = undef;
 			$query->finish;
 		}
 
