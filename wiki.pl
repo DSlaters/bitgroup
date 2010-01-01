@@ -689,6 +689,7 @@ sub wikiUpdateAccount {
 				my $query = $db->prepare( 'UPDATE ' . $::dbpre . 'user SET ' . $values . 'WHERE user_id=' . $id );
 				$query->execute();
 				$query->finish;
+				logAdd( "Prefs set for user \"$User\" (user_id $id) in $::dbname.$::dbpre user table" );
 			}
 
 			# Otherwise insert the values into a new row
@@ -696,6 +697,7 @@ sub wikiUpdateAccount {
 				my $query = $db->prepare( 'INSERT INTO ' . $::dbpre . 'user SET user_name="' . $User . '",' . $values );
 				$query->execute();
 				$query->finish;
+				logAdd( "User \"$User\" added to $::dbname.$::dbpre user table" );
 			}
 		}
 
@@ -710,6 +712,7 @@ sub wikiUpdateAccount {
 		my $query = $db->prepare( 'UPDATE ' . $::dbpre . 'user SET user_password="' . $encpass . '" WHERE user_id=' . $id );
 		$query->execute();
 		$query->finish;
+		logAdd( "Password set for \"$User\" (user_id $id)" );
 	}
 
 	# No DB connection supplied, use HTTP
