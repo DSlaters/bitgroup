@@ -829,6 +829,7 @@ sub mainRpcSendAction {
 	my $ssh  = 0;
 
 	# Attempt to execute the command remotely over SSH
+	# - Net::SSH2 way would be better, but is failing
 	my $exp  = Expect->spawn( "ssh -p $port $user\@$peer 'wikid --rpc $args'" );
 	$exp->expect( 30,
 		[ qr/password:/ => sub {
