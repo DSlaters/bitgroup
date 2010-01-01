@@ -33,7 +33,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.8.20'; # 2009-01-01
+$::ver      = '3.8.21'; # 2009-01-01
 $::log      = "$::dir/$::daemon.log";
 $::wkfile   = "$::dir/$::daemon.work";
 $::motd     = "Hail Earthlings! $::daemon-$::ver is in the heeeeeouse! (rock)" unless defined $::motd;
@@ -841,7 +841,10 @@ sub mainRpcSendAction {
 	workStopJob() if $ssh;
 
 	# If the SSH connection was not established try again in 5min or so
-	$$::job{wait} = 300 unless $ssh;
+	unless ( $ssh ) {
+		logAdd( "Could not establish SSH connection with $peer, queuing for retry soon" );
+		$$::job{wait} = 300;
+	}
 
 	1;
 }
