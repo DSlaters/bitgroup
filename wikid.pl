@@ -782,6 +782,7 @@ sub rpcBroadcastAction {
 
 # Encrypt the action and its arguments and start a job to send them
 sub rpcSendAction {
+	my $args   = \@_;
 	my $from   = $_[0];
 	my $to     = $_[1];
 	my $action = $_[2];
