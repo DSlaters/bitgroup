@@ -30,6 +30,7 @@ $dnspass      = '****************************';
 #        is used for encrypting messages between them
 $network      = 'FooBarNet';
 $netpass      = '****************************';
+$netself      = 'foo.baz:1729';
 $netpeer      = 'bar.baz:1729';
 
 # Set this to users that should replicate, or remove if all should
