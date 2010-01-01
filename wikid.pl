@@ -33,7 +33,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.8.21'; # 2009-01-01
+$::ver      = '3.9.0'; # 2009-01-01
 $::log      = "$::dir/$::daemon.log";
 $::wkfile   = "$::dir/$::daemon.work";
 $::motd     = "Hail Earthlings! $::daemon-$::ver is in the heeeeeouse! (rock)" unless defined $::motd;
@@ -553,8 +553,8 @@ sub onRpcDoAction {
 	# Run the action
 	defined &$func ? &$func( @args ) : logAdd( "No such action \"$action\" requested over RPC by $from" );
 
-	# If the "to" field is empty, send the action to the next peer (unless next is the original sender)
-	rpcSendAction( $::peer, $action, @args ) unless $to or $::peer eq $from;
+	# If the "to" field is empty (a broadcast message), send the action to the next peer
+	rpcSendAction( $from, $action, @args ) unless $to;
 
 }
 
@@ -771,20 +771,19 @@ sub doUpdate {
 #---------------------------------------------------------------------------------------------------------#
 # RPC
 
-# Broadcast actions are just normal RPC with an empty "to" arg
+# Broadcast actions are just normal RPC with the "from" set to self and an empty "to" arg
 sub rpcBroadcastAction {
-	rpcSendAction( '', @_ );
+	rpcSendAction( $::netaddr, '', @_ );
 }
 
 # Encrypt the action and its arguments and start a job to send them
 sub rpcSendAction {
-	my $to     = $_[0];
-	my $action = $_[1];
+	my $from   = $_[0];
+	my $to     = $_[1];
+	my $action = $_[2];
 
-	# Add "from" to args
-	my $host = lc $::name;
-	my $from = "$host.$::dnsdomain:$::port";
-	my $args = [ $from, @_ ];
+	# Propagation finsihed if "to" and "from" are the same
+	return if $from eq $to;
 
 	# Initialise the job hash
 	%$::job = ();
