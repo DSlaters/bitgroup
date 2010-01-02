@@ -26,21 +26,21 @@ $dnspass      = '****************************';
 #        this is done because there will be a corresponding unix user
 #        on all peers in the network due to the user propagation and
 #        account synchronisation
-# Note2: $netpass is a password common to all peers in the group and
-#        is used for encrypting messages between them
-$network      = 'FooBarNet';
-$netpass      = '****************************';
-$netself      = 'foo.baz:1729';
-$netpeer      = 'bar.baz:1729';
+# Note2: $netuser is an optional list to restrict users that are sync'd
+# Note3: $netpass is a password common to all peers in the group and is
+#        used for encrypting messages between them
+# Note4: $netsync is used to define a group of periods (seconds for keys)
+#        each cycle-key contains a list of paths and Unison options
+$network = 'FooBarNet';
+$netuser = [ 'Foo', 'Bar', 'Baz' ];
+$netpass = '****************************';
+$netself = 'foo.baz:1729';
+$netpeer = 'bar.baz:1729';
+$netsync = {
+		600  => { paths => [ '/home' ], ignore => 'Path *', ignorenot => 'Path */Maildir' },
+		3600 => { paths => [ '/home', '/shared' ], ignore => 'Path /shared/backup' }
+}
 
-# Set this to users that should replicate, or remove if all should
-@users        = ( 'Foo', 'Bar', 'Baz' );
-
-# Set this if distributed backup of large file-structures is required
-@bak_paths    = (
-	'/home',
-	'/shared/tech'
-);
 
 # Set this if disk usage of file-structures is to be reported into the local wiki
 @stat_paths   = (
