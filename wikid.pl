@@ -33,7 +33,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.10.3'; # 2009-01-02
+$::ver      = '3.10.4'; # 2009-01-02
 $::log      = "$::dir/$::daemon.log";
 $::wkfile   = "$::dir/$::daemon.work";
 $::motd     = "Hail Earthlings! $::daemon-$::ver is in the heeeeeouse! (rock)" unless defined $::motd;
@@ -150,14 +150,14 @@ while( 1 ) {
 	
 	# Run regular functions ("every-n-minute" functions)
 	if ( time() > $minute ) {
-		$minute = time() + 60;
-		$mins++;
 		for ( keys %:: ) {
 			if ( /^(.+)_every([0-9]+)minutes?$/i and defined &$_ and $mins % $2 == 0 ) {
 				logAdd( "Executing periodic \"$1\" function" ) unless $2 < 10;
 				&$_;
 			}
 		}
+		$minute = time() + 60;
+		$mins++;
 	}
 
 	sleep( 1 );
@@ -171,12 +171,13 @@ while( 1 ) {
 sub DatabaseKeepAlive_every1minute {
 
 	# Keep wiki DB connection alive
-	if ( $::db ) {
+	if ( defined $::db ) {
 		my $q = $::db->prepare( 'SELECT 0' );
 		unless ( $q->execute() ) {
 			logAdd( 'DB connection gone away, reconnecting...' );
 			dbConnect();
 		}
+		$q->finish;
 	}
 }
 
@@ -262,8 +263,10 @@ sub start {
 
 # Establish a connection to the local wiki DB
 sub dbConnect {
-	$::db = DBI->connect( "DBI:mysql:$::dbname", $::dbuser, $::dbpass );
-	my $msg = defined $::db ? "Connected '$::dbuser' to DBI:mysql:$::dbname" : "Could not connect '$::dbuser' to '$::dbname': " . DBI->errstr;
+	my $msg = '';
+	if ( $::db = DBI->connect( "DBI:mysql:$::dbname", $::dbuser, $::dbpass ) ) {
+		$msg = "Connected '$::dbuser' to DBI:mysql:$::dbname";
+	} else { $msg = "Could not connect '$::dbuser' to '$::dbname': " . DBI->errstr }
 	logAdd( $msg );
 	logIRC( $msg );
 }
@@ -280,21 +283,23 @@ sub unison {
 	# Construct the Unison command
 	my $user = lc $::wikiuser;
 	my $options = '';
-	$options .= " -$_ $opt{$_}" for keys %opt;
-	$cmd = "unison $dir ssh://$user\@$::netpeer$dir -batch -log -logfile /var/log/syslog $options";
+	$options .= " -$_ \"$opt{$_}\"" for keys %opt;
 
-	# Start a thread to synchronise this dir
+	# Start a thread to synchronise this dir (glob)
 	$SIG{CHLD} = 'IGNORE';
 	if ( defined( my $pid = fork ) ) {
 		if ( $pid ) { logAdd( "Spawning unisom thread ($pid) for \"$dir\" ($cmd)" ) }
 		else {
 			$0 = "$::daemon-unison $dir";
-			$exp = Expect->spawn( $cmd );
-			$exp->expect( undef,
-				[ qr/password:/ => sub { my $exp = shift; $exp->send( "$::wikipass\n" ); exp_continue; } ],
-				[ qr/Synchronization complete/ => sub { } ],
-			);
-			$exp->soft_close();
+			for ( glob $dir ) {
+				$cmd = "unison $_ ssh://$user\@$::netpeer$_ -batch -log -logfile /var/log/syslog $options";
+				$exp = Expect->spawn( $cmd );
+				$exp->expect( undef,
+					[ qr/password:/ => sub { my $exp = shift; $exp->send( "$::wikipass\n" ); exp_continue; } ],
+					[ qr/Synchronization complete/ => sub { } ],
+				);
+				$exp->soft_close();
+			}
 			exit;
 		}
 	} else { logAdd( "Could not fork unison child: $!" ) }
