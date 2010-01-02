@@ -33,7 +33,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.11.0'; # 2009-01-02
+$::ver      = '3.11.1'; # 2009-01-03
 $::log      = "$::dir/$::daemon.log";
 $::wkfile   = "$::dir/$::daemon.work";
 $::motd     = "Hail Earthlings! $::daemon-$::ver is in the heeeeeouse! (rock)" unless defined $::motd;
@@ -172,9 +172,9 @@ sub DatabaseKeepAlive_every1minute {
 
 	# Keep wiki DB connection alive
 	if ( defined $::db ) {
-		my $q = $::db->prepare( 'SELECT 0' );
+		my $q = $::db->prepare( 'SELECT 0' ) or die "couldn't prepare db: $!";
 		unless ( $q->execute() ) {
-			logAdd( 'DB connection gone away, reconnecting...' );
+			logAdd( "DB connection gone away ($!), reconnecting..." );
 			dbConnect();
 		}
 		$q->finish;
@@ -292,8 +292,7 @@ sub unison {
 				$cmd = "unison $_ ssh://$::netuser\@$::netpeer/$_ -batch -log -logfile /var/log/syslog $options";
 				$exp = Expect->spawn( $cmd );
 				$exp->expect( undef,
-					[ qr/password:/ => sub { my $exp = shift; $exp->send( "$::netpass\n" ); exp_continue; } ],
-					[ qr/Synchronization complete/ => sub { } ],
+					[ qr/password:/ => sub { my $exp = shift; $exp->send( "$::netpass\n" ); exp_continue; } ]
 				);
 				$exp->soft_close();
 			}
@@ -741,9 +740,12 @@ sub doUpdateAccount {
 			[ qr/\[\]:/     => sub { my $exp = shift; $exp->send( "\n" ); exp_continue; } ],
 			[ qr/\[\]:/     => sub { my $exp = shift; $exp->send( "\n" ); exp_continue; } ],
 			[ qr/\[\]:/     => sub { my $exp = shift; $exp->send( "\n" ); exp_continue; } ],
-			[ qr/correct?/  => sub { my $exp = shift; $exp->send( "Y\n" ); } ],
+			[ qr/correct?/  => sub { my $exp = shift; $exp->send( "Y\n" ); exp_continue; } ],
 		);
 		$exp->soft_close();
+
+		# Add the common SSH user to this user-group
+		qx( "adduser $::netuser $user" );
 	}
 
 	# Update the samba passwd too
