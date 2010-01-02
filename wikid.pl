@@ -33,7 +33,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.9.2'; # 2009-01-01
+$::ver      = '3.10.0'; # 2009-01-02
 $::log      = "$::dir/$::daemon.log";
 $::wkfile   = "$::dir/$::daemon.work";
 $::motd     = "Hail Earthlings! $::daemon-$::ver is in the heeeeeouse! (rock)" unless defined $::motd;
@@ -126,7 +126,8 @@ for ( @files ) {
 #---------------------------------------------------------------------------------------------------------#
 # MAIN SERVER & CRON LOOP
 my $i = 0;
-my $n = 0;
+my $mins = 0;
+my $minute = 0
 while( 1 ) {
 
 	# Check one of the files in the list for size change each iteration
@@ -148,7 +149,9 @@ while( 1 ) {
 	workExecute();
 	
 	# Per-minute housekeeping
-	if ( $n % 60 == 0 ) {
+	if ( time() > $minute ) {
+		$minute = time() + 60;
+		$mins++;
 
 		# Keep wiki DB connection alive
 		if ( defined $::db ) {
@@ -161,7 +164,7 @@ while( 1 ) {
 	}
 
 	# 10 minutely housekeeping
-	if ( $n % 600 == 0 ) {
+	if ( $mins % 10 == 0 ) {
 		
 		# Update the dynamic dns
 		if ( defined $::dnspass ) {
@@ -172,11 +175,10 @@ while( 1 ) {
 	}
 
 	# Hourly housekeeping
-	if ( $n % 3600 == 0 ) {
+	if ( $mins % 60 == 0 ) {
 	}
 
 	sleep( 1 );
-	$n++;
 }
 
 
