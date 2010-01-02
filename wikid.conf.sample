@@ -51,7 +51,7 @@ $netpass = '****************************';
 $netself = 'foo.baz:1729';
 $netpeer = 'bar.baz:1729';
 $netsync = {
-		600  => { paths => [ '/home' ], ignore => 'Path *', ignorenot => 'Path */Maildir' },
+		600  => { paths => [ '/home/*/Maildir' ], ignore => 'Path tmp' },
 		3600 => { paths => [ '/home', '/shared' ], ignore => 'Path /shared/backup' }
 }
 
