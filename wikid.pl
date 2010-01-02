@@ -168,25 +168,21 @@ while( 1 ) {
 # IN-BUILT SCHEDULED TASKS
 # - "every-n-minute" functions - having names matching /^(.+)_every([0-9]+)minutes?$/i
 
+# Keep wiki DB connection alive
 sub DatabaseKeepAlive_every1minute {
-
-	# Keep wiki DB connection alive
 	if ( defined $::db ) {
-		my $q = $::db->prepare( 'SELECT 0' ) or die "couldn't prepare db: $!";
-		unless ( $q->execute() ) {
-			logAdd( "DB connection gone away ($!), reconnecting..." );
-			dbConnect();
-		}
+		my $q = $::db->prepare( 'SELECT 0' ) or die "Couldn't prepare DB: $!";
+		$q->execute() or logAdd( "DB connection gone away, reconnecting..." ) && dbConnect();
 		$q->finish;
 	}
 }
 
+# Update the dynamic DNS
 sub DynamicDNS_every10minutes {
-
-	# Update the dynamic dns
 	if ( defined $::dnspass ) {
 		my $host = lc $::name;
-		my $response = $::client->get( "http://dynamicdns.park-your-domain.com/update?host=$host&domain=$dnsdomain&password=$dnspass" );
+		my $url = "http://dynamicdns.park-your-domain.com/update?host=$host&domain=$dnsdomain&password=$dnspass";
+		my $response = $::client->get( $url );
 		logAdd( "DDNS update error: $1" ) if $response->content =~ m/<Err1>(.+?)<\/Err1>/;
 	}
 }
@@ -283,7 +279,7 @@ sub unison {
 	# Start a thread to synchronise this dir (glob)
 	$SIG{CHLD} = 'IGNORE';
 	if ( defined( my $pid = fork ) ) {
-		if ( $pid ) { logAdd( "Spawning unisom thread ($pid) for \"$dir\"" ) }
+		if ( $pid ) { logAdd( "Spawning unison thread ($pid) for \"$dir\"" ) }
 		else {
 			$0 = "$::daemon-unison $dir";
 			my $options = '';
