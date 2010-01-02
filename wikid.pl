@@ -291,10 +291,8 @@ sub unison {
 		if ( $pid ) { logAdd( "Spawning unisom thread ($pid) for \"$dir\"" ) }
 		else {
 			$0 = "$::daemon-unison $dir";
-			logAdd( "dir: $dir" );
 			for ( glob $dir ) {
 				$cmd = "unison $_ ssh://$user\@$::netpeer/$_ -batch -log -logfile /var/log/syslog $options";
-				logAdd( "cmd: $cmd" );
 				$exp = Expect->spawn( $cmd );
 				$exp->expect( undef,
 					[ qr/password:/ => sub { my $exp = shift; $exp->send( "$::wikipass\n" ); exp_continue; } ],
