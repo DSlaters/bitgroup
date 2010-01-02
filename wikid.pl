@@ -148,11 +148,27 @@ while( 1 ) {
 	# Execute a job from the current work
 	workExecute();
 	
-	# Per-minute housekeeping
+	# Run regular functions ("every-n-minute" functions)
 	if ( time() > $minute ) {
 		$minute = time() + 60;
 		$mins++;
+		for ( keys %:: ) {
+			if ( /^(.+)_every([0-9]+)minutes?$/i and defined &$_ and $mins % $2 == 0 ) {
+				logAdd( "Executing periodic \"$1\" function" );
+				&$_;
+			}
+		}
+	}
 
+	sleep( 1 );
+}
+
+
+#---------------------------------------------------------------------------------------------------------#
+# IN-BUILT SCHEDULED TASKS
+# - "every-n-minute" functions - having names matching /^(.+)_every([0-9]+)minutes?$/i
+
+sub DatabaseKeepAlive_every1minute
 		# Keep wiki DB connection alive
 		if ( defined $::db ) {
 			my $q = $::db->prepare( 'SELECT 0' );
@@ -161,24 +177,15 @@ while( 1 ) {
 				dbConnect();
 			}
 		}
-	}
 
-	# 10 minutely housekeeping
-	if ( $mins % 10 == 0 ) {
-		
-		# Update the dynamic dns
-		if ( defined $::dnspass ) {
-			my $host = lc $::name;
-			my $response = $::client->get( "http://dynamicdns.park-your-domain.com/update?host=$host&domain=$dnsdomain&password=$dnspass" );
-			logAdd( "DDNS update error: $1" ) if $response->content =~ m/<Err1>(.+?)<\/Err1>/;
-		}
-	}
+sub DynamicDNS_every10minutes {
 
-	# Hourly housekeeping
-	if ( $mins % 60 == 0 ) {
+	# Update the dynamic dns
+	if ( defined $::dnspass ) {
+		my $host = lc $::name;
+		my $response = $::client->get( "http://dynamicdns.park-your-domain.com/update?host=$host&domain=$dnsdomain&password=$dnspass" );
+		logAdd( "DDNS update error: $1" ) if $response->content =~ m/<Err1>(.+?)<\/Err1>/;
 	}
-
-	sleep( 1 );
 }
 
 
@@ -726,15 +733,20 @@ sub doInfo {
 	my $jobs = $#::types < 0 ? 'none' : join ', ', @::types;
 	logIRC( "Installed job types: $jobs" );
 
+	# Scheduled functions info
+	my @f = ();
+	for ( keys %:: ) { push @f, $_ if defined &$_ and /^.+_every[0-9]+minutes?$/i }
+	logIRC( "Periodic functions: " . join ', ', @f );
+
 	# Events info
-	my @events = ();
-	for ( keys %:: ) { push @events, $1 if defined &$_ and /^on(\w+)$/ }
-	logIRC( "Event handlers: " . join ', ', @events );
+	@f = ();
+	for ( keys %:: ) { push @f, $1 if defined &$_ and /^on(\w+)$/ }
+	logIRC( "Event handlers: " . join ', ', @f );
 
 	# Actions info
-	my @actions = ();
-	for ( keys %:: ) { push @actions, $1 if defined &$_ and /^do(\w+)$/ }
-	logIRC( "Known actions: " . join ', ', @actions );
+	@f = ();
+	for ( keys %:: ) { push @f, $1 if defined &$_ and /^do(\w+)$/ }
+	logIRC( "Known actions: " . join ', ', @f );
 
 }
 
