@@ -33,7 +33,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.10.2'; # 2009-01-02
+$::ver      = '3.10.3'; # 2009-01-02
 $::log      = "$::dir/$::daemon.log";
 $::wkfile   = "$::dir/$::daemon.work";
 $::motd     = "Hail Earthlings! $::daemon-$::ver is in the heeeeeouse! (rock)" unless defined $::motd;
@@ -171,7 +171,7 @@ while( 1 ) {
 sub DatabaseKeepAlive_every1minute {
 
 	# Keep wiki DB connection alive
-	if ( defined $::db ) {
+	if ( $::db ) {
 		my $q = $::db->prepare( 'SELECT 0' );
 		unless ( $q->execute() ) {
 			logAdd( 'DB connection gone away, reconnecting...' );
@@ -280,13 +280,13 @@ sub unison {
 	# Construct the Unison command
 	my $user = lc $::wikiuser;
 	my $options = '';
-	$options .= " -$k $opt{$_}" for keys %opt;
+	$options .= " -$_ $opt{$_}" for keys %opt;
 	$cmd = "unison $dir ssh://$user\@$::netpeer$dir -batch -log -logfile /var/log/syslog $options";
 
 	# Start a thread to synchronise this dir
 	$SIG{CHLD} = 'IGNORE';
 	if ( defined( my $pid = fork ) ) {
-		if ( $pid ) { logAdd( "Spawning unisom thread ($pid) for \"$dir\"" ) }
+		if ( $pid ) { logAdd( "Spawning unisom thread ($pid) for \"$dir\" ($cmd)" ) }
 		else {
 			$0 = "$::daemon-unison $dir";
 			$exp = Expect->spawn( $cmd );
