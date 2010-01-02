@@ -270,7 +270,7 @@ sub dbConnect {
 # Execute a Unison file synchronisation
 sub unison {
 	my $dir = shift;
-	my %opt = ( @_ );
+	my @opt = ( @_ );
 
 	# Bail if unison is all ready running for this dir
 	$ps = qx( ps x );
@@ -282,16 +282,26 @@ sub unison {
 		if ( $pid ) { logAdd( "Spawning unison thread ($pid) for \"$dir\"" ) }
 		else {
 			$0 = "$::daemon-unison $dir";
+			
+			# Build the options
 			my $options = '';
-			$options .= " -$_ \"$opt{$_}\"" for keys %opt;
+			while ( $#opt > 0 ) {
+				my $k = shift @opt;
+				my $v = shift @opt;
+				$options .= " -$k \"$v\"";
+			}
+
+			# Loop through the dirs to sync
 			for ( glob $dir ) {
 				$cmd = "unison $_ ssh://$::netuser\@$::netpeer/$_ -batch -log -logfile /var/log/syslog $options";
+				logAdd( $cmd );
 				$exp = Expect->spawn( $cmd );
 				$exp->expect( undef,
 					[ qr/password:/ => sub { my $exp = shift; $exp->send( "$::netpass\n" ); exp_continue; } ]
 				);
 				$exp->soft_close();
 			}
+
 			exit;
 		}
 	} else { logAdd( "Could not fork unison child: $!" ) }
