@@ -21,7 +21,21 @@ $ircpass      = '******';
 $dnsdomain    = 'foo.bar'; # defaults to organicdesign.tv
 $dnspass      = '****************************';
 
-# Set this if this bot is part of a distributed network of bots
+# Set this if disk usage of file-structures is to be reported into the local wiki
+@stat_paths   = (
+	'/home/*',
+	'/shared/*'
+);
+
+# Set this to important configuration files that need to be backed up
+@config_paths = (
+	'/var/www/vhosts',
+	'/etc/exim4/virtual.domains',
+	'/etc/exim4/virtual.users'
+);
+
+# DISTRIBUTED NETWORK SETTINGS
+#
 # Note1: the connection is made over SSH using $wikiuser and $wikipass
 #        this is done because there will be a corresponding unix user
 #        on all peers in the network due to the user propagation and
@@ -42,15 +56,4 @@ $netsync = {
 }
 
 
-# Set this if disk usage of file-structures is to be reported into the local wiki
-@stat_paths   = (
-	'/home/*',
-	'/shared/*'
-);
 
-# Set this to important configuration files that need to be backed up
-@config_paths = (
-	'/var/www/vhosts',
-	'/etc/exim4/virtual.domains',
-	'/etc/exim4/virtual.users'
-);
