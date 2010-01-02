@@ -33,7 +33,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.10.5'; # 2009-01-02
+$::ver      = '3.11.0'; # 2009-01-02
 $::log      = "$::dir/$::daemon.log";
 $::wkfile   = "$::dir/$::daemon.work";
 $::motd     = "Hail Earthlings! $::daemon-$::ver is in the heeeeeouse! (rock)" unless defined $::motd;
@@ -280,22 +280,19 @@ sub unison {
 	$ps = qx( ps x );
 	return if $ps =~ /$::daemon-unison $dir/;
 
-	# Construct the Unison command
-	my $user = lc $::wikiuser;
-	my $options = '';
-	$options .= " -$_ \"$opt{$_}\"" for keys %opt;
-
 	# Start a thread to synchronise this dir (glob)
 	$SIG{CHLD} = 'IGNORE';
 	if ( defined( my $pid = fork ) ) {
 		if ( $pid ) { logAdd( "Spawning unisom thread ($pid) for \"$dir\"" ) }
 		else {
 			$0 = "$::daemon-unison $dir";
+			my $options = '';
+			$options .= " -$_ \"$opt{$_}\"" for keys %opt;
 			for ( glob $dir ) {
-				$cmd = "unison $_ ssh://$user\@$::netpeer/$_ -batch -log -logfile /var/log/syslog $options";
+				$cmd = "unison $_ ssh://$::netuser\@$::netpeer/$_ -batch -log -logfile /var/log/syslog $options";
 				$exp = Expect->spawn( $cmd );
 				$exp->expect( undef,
-					[ qr/password:/ => sub { my $exp = shift; $exp->send( "$::wikipass\n" ); exp_continue; } ],
+					[ qr/password:/ => sub { my $exp = shift; $exp->send( "$::netpass\n" ); exp_continue; } ],
 					[ qr/Synchronization complete/ => sub { } ],
 				);
 				$exp->soft_close();
@@ -693,8 +690,8 @@ sub doUpdateAccount {
 	$user =~ s/ /_/g;
 	my $User = ucfirst $user;
 
-	# if the @users array exists, bail unless user is in it
-	return if defined @::users and not grep /$user/i, @::users;
+	# if the @netsync array exists, bail unless user is in it
+	return if defined @$::netsync and not grep /$user/i, @$::netsync;
 
 	# If there are prefs then this is from RPC so we may need to create/update the local wiki account
 	my @npref = keys %prefs;
@@ -888,11 +885,11 @@ sub mainRpcSendAction {
 
 	# Attempt to execute the command remotely over SSH
 	# - Net::SSH2 way would be better, but is failing
-	my $exp  = Expect->spawn( "ssh -p $port $user\@$peer 'wikid --rpc $args'" );
+	my $exp  = Expect->spawn( "ssh -p $port $::netuser\@$peer 'wikid --rpc $args'" );
 	$exp->expect( 30,
 		[ qr/password:/ => sub {
 			my $exp = shift;
-			$exp->send( $::wikipass . "\n" );
+			$exp->send( "$::netpass\n" );
 			$ssh = 1;
 		} ],
 	);
