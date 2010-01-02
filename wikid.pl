@@ -33,7 +33,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.10.1'; # 2009-01-02
+$::ver      = '3.10.2'; # 2009-01-02
 $::log      = "$::dir/$::daemon.log";
 $::wkfile   = "$::dir/$::daemon.work";
 $::motd     = "Hail Earthlings! $::daemon-$::ver is in the heeeeeouse! (rock)" unless defined $::motd;
@@ -266,6 +266,39 @@ sub dbConnect {
 	my $msg = defined $::db ? "Connected '$::dbuser' to DBI:mysql:$::dbname" : "Could not connect '$::dbuser' to '$::dbname': " . DBI->errstr;
 	logAdd( $msg );
 	logIRC( $msg );
+}
+
+# Execute a Unison file synchronisation
+sub unison {
+	my $dir = shift;
+	my %opt = ( @_ );
+
+	# Bail if unison is all ready running for this dir
+	$ps = qx( ps x );
+	return if $ps =~ /$::daemon-unison $dir/;
+
+	# Construct the Unison command
+	my $user = lc $::wikiuser;
+	my $options = '';
+	$options .= " -$k $opt{$_}" for keys %opt;
+	$cmd = "unison $dir ssh://$user\@$::netpeer$dir -batch -log -logfile /var/log/syslog $options";
+
+	# Start a thread to synchronise this dir
+	$SIG{CHLD} = 'IGNORE';
+	if ( defined( my $pid = fork ) ) {
+		if ( $pid ) { logAdd( "Spawning unisom thread ($pid) for \"$dir\"" ) }
+		else {
+			$0 = "$::daemon-unison $dir";
+			$exp = Expect->spawn( $cmd );
+			$exp->expect( undef,
+				[ qr/password:/ => sub { my $exp = shift; $exp->send( "$::wikipass\n" ); exp_continue; } ],
+				[ qr/Synchronization complete/ => sub { } ],
+			);
+			$exp->soft_close();
+			exit;
+		}
+	} else { logAdd( "Could not fork unison child: $!" ) }
+
 }
 
 #---------------------------------------------------------------------------------------------------------#
