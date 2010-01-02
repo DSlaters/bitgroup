@@ -33,7 +33,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.10.0'; # 2009-01-02
+$::ver      = '3.10.1'; # 2009-01-02
 $::log      = "$::dir/$::daemon.log";
 $::wkfile   = "$::dir/$::daemon.work";
 $::motd     = "Hail Earthlings! $::daemon-$::ver is in the heeeeeouse! (rock)" unless defined $::motd;
@@ -127,7 +127,7 @@ for ( @files ) {
 # MAIN SERVER & CRON LOOP
 my $i = 0;
 my $mins = 0;
-my $minute = 0
+my $minute = 0;
 while( 1 ) {
 
 	# Check one of the files in the list for size change each iteration
@@ -154,7 +154,7 @@ while( 1 ) {
 		$mins++;
 		for ( keys %:: ) {
 			if ( /^(.+)_every([0-9]+)minutes?$/i and defined &$_ and $mins % $2 == 0 ) {
-				logAdd( "Executing periodic \"$1\" function" );
+				logAdd( "Executing periodic \"$1\" function" ) unless $2 < 10;
 				&$_;
 			}
 		}
@@ -168,15 +168,17 @@ while( 1 ) {
 # IN-BUILT SCHEDULED TASKS
 # - "every-n-minute" functions - having names matching /^(.+)_every([0-9]+)minutes?$/i
 
-sub DatabaseKeepAlive_every1minute
-		# Keep wiki DB connection alive
-		if ( defined $::db ) {
-			my $q = $::db->prepare( 'SELECT 0' );
-			unless ( $q->execute() ) {
-				logAdd( 'DB connection gone away, reconnecting...' );
-				dbConnect();
-			}
+sub DatabaseKeepAlive_every1minute {
+
+	# Keep wiki DB connection alive
+	if ( defined $::db ) {
+		my $q = $::db->prepare( 'SELECT 0' );
+		unless ( $q->execute() ) {
+			logAdd( 'DB connection gone away, reconnecting...' );
+			dbConnect();
 		}
+	}
+}
 
 sub DynamicDNS_every10minutes {
 
