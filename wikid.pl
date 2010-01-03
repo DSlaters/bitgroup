@@ -33,7 +33,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.11.2'; # 2009-01-03
+$::ver      = '3.11.3'; # 2009-01-03
 $::log      = "$::dir/$::daemon.log";
 $::wkfile   = "$::dir/$::daemon.work";
 $::motd     = "Hail Earthlings! $::daemon-$::ver is in the heeeeeouse! (rock)" unless defined $::motd;
@@ -264,7 +264,6 @@ sub dbConnect {
 		$msg = "Connected '$::dbuser' to DBI:mysql:$::dbname";
 	} else { $msg = "Could not connect '$::dbuser' to '$::dbname': " . DBI->errstr }
 	logAdd( $msg );
-	logIRC( $msg );
 }
 
 # Execute a Unison file synchronisation
@@ -293,7 +292,7 @@ sub unison {
 
 			# Loop through the dirs to sync
 			for ( glob $dir ) {
-				$cmd = "unison $_ ssh://$::netuser\@$::netpeer/$_ -owner -group -batch -log -logfile /var/log/syslog $options";
+				$cmd = "unison $_ ssh://$::netuser\@$::netpeer/$_ -batch -log -logfile /var/log/syslog $options";
 				logAdd( $cmd );
 				$exp = Expect->spawn( $cmd );
 				$exp->expect( undef,
