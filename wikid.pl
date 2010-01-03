@@ -291,9 +291,6 @@ sub unison {
 				$options .= " -$k \"$v\"";
 			}
 
-			# Ensure all files in the dir are in the SSH user's group
-			qx( chgrp -R $::netuser $dir );
-
 			# Loop through the dirs to sync
 			for ( glob $dir ) {
 				$cmd = "unison $_ ssh://$::netuser\@$::netpeer/$_ -owner -group -batch -log -logfile /var/log/syslog $options";
