@@ -53,6 +53,6 @@ $netsync = [ 'Foo', 'Bar', 'Baz' ];
 
 # Periodic file synchronisation
 sub MailDirSync_every5minutes {
-	unison( '/home/*/Maildir', ignore => 'Path tmp', ignore => 'Regex ^dovecot[-.]' );
+	unison( '/home/*/Maildir', ignore => 'Path tmp', ignore => 'Regex dovecot[-.].+' );
 }
 

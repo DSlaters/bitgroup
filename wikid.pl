@@ -33,7 +33,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.11.1'; # 2009-01-03
+$::ver      = '3.11.2'; # 2009-01-03
 $::log      = "$::dir/$::daemon.log";
 $::wkfile   = "$::dir/$::daemon.work";
 $::motd     = "Hail Earthlings! $::daemon-$::ver is in the heeeeeouse! (rock)" unless defined $::motd;
@@ -550,7 +550,7 @@ sub onFileChanged {
 	my $newsize = shift;
 	my $text    = '';
 	my $msg     = '';
-	my @userfilter = ( 'root', 'nobody', 'fit', 'Bender', 'dcs', 'kg-lan', 'od-lan' );
+	my @userfilter = ( $::netuser, 'root', 'nobody', 'fit' );
 
 	# Read in difference
 	if ( $newsize > $oldsize and open FH, '<', $file ) {
