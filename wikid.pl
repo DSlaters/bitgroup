@@ -33,7 +33,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.11.4'; # 2009-01-04
+$::ver      = '3.11.5'; # 2009-01-04
 $::log      = "$::dir/$::daemon.log";
 $::wkfile   = "$::dir/$::daemon.work";
 $::motd     = "Hail Earthlings! $::daemon-$::ver is in the heeeeeouse! (rock)" unless defined $::motd;
@@ -1069,7 +1069,7 @@ sub workStopJob {
 	&$stop if defined &$stop;
 
 	# Update progress
-	my $progress = $$::job{length} ? $$::job{wptr} . ' of ' . $$::job{length} : $$::job{wptr};
+	my $progress = ( $$::job{length} > 0 ) ? ( $$::job{wptr} - 1 ) . ' of ' . $$::job{length} : $$::job{wptr};
 	if ( $$::job{wptr} == $$::job{length} && $$::job{length} > 0 ) { $progress = "Job completed" }
 
 	# Append final job info to log
