@@ -284,9 +284,11 @@ sub unison {
 	if ( defined( my $pid = fork ) ) {
 		if ( $pid ) { logAdd( "Spawning child thread ($pid) for \"$dir\"" ) }
 		else {
+			
+			# Set the child process name so we can see if it's still running next time
 			$0 = "$::daemon-unison $dir";
 			
-			# Build the options
+			# Build the unison options
 			my $options = '';
 			while ( $#opt > 0 ) {
 				my $k = shift @opt;
@@ -294,7 +296,7 @@ sub unison {
 				$options .= " -$k \"$v\"";
 			}
 
-			# Loop through the dirs to sync
+			# Loop through the dirs (that the glob resolves to) and sync each with the same dir in the next peer
 			for ( glob $dir ) {
 				$cmd = "unison $_ ssh://$::netuser\@$::netpeer/$_ -batch -log -logfile /var/log/syslog $options";
 				logAdd( $cmd );
