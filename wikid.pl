@@ -274,7 +274,7 @@ sub unison {
 	# Bail if unison is all ready running for this dir
 	$ps = qx( ps x );
 	if ( $ps =~ /$::daemon-unison $dir/ ) {
-		my $msg = "Not spawning unison thread for \"$dir\", last instance still running";
+		my $msg = "Not spawning unison child for \"$dir\", last instance still running";
 		logAdd( $msg );
 		logIRC( $msg );
 	}
@@ -282,7 +282,7 @@ sub unison {
 	# Start a thread to synchronise this dir (glob)
 	$SIG{CHLD} = 'IGNORE';
 	if ( defined( my $pid = fork ) ) {
-		if ( $pid ) { logAdd( "Spawning unison thread ($pid) for \"$dir\"" ) }
+		if ( $pid ) { logAdd( "Spawning child thread ($pid) for \"$dir\"" ) }
 		else {
 			$0 = "$::daemon-unison $dir";
 			
