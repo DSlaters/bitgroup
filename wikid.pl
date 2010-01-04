@@ -33,7 +33,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.11.3'; # 2009-01-03
+$::ver      = '3.11.4'; # 2009-01-04
 $::log      = "$::dir/$::daemon.log";
 $::wkfile   = "$::dir/$::daemon.work";
 $::motd     = "Hail Earthlings! $::daemon-$::ver is in the heeeeeouse! (rock)" unless defined $::motd;
@@ -273,7 +273,11 @@ sub unison {
 
 	# Bail if unison is all ready running for this dir
 	$ps = qx( ps x );
-	return if $ps =~ /$::daemon-unison $dir/;
+	if ( $ps =~ /$::daemon-unison $dir/ ) {
+		my $msg = "Not spawning unison thread for \"$dir\", last instance still running";
+		logAdd( $msg );
+		logIRC( $msg );
+	}
 
 	# Start a thread to synchronise this dir (glob)
 	$SIG{CHLD} = 'IGNORE';
