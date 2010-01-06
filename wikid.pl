@@ -33,7 +33,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.11.5'; # 2009-01-04
+$::ver      = '3.11.6'; # 2009-01-07
 $::log      = "$::dir/$::daemon.log";
 $::wkfile   = "$::dir/$::daemon.work";
 $::motd     = "Hail Earthlings! $::daemon-$::ver is in the heeeeeouse! (rock)" unless defined $::motd;
@@ -1063,14 +1063,14 @@ sub workStopJob {
 	my $i = workSetJobFromId( $id );
 	return 0 if $i < 0;
 
+	# Update progress
+	my $progress = ( $$::job{length} > 0 ) ? ( $$::job{wptr} - 1 ) . ' of ' . $$::job{length} : $$::job{wptr};
+	if ( $$::job{wptr} == $$::job{length} && $$::job{length} > 0 ) { $progress = "Job completed" }
+
 	# Execute the job type's stop function if defined
 	$$::job{finish} = time();
 	my $stop = 'stop' . $$::job{type};
 	&$stop if defined &$stop;
-
-	# Update progress
-	my $progress = ( $$::job{length} > 0 ) ? ( $$::job{wptr} - 1 ) . ' of ' . $$::job{length} : $$::job{wptr};
-	if ( $$::job{wptr} == $$::job{length} && $$::job{length} > 0 ) { $progress = "Job completed" }
 
 	# Append final job info to log
 	$entry  = "[$id]\n";
