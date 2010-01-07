@@ -33,7 +33,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.11.8'; # 2009-01-07
+$::ver      = '3.11.9'; # 2009-01-07
 $::log      = "$::dir/$::daemon.log";
 $::wkfile   = "$::dir/$::daemon.work";
 $::motd     = "Hail Earthlings! $::daemon-$::ver is in the heeeeeouse! (rock)" unless defined $::motd;
@@ -298,7 +298,7 @@ sub unison {
 
 			# Loop through the dirs (that the glob resolves to) and sync each with the same dir in the next peer
 			for ( glob $dir ) {
-				$cmd = "unison $_ ssh://$::netuser\@$::netpeer/$_ -owner -batch -log -logfile /var/log/syslog $options";
+				$cmd = "unison $_ ssh://$::netuser\@$::netpeer/$_ -owner -group -batch -log -logfile /var/log/syslog $options";
 				logAdd( $cmd );
 				$exp = Expect->spawn( $cmd );
 				$exp->expect( undef,
