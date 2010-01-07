@@ -33,7 +33,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.11.6'; # 2009-01-07
+$::ver      = '3.11.7'; # 2009-01-07
 $::log      = "$::dir/$::daemon.log";
 $::wkfile   = "$::dir/$::daemon.work";
 $::motd     = "Hail Earthlings! $::daemon-$::ver is in the heeeeeouse! (rock)" unless defined $::motd;
@@ -755,8 +755,11 @@ sub doUpdateAccount {
 		);
 		$exp->soft_close();
 
-		# Add the common SSH user to this user-group
-		qx( "adduser $::netuser $user" );
+		# Ensure the user has a Maildir and it's owned by the shared SSH user
+		if ( defined $::netuser ) {
+			qx( "mkdir /home/$user/Maildir" );
+			qx( "chown -R $::netuser:$::netuser /home/$user/Maildir" );
+		}
 	}
 
 	# Update the samba passwd too
