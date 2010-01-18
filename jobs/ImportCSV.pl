@@ -59,12 +59,13 @@ sub mainImportCSV {
 		$text .= "\}\}";
 
 		# Import into the wiki
-		my $comment = "New article created from \"$file\" import";
+		my $leaf = $1 if $file =~ /^.+\/(.+?)$/;
+		my $comment = "New article created from \"$leaf\" import";
 		my $minor = 1;
 		my $cur = wikiRawPage( $wiki, $title );
 		if ( $cur ) {
 			$minor = 0;
-			$comment = "Article content replaced from \"$file\" import";
+			$comment = "Article content replaced from \"$leaf\" import";
 		}
 		$$::job{'revisions'}++ if wikiEdit( $wiki, $title, $text, $comment, $minor ) and $cur ne $text;
 	}
