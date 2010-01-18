@@ -59,8 +59,14 @@ sub mainImportCSV {
 		$text .= "\}\}";
 
 		# Import into the wiki
+		my $comment = "New article created from \"$file\" import";
+		my $minor = 1;
 		my $cur = wikiRawPage( $wiki, $title );
-		$$::job{'revisions'}++ if wikiEdit( $wiki, $title, $text, "Content imported from \"$file\"" ) and $cur ne $text;
+		if ( $cur ) {
+			$minor = 0;
+			$comment = "Article content replaced from \"$file\" import";
+		}
+		$$::job{'revisions'}++ if wikiEdit( $wiki, $title, $text, $minor ) and $cur ne $text;
 	}
 
 	$$::job{'status'} = "Record $ptr imported";
