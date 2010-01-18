@@ -66,7 +66,7 @@ sub mainImportCSV {
 			$minor = 0;
 			$comment = "Article content replaced from \"$file\" import";
 		}
-		$$::job{'revisions'}++ if wikiEdit( $wiki, $title, $text, $minor ) and $cur ne $text;
+		$$::job{'revisions'}++ if wikiEdit( $wiki, $title, $text, $comment, $minor ) and $cur ne $text;
 	}
 
 	$$::job{'status'} = "Record $ptr imported";
