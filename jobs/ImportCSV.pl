@@ -42,7 +42,6 @@ sub mainImportCSV {
 		# Split and trim the line and remove quotes if any
 		@data = split /\t/, $line;
 		s/^\s*"?(.*?)"?\s*$/$1/s for @data;
-		logAdd($line);
 
 	} else {
 		workLogError( "Couldn't read input file \"$file\", job aborted!" );
