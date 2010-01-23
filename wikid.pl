@@ -33,7 +33,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.11.9'; # 2009-01-07
+$::ver      = '3.11.10'; # 2009-01-24
 $::log      = "$::dir/$::daemon.log";
 $::wkfile   = "$::dir/$::daemon.work";
 $::motd     = "Hail Earthlings! $::daemon-$::ver is in the heeeeeouse! (rock)" unless defined $::motd;
@@ -853,6 +853,9 @@ sub rpcSendAction {
 	my $from   = $_[0];
 	my $to     = $_[1];
 	my $action = $_[2];
+
+	# no propagation if next peer not defined
+	return unless $::netpeer;
 
 	# Propagation finsihed if "to" and "from" are the same
 	return if $from eq $to;
