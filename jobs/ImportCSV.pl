@@ -31,12 +31,20 @@ sub mainImportCSV {
 		my $i = 0;
 		my $q = 0;
 		do {
-			$i = read INPUT, $chr, 1;
-			$q++ if $chr eq '"';
-			$line .= $chr;
-		} while( $i && ( $q%2 || ( $chr ne "\r" && $chr ne "\n" ) ) );
+			do {
+				$i = read INPUT, $chr, 1;
+				$q++ if $chr eq '"';
+				$line .= $chr;
+			} while( $i && ( $q%2 || ( $chr ne "\n" ) ) );
+			$line = $1 if $line =~ /^\s*(.+?)\s*$/;
+		} while ( $i && $line eq '' );
 		$$::job{fptr} = tell INPUT;
 		close INPUT;
+
+		# If no line was read, stop job and bail
+		workStopJob() and return 1 unless $line;
+
+		# Stop the job but don't bail if this is the last line
 		workStopJob() if $i == 0;
 
 		# Split and trim the line and remove quotes if any
@@ -46,6 +54,7 @@ sub mainImportCSV {
 	} else {
 		workLogError( "Couldn't read input file \"$file\", job aborted!" );
 		workStopJob();
+		return 1;
 	}
 
 	# If this is the first row, define the columns and a reverse lookup
@@ -63,6 +72,8 @@ sub mainImportCSV {
 		my $title = $$::job{title};
 		if ( $title ) {
 			$title =~ s/\$(\w+)/ jobImportCSVBuildTitle( $1, \@data ) /eg;
+			$title = $1 if $title =~ /^\s*(.+?)\s*$/;
+			$title =~ s/ +/ /g;
 		} else { $title = wikiGuid() }
 
 		# Construct the template syntax
@@ -95,7 +106,6 @@ sub jobImportCSVBuildTitle {
 	my $data = shift;
 	my %lut = %{$$::job{lut}};
 	my $title = $$data[ $i =~ /\D/ ? $lut{lc $i} : $i - 1 ];
-	$title =~ s/ +/ /g;
 	return $title;
 }
 
