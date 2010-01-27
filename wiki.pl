@@ -119,18 +119,18 @@ sub wikiLogout {
 # todo: don't return success if edited succeeded but made no changes
 sub wikiEdit {
 	my ( $wiki, $title, $content, $comment, $minor ) = @_;
-	logAdd "Attempting to edit \"$title\" on $wiki";
-	$title = encodeTitle( $title );
+	my $utitle = encodeTitle( $title );
 	my $success = 0;
 	my $err = 'ERROR';
 	my $retries = 1;
+	logAdd "Attempting to edit \"$title\" on $wiki";
 
 	while ( $retries-- ) {
 	    my @matches;
 		# Request the page for editing and extract the edit-token
-		my $response = $::client->get( "$wiki?title=$title&action=edit" );
+		my $response = $::client->get( "$wiki?title=$utitle&action=edit" );
 			if ( $response->is_success and (
-			$response->content =~ m|<input type='hidden' value="(.+?)" name="wpEditToken" />|g
+			$response->content =~ m|<input type='hidden' value="(.+?)" name="wpEditToken" />|
 			)) {
 
 				# Got token etc, now submit an edit-form
@@ -142,15 +142,14 @@ sub wikiEdit {
 				);
 				$form{wpMinoredit} = 1 if $minor;
 
-				my $tokens = @{[$response->content =~ m|(<input type='hidden'.+type="hidden" value=".*?" />)|gs]};
+				my $tokens = @{[$response->content =~ m|(<input type='hidden'.+type="hidden" value=".*?" />)|s]};
 
 				# Grabbing fields separately as hidden input order may vary in global regex
 				$response->content =~ m|<input type='hidden' value="(.*?)" name="wpSection" />|     && ($form{wpSection} = $1);
 				$response->content =~ m|<input type='hidden' value="(.*?)" name="wpStarttime" />|   && ($form{wpStarttime} = $1);
 				$response->content =~ m|<input type='hidden' value="(.*?)" name="wpEdittime" />|    && ($form{wpEdittime} = $1);
 				$response->content =~ m|<input name="wpAutoSummary" type="hidden" value="(.*?)" />| && ($form{wpAutoSummary} = $1);
-				$response = $::client->post( "$wiki?title=$title&action=submit", \%form );
-
+				$response = $::client->post( "$wiki?title=$utitle&action=submit", \%form );
 				if ( $response->content =~ /<!-- start content -->Someone else has changed this page/ ) {
 					$err = 'EDIT CONFLICT';
 					$retries = 0;
