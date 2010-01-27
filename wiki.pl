@@ -12,7 +12,7 @@
 #   - get namespaces
 #   - get messages used in patterns (and make methods use messages in their regexp's so lang-independent)
 
-$::wikipl_version = '1.10.8'; # 2009-01-05
+$::wikipl_version = '1.10.9'; # 2010-01-28
 
 use HTTP::Request;
 use LWP::UserAgent;
@@ -119,8 +119,8 @@ sub wikiLogout {
 # todo: don't return success if edited succeeded but made no changes
 sub wikiEdit {
 	my ( $wiki, $title, $content, $comment, $minor ) = @_;
-	$title = encodeTitle( $title );
 	logAdd "Attempting to edit \"$title\" on $wiki";
+	$title = encodeTitle( $title );
 	my $success = 0;
 	my $err = 'ERROR';
 	my $retries = 1;
