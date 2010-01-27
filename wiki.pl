@@ -88,10 +88,10 @@ sub wikiLogin {
 	while ( $retries-- ) {
 		my $html = '';
 		if ( $::client->get( $url )->is_success ) {
-			my %form = (wpName => $user, wpPassword => $pass, wpDomain => $domain, wpLoginattempt => 'Log in', wpRemember => '1');
-			my $response = $::client->post("$url&action=submitlogin&type=login", \%form);
+			my %form = ( wpName => $user, wpPassword => $pass, wpDomain => $domain, wpLoginattempt => 'Log in', wpRemember => '1' );
+			my $response = $::client->post( "$url&action=submitlogin&type=login", \%form );
 			$html = $response->content;
-			$success = $response->is_redirect || ($response->is_success && $html =~ /You are now logged in/);
+			$success = $response->is_redirect || ( $response->is_success && $html =~ /You are now logged in/ );
 		}
 		if ( $success ) {
 			logAdd "$user successfully logged in to $wiki.";
@@ -108,7 +108,7 @@ sub wikiLogin {
 # Logout of a MediaWiki
 sub wikiLogout {
 	my $wiki = shift;
-	my $success = $::client->get("$wiki?title=Special:Userlogout")->is_success;
+	my $success = $::client->get( "$wiki?title=Special:Userlogout" )->is_success;
 	logAdd $success
 		? "Successfully logged out of $wiki."
 		: "WARNING: couldn't log out of $wiki!";
