@@ -149,9 +149,9 @@ sub wikiEdit {
 				$response->content =~ m|<input type='hidden' value="(.*?)" name="wpStarttime" />|   && ($form{wpStarttime} = $1);
 				$response->content =~ m|<input type='hidden' value="(.*?)" name="wpEdittime" />|    && ($form{wpEdittime} = $1);
 				$response->content =~ m|<input name="wpAutoSummary" type="hidden" value="(.*?)" />| && ($form{wpAutoSummary} = $1);
-				$response = $::client->post("$wiki?title=$title&action=submit", \%form);
+				$response = $::client->post( "$wiki?title=$title&action=submit", \%form );
 
-				if ($response->content =~ /<!-- start content -->Someone else has changed this page/) {
+				if ( $response->content =~ /<!-- start content -->Someone else has changed this page/ ) {
 					$err = 'EDIT CONFLICT';
 					$retries = 0;
 				} else { $success = !$response->is_error }
