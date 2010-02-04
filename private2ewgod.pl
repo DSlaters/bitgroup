@@ -13,7 +13,7 @@ my $comment = "Imported by private2ewgod.pl";
 # Projects
 my @titles = wikiParse( $ewgsrc, '{{#dpl:category=KIWIGREEN Limited|category=Projects}}', 1 );
 for my $title ( @titles ) {
-	my $text = wikiRawPage( $ewgsrc, $title );
+	$text = wikiRawPage( $ewgsrc, $title );
 
 	&changeOrganisation;
 	&changePeople;
@@ -24,7 +24,7 @@ for my $title ( @titles ) {
 # Issues
 my @titles = wikiParse( $ewgsrc, '{{#dpl:category=KIWIGREEN Limited|category=Issues}}', 1 );
 for my $title ( @titles ) {
-	my $text = wikiRawPage( $ewgsrc, $title );
+	$text = wikiRawPage( $ewgsrc, $title );
 
 	&changeOrganisation;
 	&changePeople;
@@ -36,7 +36,7 @@ for my $title ( @titles ) {
 # Activities
 my @titles = wikiParse( $ewgsrc, '{{#dpl:category=KIWIGREEN Limited|category=Activities}}', 1 );
 for my $title ( @titles ) {
-	my $text = wikiRawPage( $ewgsrc, $title );
+	$text = wikiRawPage( $ewgsrc, $title );
 
 	&changeOrganisation;
 	&changePeople;
@@ -48,7 +48,7 @@ for my $title ( @titles ) {
 
 # Change first names to full names
 sub changePeople {
-	$text =~ s|Aran(?!= Dunkley)|Aran DUnkley|g;
+	$text =~ s|Aran(?!= Dunkley)|Aran Dunkley|g;
 	$text =~ s|Jack(?!= Henderson)|Jack Henderson|g;
 	$text =~ s|Milan(?!= Holzapfel)|Milan Holzapfel|g;
 	$text =~ s|Rob(?!=ert)|Robert Carter|g;
@@ -58,11 +58,11 @@ sub changePeople {
 
 # Change organisation
 sub changeOrganisation {
-	$text =~ s|kiwigreen limited|Earthwise Group Ltd|ig;
+	$text =~ s/kiwigreen (limited|ltd)/Earthwise Group Ltd/ig;
 }
 
 # Change issues
 sub changeIssue {
 	$text =~ s|(?<=\{\{)Issue(?=\W)|Task|;
-	$text =~ s|^(\s*\|\s*)Issue(\s*=)|$1Task $2|mg;
+	$text =~ s|^(\s*\|\s*)Issue\s*=|$1Task =|mg;
 }
