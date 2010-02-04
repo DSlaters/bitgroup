@@ -125,31 +125,31 @@ sub wikiEdit {
 	my $err = 'ERROR';
 	my $retries = 1;
 	logAdd "Attempting to edit \"$title\" on $wiki";
-
 	while ( $retries-- ) {
-	    my @matches;
+
 		# Request the page for editing and extract the edit-token
 		my $response = $::client->get( "$wiki?title=$utitle&action=edit&useskin=standard" );
-			if ( $response->is_success and (
-			$response->content =~ m|<input type='hidden' value="(.+?)" name="wpEditToken" />|
-			)) {
+		if ( $response->is_success and (
+				$response->content =~ m|<input type='hidden' value="(.+?)" name="wpEditToken" />|
+		)) {
 
-				# Got token etc, construct a form to post
-				my %form = ( wpEditToken => $1, wpTextbox1 => $content, wpSummary => $comment, wpSave => 'Save page' );
-				$form{wpMinoredit}   = 1  if $minor;
-				$form{wpSection}     = $1 if $response->content =~ m|<input type='hidden' value="(.*?)" name="wpSection" />|;
-				$form{wpStarttime}   = $1 if $response->content =~ m|<input type='hidden' value="(.*?)" name="wpStarttime" />|;
-				$form{wpEdittime}    = $1 if $response->content =~ m|<input type='hidden' value="(.*?)" name="wpEdittime" />|;
-				$form{wpAutoSummary} = $1 if $response->content =~ m|<input name="wpAutoSummary" type="hidden" value="(.*?)" />|;
+			# Got token etc, construct a form to post
+			my %form = ( wpEditToken => $1, wpTextbox1 => $content, wpSummary => $comment, wpSave => 'Save page' );
+			$form{wpMinoredit}   = 1  if $minor;
+			$form{wpSection}     = $1 if $response->content =~ m|<input type='hidden' value="(.*?)" name="wpSection" />|;
+			$form{wpStarttime}   = $1 if $response->content =~ m|<input type='hidden' value="(.*?)" name="wpStarttime" />|;
+			$form{wpEdittime}    = $1 if $response->content =~ m|<input type='hidden' value="(.*?)" name="wpEdittime" />|;
+			$form{wpAutoSummary} = $1 if $response->content =~ m|<input name="wpAutoSummary" type="hidden" value="(.*?)" />|;
 
-				# Post the form
-				$response = $::client->post( "$wiki?title=$utitle&action=submit&useskin=standard", \%form );
-				if ( $response->content =~ /<!-- start content -->Someone else has changed this page/ ) {
-					$err = 'EDIT CONFLICT';
-					$retries = 0;
-				} else { $success = !$response->is_error }
+			# Post the form
+			$response = $::client->post( "$wiki?title=$utitle&action=submit", \%form );
+			if ( $response->content =~ /<!-- start content -->Someone else has changed this page/ ) {
+				$err = 'EDIT CONFLICT';
+				$retries = 0;
+			} else { $success = !$response->is_error }
 
-			} else { $err = $response->is_success ? 'MATCH FAILED' : 'RQST FAILED' }
+		} else { $err = $response->is_success ? 'MATCH FAILED' : 'RQST FAILED' }
+
 		if ( $success ) { $retries = 0; logAdd "\"$title\" updated." }
 		else { logAdd "$err: Couldn't edit \"$title\" on $wiki!\n" }
 	}
@@ -717,29 +717,28 @@ sub wikiUpdateAccount {
 
 # Use edit-preview to parse wikitext into HTML
 sub wikiParse {
-	my ( $wiki, $title, $content ) = @_;
-	my $utitle = encodeTitle( $title );
-	my $success = 0;
-	my $err = 'ERROR';
+	my ( $wiki, $content ) = @_;
+	my $html = '';
 
-	my @matches;
 	# Request the page for editing and extract the edit-token
-	my $response = $::client->get( "$wiki?title=$utitle&action=edit&useskin=standard" );
+	my $response = $::client->get( "$wiki?title=Sandbox&action=edit&useskin=standard" );
 	if ( $response->is_success and (
-	$response->content =~ m|<input type='hidden' value="(.+?)" name="wpEditToken" />|
+		$response->content =~ m|<input type='hidden' value="(.+?)" name="wpEditToken" />|
 	)) {
 
 		# Got token etc, construct a form data structure to post
 		my %form = ( wpEditToken => $1, wpTextbox1 => $content, wpPreview => 'Show preview' );
-		$form{wpSection}     = $1 if $response->content =~ m|<input type='hidden' value="(.*?)" name="wpSection" />|;
-		$form{wpStarttime}   = $1 if $response->content =~ m|<input type='hidden' value="(.*?)" name="wpStarttime" />|;
-		$form{wpEdittime}    = $1 if $response->content =~ m|<input type='hidden' value="(.*?)" name="wpEdittime" />|;
-		$form{wpAutoSummary} = $1 if $response->content =~ m|<input name="wpAutoSummary" type="hidden" value="(.*?)" />|;
+#		$form{wpSection}     = $1 if $response->content =~ m|<input type='hidden' value="(.*?)" name="wpSection" />|;
+#		$form{wpStarttime}   = $1 if $response->content =~ m|<input type='hidden' value="(.*?)" name="wpStarttime" />|;
+#		$form{wpEdittime}    = $1 if $response->content =~ m|<input type='hidden' value="(.*?)" name="wpEdittime" />|;
+#		$form{wpAutoSummary} = $1 if $response->content =~ m|<input name="wpAutoSummary" type="hidden" value="(.*?)" />|;
 
 		# Post the form
-		$response = $::client->post( "$wiki?title=$utitle&action=submit&useskin=standard", \%form );
-		$success = !$response->is_error;
+		$response = $::client->post( "$wiki?title=Sandbox&action=submit", \%form );
+		unless ( $response->is_error ) {
+			print $response->content;
+		}
 
-	} else { $err = $response->is_success ? 'MATCH FAILED' : 'RQST FAILED' }
+	}
 	return $success;
 }
