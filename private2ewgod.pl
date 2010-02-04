@@ -5,10 +5,37 @@
 require "wiki.pl";
 require "wikid.conf";
 
-@titles = wikiParse( $ewgsrc, '{{#dpl:category=NZKIWIGREEN Limited}}', 1 );
+wikiLogin( $ewgsrc, $ewguser, $ewgpass );
+wikiLogin( $ewgdst, $ewguser, $ewgpass );
 
+# Projects
+my @titles = wikiParse( $ewgsrc, '{{#dpl:category=KIWIGREEN Limited|category=Projects}}', 1 );
 for my $title ( @titles ) {
 	
-	print "$title\n";
+	# Change Organisation from KG to EWG
+	
+	
+	
+}
+
+# Tasks
+my @titles = wikiParse( $ewgsrc, '{{#dpl:category=KIWIGREEN Limited|category=Issues}}', 1 );
+for my $title ( @titles ) {
+	
+	# Change Organisation from KG to EWG
+	
+	# Change AssignedTo and Attention to full names
+	
+}
+
+# Activities
+my @titles = wikiParse( $ewgsrc, '{{#dpl:category=KIWIGREEN Limited|category=Activities}}', 1 );
+for my $title ( @titles ) {
+	
+	# Change Organisation from KG to EWG
+	
+	# Change Participants to full names
+	
+	# Change Issue parameter to Task
 	
 }
