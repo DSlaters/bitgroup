@@ -12,7 +12,7 @@
 #   - get namespaces
 #   - get messages used in patterns (and make methods use messages in their regexp's so lang-independent)
 
-$::wikipl_version = '1.11.0'; # 2010-02-04
+$::wikipl_version = '1.11.1'; # 2010-02-04
 
 use HTTP::Request;
 use LWP::UserAgent;
@@ -716,18 +716,20 @@ sub wikiUpdateAccount {
 
 
 # Use edit-preview to parse wikitext into HTML
+# - set $links to 1 to return as a list of link titles instead of HTML
 sub wikiParse {
-	my ( $wiki, $content ) = @_;
+	my ( $wiki, $content, $links ) = @_;
 
 	# Request the page for editing and extract the edit-token
 	my $html = '';
+	my $marker = '<p class="wikiParseMarker"></p>';
 	my $response = $::client->get( "$wiki?title=Sandbox&action=edit&useskin=standard" );
 	if ( $response->is_success and (
 		$response->content =~ m|<input type='hidden' value="(.+?)" name="wpEditToken" />|
 	)) {
 
 		# Got token etc, construct a form data structure to post
-		my %form = ( wpEditToken => $1, wpTextbox1 => $content, wpPreview => 'Show preview' );
+		my %form = ( wpEditToken => $1, wpTextbox1 => "$marker\n$content\n$marker", wpPreview => 'Show preview' );
 		$form{wpSection}     = $1 if $response->content =~ m|<input type='hidden' value="(.*?)" name="wpSection" />|;
 		$form{wpStarttime}   = $1 if $response->content =~ m|<input type='hidden' value="(.*?)" name="wpStarttime" />|;
 		$form{wpEdittime}    = $1 if $response->content =~ m|<input type='hidden' value="(.*?)" name="wpEdittime" />|;
@@ -738,6 +740,8 @@ sub wikiParse {
 		$html = $response->content if $response->content =~ m|<h2 id="mw-previewheader">|;
 		
 		# Extract preview content out of resulting page
+		$html = $1 if $html =~ m|$marker\s*(.+)\s*$marker|s;
 	}
-	return $html;
+
+	return $links ? $html =~ m|title="(.+?)"|g : $html;
 }
