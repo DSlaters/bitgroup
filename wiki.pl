@@ -142,7 +142,7 @@ sub wikiEdit {
 			$form{wpAutoSummary} = $1 if $response->content =~ m|<input name="wpAutoSummary" type="hidden" value="(.*?)" />|;
 
 			# Post the form
-			$response = $::client->post( "$wiki?title=$utitle&action=submit", \%form );
+			$response = $::client->post( "$wiki?title=$utitle&action=submit&useskin=standard", \%form );
 			if ( $response->content =~ /<!-- start content -->Someone else has changed this page/ ) {
 				$err = 'EDIT CONFLICT';
 				$retries = 0;
@@ -718,9 +718,9 @@ sub wikiUpdateAccount {
 # Use edit-preview to parse wikitext into HTML
 sub wikiParse {
 	my ( $wiki, $content ) = @_;
-	my $html = '';
 
 	# Request the page for editing and extract the edit-token
+	my $html = '';
 	my $response = $::client->get( "$wiki?title=Sandbox&action=edit&useskin=standard" );
 	if ( $response->is_success and (
 		$response->content =~ m|<input type='hidden' value="(.+?)" name="wpEditToken" />|
@@ -728,17 +728,14 @@ sub wikiParse {
 
 		# Got token etc, construct a form data structure to post
 		my %form = ( wpEditToken => $1, wpTextbox1 => $content, wpPreview => 'Show preview' );
-#		$form{wpSection}     = $1 if $response->content =~ m|<input type='hidden' value="(.*?)" name="wpSection" />|;
-#		$form{wpStarttime}   = $1 if $response->content =~ m|<input type='hidden' value="(.*?)" name="wpStarttime" />|;
-#		$form{wpEdittime}    = $1 if $response->content =~ m|<input type='hidden' value="(.*?)" name="wpEdittime" />|;
-#		$form{wpAutoSummary} = $1 if $response->content =~ m|<input name="wpAutoSummary" type="hidden" value="(.*?)" />|;
+		$form{wpSection}     = $1 if $response->content =~ m|<input type='hidden' value="(.*?)" name="wpSection" />|;
+		$form{wpStarttime}   = $1 if $response->content =~ m|<input type='hidden' value="(.*?)" name="wpStarttime" />|;
+		$form{wpEdittime}    = $1 if $response->content =~ m|<input type='hidden' value="(.*?)" name="wpEdittime" />|;
+		$form{wpAutoSummary} = $1 if $response->content =~ m|<input name="wpAutoSummary" type="hidden" value="(.*?)" />|;
 
 		# Post the form
-		$response = $::client->post( "$wiki?title=Sandbox&action=submit", \%form );
-		unless ( $response->is_error ) {
-			print $response->content;
-		}
-
+		$response = $::client->post( "$wiki?title=Sandbox&action=submit&useskin=standard", \%form );
+		$html = $response->content if $response->content =~ m|<h2 id="mw-previewheader">|;
 	}
-	return $success;
+	return $html;
 }
