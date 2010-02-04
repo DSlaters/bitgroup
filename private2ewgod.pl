@@ -9,7 +9,7 @@ wikiLogin( $ewgsrc, $ewguser, $ewgpass );
 wikiLogin( $ewgdst, $ewguser, $ewgpass );
 
 my $comment = "Imported by private2ewgod.pl";
-
+if (0) {
 # Projects
 my @titles = wikiParse( $ewgsrc, '{{#dpl:category=KIWIGREEN Limited|category=Projects}}', 1 );
 for my $title ( @titles ) {
@@ -32,7 +32,7 @@ for my $title ( @titles ) {
 
 	wikiEdit( $ewgdst, $title, $text, $comment );
 }
-
+}
 # Activities
 my @titles = wikiParse( $ewgsrc, '{{#dpl:category=KIWIGREEN Limited|category=Activities}}', 1 );
 for my $title ( @titles ) {
@@ -48,12 +48,12 @@ for my $title ( @titles ) {
 
 # Change first names to full names
 sub changePeople {
-	$text =~ s|Aran(?!= Dunkley)|Aran Dunkley|g;
-	$text =~ s|Jack(?!= Henderson)|Jack Henderson|g;
-	$text =~ s|Milan(?!= Holzapfel)|Milan Holzapfel|g;
-	$text =~ s|Rob(?!=ert)|Robert Carter|g;
-	$text =~ s|Dana(?!= Darwin)|Dana Darwin|g;
-	$text =~ s|Sven|Marcus Davy|g;
+	$text =~ s/Aran(?!= Dunkley)/Aran Dunkley/g;
+	$text =~ s/Jack(?!= Henderson)/Jack Henderson/g;
+	$text =~ s/Milan(?!= Holzapfel)/Milan Holzapfel/g;
+	$text =~ s/Rob(?!=ert)/Robert Carter/g;
+	$text =~ s/Dana(?!= Darwin)/Dana Darwin/g;
+	$text =~ s/Sven/Marcus Davy/g;
 }
 
 # Change organisation
@@ -63,6 +63,6 @@ sub changeOrganisation {
 
 # Change issues
 sub changeIssue {
-	$text =~ s|(?<=\{\{)Issue(?=\W)|Task|;
-	$text =~ s|^(\s*\|\s*)Issue\s*=|$1Task =|mg;
+	$text =~ s/(?<=\{\{)Issue(?=\W)/Task/;
+	$text =~ s/^(\s*\|\s*)Issue\s*=/$1Task =/mg;
 }
