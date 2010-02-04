@@ -12,7 +12,7 @@
 #   - get namespaces
 #   - get messages used in patterns (and make methods use messages in their regexp's so lang-independent)
 
-$::wikipl_version = '1.10.9'; # 2010-01-28
+$::wikipl_version = '1.11.0'; # 2010-02-04
 
 use HTTP::Request;
 use LWP::UserAgent;
@@ -43,6 +43,7 @@ sub wikiGuid;
 sub wikiGetConfig;
 sub wikiAllPages;
 sub wikiUpdateAccount;
+sub wikiParse;
 
 # Set up a global client for making HTTP requests as a browser
 $::client = LWP::UserAgent->new(
@@ -128,28 +129,21 @@ sub wikiEdit {
 	while ( $retries-- ) {
 	    my @matches;
 		# Request the page for editing and extract the edit-token
-		my $response = $::client->get( "$wiki?title=$utitle&action=edit" );
+		my $response = $::client->get( "$wiki?title=$utitle&action=edit&useskin=standard" );
 			if ( $response->is_success and (
 			$response->content =~ m|<input type='hidden' value="(.+?)" name="wpEditToken" />|
 			)) {
 
-				# Got token etc, now submit an edit-form
-				my %form = (
-					wpEditToken => $1,
-					wpTextbox1  => $content,
-					wpSummary   => $comment,
-					wpSave      => 'Save page'
-				);
-				$form{wpMinoredit} = 1 if $minor;
+				# Got token etc, construct a form to post
+				my %form = ( wpEditToken => $1, wpTextbox1 => $content, wpSummary => $comment, wpSave => 'Save page' );
+				$form{wpMinoredit}   = 1  if $minor;
+				$form{wpSection}     = $1 if $response->content =~ m|<input type='hidden' value="(.*?)" name="wpSection" />|;
+				$form{wpStarttime}   = $1 if $response->content =~ m|<input type='hidden' value="(.*?)" name="wpStarttime" />|;
+				$form{wpEdittime}    = $1 if $response->content =~ m|<input type='hidden' value="(.*?)" name="wpEdittime" />|;
+				$form{wpAutoSummary} = $1 if $response->content =~ m|<input name="wpAutoSummary" type="hidden" value="(.*?)" />|;
 
-				my $tokens = @{[$response->content =~ m|(<input type='hidden'.+type="hidden" value=".*?" />)|s]};
-
-				# Grabbing fields separately as hidden input order may vary in global regex
-				$response->content =~ m|<input type='hidden' value="(.*?)" name="wpSection" />|     && ($form{wpSection} = $1);
-				$response->content =~ m|<input type='hidden' value="(.*?)" name="wpStarttime" />|   && ($form{wpStarttime} = $1);
-				$response->content =~ m|<input type='hidden' value="(.*?)" name="wpEdittime" />|    && ($form{wpEdittime} = $1);
-				$response->content =~ m|<input name="wpAutoSummary" type="hidden" value="(.*?)" />| && ($form{wpAutoSummary} = $1);
-				$response = $::client->post( "$wiki?title=$utitle&action=submit", \%form );
+				# Post the form
+				$response = $::client->post( "$wiki?title=$utitle&action=submit&useskin=standard", \%form );
 				if ( $response->content =~ /<!-- start content -->Someone else has changed this page/ ) {
 					$err = 'EDIT CONFLICT';
 					$retries = 0;
@@ -721,3 +715,31 @@ sub wikiUpdateAccount {
 }
 
 
+# Use edit-preview to parse wikitext into HTML
+sub wikiParse {
+	my ( $wiki, $title, $content ) = @_;
+	my $utitle = encodeTitle( $title );
+	my $success = 0;
+	my $err = 'ERROR';
+
+	my @matches;
+	# Request the page for editing and extract the edit-token
+	my $response = $::client->get( "$wiki?title=$utitle&action=edit&useskin=standard" );
+	if ( $response->is_success and (
+	$response->content =~ m|<input type='hidden' value="(.+?)" name="wpEditToken" />|
+	)) {
+
+		# Got token etc, construct a form data structure to post
+		my %form = ( wpEditToken => $1, wpTextbox1 => $content, wpPreview => 'Show preview' );
+		$form{wpSection}     = $1 if $response->content =~ m|<input type='hidden' value="(.*?)" name="wpSection" />|;
+		$form{wpStarttime}   = $1 if $response->content =~ m|<input type='hidden' value="(.*?)" name="wpStarttime" />|;
+		$form{wpEdittime}    = $1 if $response->content =~ m|<input type='hidden' value="(.*?)" name="wpEdittime" />|;
+		$form{wpAutoSummary} = $1 if $response->content =~ m|<input name="wpAutoSummary" type="hidden" value="(.*?)" />|;
+
+		# Post the form
+		$response = $::client->post( "$wiki?title=$utitle&action=submit&useskin=standard", \%form );
+		$success = !$response->is_error;
+
+	} else { $err = $response->is_success ? 'MATCH FAILED' : 'RQST FAILED' }
+	return $success;
+}
