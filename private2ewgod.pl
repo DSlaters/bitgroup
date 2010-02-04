@@ -14,7 +14,7 @@ for my $title ( @titles ) {
 	
 	# Change Organisation from KG to EWG
 	
-	
+	# Change Leader and Members to full names
 	
 }
 
@@ -38,4 +38,9 @@ for my $title ( @titles ) {
 	
 	# Change Issue parameter to Task
 	
+}
+
+
+# Change first names to full names
+sub fullNames {
 }
