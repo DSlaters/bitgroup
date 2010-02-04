@@ -736,6 +736,8 @@ sub wikiParse {
 		# Post the form
 		$response = $::client->post( "$wiki?title=Sandbox&action=submit&useskin=standard", \%form );
 		$html = $response->content if $response->content =~ m|<h2 id="mw-previewheader">|;
+		
+		# Extract preview content out of resulting page
 	}
 	return $html;
 }
