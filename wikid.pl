@@ -33,7 +33,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.12.0'; # 2009-02-05
+$::ver      = '3.12.1'; # 2009-02-05
 $::log      = "$::dir/$::daemon.log";
 $::wkfile   = "$::dir/$::daemon.work";
 $::motd     = "Hail Earthlings! $::daemon-$::ver is in the heeeeeouse! (rock)" unless defined $::motd;
@@ -63,7 +63,7 @@ $::name   = $name if $name;
 $::port   = $port if $port;
 $wikiuser = $::name unless $wikiuser;
 $ircuser  = $::name unless $ircuser;
-$::name   = "[$::name]";
+$ircuser  = "[$ircuser]";
 
 # If --rpc, send data down the running instance's event pipe and exit
 if ( $ARGV[0] eq '--rpc' ) {
