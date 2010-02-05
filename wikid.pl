@@ -33,7 +33,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.12.1'; # 2009-02-05
+$::ver      = '3.12.2'; # 2009-02-05
 $::log      = "$::dir/$::daemon.log";
 $::wkfile   = "$::dir/$::daemon.work";
 $::motd     = "Hail Earthlings! $::daemon-$::ver is in the heeeeeouse! (rock)" unless defined $::motd;
@@ -63,7 +63,6 @@ $::name   = $name if $name;
 $::port   = $port if $port;
 $wikiuser = $::name unless $wikiuser;
 $ircuser  = $::name unless $ircuser;
-$ircuser  = "[$ircuser]";
 
 # If --rpc, send data down the running instance's event pipe and exit
 if ( $ARGV[0] eq '--rpc' ) {
@@ -430,7 +429,7 @@ sub ircInitialise {
 
 	# If connected, do login sequence
 	if ( $::ircsock ) {
-		print $::ircsock "PASS $ircpass\nNICK $ircuser\nUSER $ircuser 0 0 :$::daemon\n";
+		print $::ircsock "PASS $ircpass\nNICK [$ircuser]\nUSER $ircuser 0 0 :$::daemon\n";
 		while ( <$::ircsock> ) {
 
 			# if the server asks for a ping
