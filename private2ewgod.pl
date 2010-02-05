@@ -9,7 +9,7 @@ wikiLogin( $ewgsrc, $ewguser, $ewgpass );
 wikiLogin( $ewgdst, $ewguser, $ewgpass );
 
 my $comment = "Imported by private2ewgod.pl";
-if (0) {
+
 # Projects
 my @titles = wikiParse( $ewgsrc, '{{#dpl:category=KIWIGREEN Limited|category=Projects}}', 1 );
 for my $title ( @titles ) {
@@ -32,7 +32,7 @@ for my $title ( @titles ) {
 
 	wikiEdit( $ewgdst, $title, $text, $comment );
 }
-}
+
 # Activities
 my @titles = wikiParse( $ewgsrc, '{{#dpl:category=KIWIGREEN Limited|category=Activities}}', 1 );
 for my $title ( @titles ) {
