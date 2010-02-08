@@ -12,7 +12,7 @@
 #   - get namespaces
 #   - get messages used in patterns (and make methods use messages in their regexp's so lang-independent)
 
-$::wikipl_version = '1.11.1'; # 2010-02-04
+$::wikipl_version = '1.12.1'; # 2010-02-08
 
 use HTTP::Request;
 use LWP::UserAgent;
@@ -44,6 +44,7 @@ sub wikiGetConfig;
 sub wikiAllPages;
 sub wikiUpdateAccount;
 sub wikiParse;
+sub wikiPropertyChanges;
 
 # Set up a global client for making HTTP requests as a browser
 $::client = LWP::UserAgent->new(
@@ -167,16 +168,16 @@ sub wikiAppend {
 # Get the date of last edit of an article
 sub wikiLastEdit {
 	my( $wiki, $title ) = @_;
-	# Request the last history entry and extract date
-	my $response = $::client->request(HTTP::Request->new(GET => "$wiki?title=$title&action=history&limit=1"));
+	my $response = $::client->request( HTTP::Request->new( GET => "$wiki?title=$title&action=history&limit=1" ) );
 	return $1 if $response->is_success and $response->content =~ /<a.+?>(\d+:\d+.+?\d)<\/a>/;
 }
 
 # Retrieve the raw content of a page
 sub wikiRawPage {
-	my( $wiki, $title, $expand ) = @_;
+	my( $wiki, $title, $expand, $oldid ) = @_;
+	$oldid = "&oldid=$oldid" if $oldid;
 	$title = encodeTitle( $title );
-	my $response = $::client->get( "$wiki?title=$title&action=raw" . ( $expand ? '&templates=expand' : '' ) );
+	my $response = $::client->get( "$wiki?title=$title&action=raw$oldid" . ( $expand ? '&templates=expand' : '' ) );
 	return $response->content if $response->is_success;
 }
 
@@ -744,4 +745,33 @@ sub wikiParse {
 	}
 
 	return $links ? $html =~ m|title="(.+?)"|g : $html;
+}
+
+# Return a hash of properties that have changed in the last revision
+sub wikiPropertyChanges {
+	
+	# get the last diff
+	
+	# extract changed param names and cauurent vals
+	
+
+	my $wtext = wikiRawPage( $wiki, $title );
+	$title = encodeTitle( $title );
+
+	# Use examine braces to get all content
+	my @articleBraces = examineBraces( $wtext );
+
+	# Array of matches
+	my @matches  = ();
+	# Array of ambig braces
+	my @brace    = ();
+	my$templateParams;
+	my $newparams;
+	foreach ( @articleBraces ) {
+		if ( $_->{'NAME'} eq $template ) {
+			push @matches, $_;
+		}
+	}
+
+	
 }

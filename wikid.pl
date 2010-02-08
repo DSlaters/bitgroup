@@ -393,6 +393,12 @@ sub serverProcessMessage {
 			if ( $::script and defined &$::event ) {
 				logAdd( "Processing \"$title\" hook from $::site" );
 				&$::event;
+
+				# Handle property changes separately from RevisionInsertComplete
+				if ( $::event eq 'onRevisionInsertComplete' ) {
+
+				}
+
 			} else { logAdd( "Unknown event \"$title\" received!" ) }
 		}
 
