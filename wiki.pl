@@ -794,6 +794,7 @@ sub wikiPropertyChanges {
 			}
 		}
 
-		return %args;
+		# Return the record type and the hash of changed properties
+		return ( $brace1[0]->{NAME}, %args );
 	}
 }

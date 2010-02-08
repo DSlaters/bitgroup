@@ -33,7 +33,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.12.2'; # 2009-02-05
+$::ver      = '3.13.0'; # 2009-02-08
 $::log      = "$::dir/$::daemon.log";
 $::wkfile   = "$::dir/$::daemon.work";
 $::motd     = "Hail Earthlings! $::daemon-$::ver is in the heeeeeouse! (rock)" unless defined $::motd;
@@ -396,7 +396,13 @@ sub serverProcessMessage {
 
 				# Handle property changes separately from RevisionInsertComplete
 				if ( $::event eq 'onRevisionInsertComplete' ) {
-
+					my( $type, %props ) = wikiPropertyChanges( $::script, $title );
+					for my $k ( keys %props ) {
+						my $v = $props{$k};
+						my $handler = 'on' . $type . $k . 'Change';
+						&$handler if defined &$handler;
+						logAdd( "Property $::site\:\:$type\:\:$k set to '$v'" );
+					}
 				}
 
 			} else { logAdd( "Unknown event \"$title\" received!" ) }
