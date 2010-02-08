@@ -401,7 +401,7 @@ sub serverProcessMessage {
 					for my $k ( keys %props ) {
 						my $v = $props{$k};
 						my $handler = 'on' . $type . $k . 'Change';
-						&$handler if defined &$handler;
+						&$handler( $v ) if defined &$handler;
 						logAdd( "Property $::site\:\:$type\:\:$k set to '$v'" );
 					}
 				}
