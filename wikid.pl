@@ -33,7 +33,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.13.2'; # 2009-02-08
+$::ver      = '3.13.3'; # 2009-02-08
 $::log      = "$::dir/$::daemon.log";
 $::wkfile   = "$::dir/$::daemon.work";
 $::motd     = "Hail Earthlings! $::daemon-$::ver is in the heeeeeouse! (rock)" unless defined $::motd;
@@ -398,12 +398,10 @@ sub serverProcessMessage {
 				if ( $hook eq 'RevisionInsertComplete' ) {
 					my %revision = %{$$::data{args}[0]};
 					my( $type, %props ) = wikiPropertyChanges( $::script, $revision{mTitle} );
-					for my $k ( keys %props ) {
-						my $v = $props{$k};
-						my $handler = 'on' . $type . $k . 'Change';
-						&$handler( $v ) if defined &$handler;
-						logAdd( "Property $::site\:\:$type\:\:$k set to '$v'" );
-					}
+					my $v = $props{$k};
+					my $handler = 'on' . $type . 'PropertyChange';
+					&$handler( %props ) if defined &$handler;
+					logAdd( "$type properties changed in $::site" );
 				}
 
 			} else { logAdd( "Unknown event \"$hook\" received!" ) }
