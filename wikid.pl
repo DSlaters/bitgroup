@@ -33,7 +33,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.13.0'; # 2009-02-08
+$::ver      = '3.13.2'; # 2009-02-08
 $::log      = "$::dir/$::daemon.log";
 $::wkfile   = "$::dir/$::daemon.work";
 $::motd     = "Hail Earthlings! $::daemon-$::ver is in the heeeeeouse! (rock)" unless defined $::motd;
@@ -385,18 +385,19 @@ sub serverProcessMessage {
 
 		# Call event handler for received event if one exists
 		if ( $::data = $title =~ /^(.+?)\?(.+)$/s ? $2 : '' ) {
-			$title    = $1;
+			$hook     = $1;
 			$::data   = unserialize( $::data );
 			$::script = $$::data{wgScript};
 			$::site   = $$::data{wgSitename};
-			$::event  = "on$title";
+			$::event  = "on$hook";
 			if ( $::script and defined &$::event ) {
-				logAdd( "Processing \"$title\" hook from $::site" );
+				logAdd( "Processing \"$hook\" hook from $::site" );
 				&$::event;
 
 				# Handle property changes separately from RevisionInsertComplete
-				if ( $::event eq 'onRevisionInsertComplete' ) {
-					my( $type, %props ) = wikiPropertyChanges( $::script, $title );
+				if ( $hook eq 'RevisionInsertComplete' ) {
+					my %revision = %{$$::data{args}[0]};
+					my( $type, %props ) = wikiPropertyChanges( $::script, $revision{mTitle} );
 					for my $k ( keys %props ) {
 						my $v = $props{$k};
 						my $handler = 'on' . $type . $k . 'Change';
@@ -405,7 +406,7 @@ sub serverProcessMessage {
 					}
 				}
 
-			} else { logAdd( "Unknown event \"$title\" received!" ) }
+			} else { logAdd( "Unknown event \"$hook\" received!" ) }
 		}
 
 	} else { $http = "401 Authorization Required\r\nWWW-Authenticate: Basic realm=\"private\"" }
@@ -683,7 +684,7 @@ sub onRevisionInsertComplete {
 	my $user     = $revision{mUserText};
 	my $parent   = $revision{mParentId};
 	my $comment  = $revision{mComment};
-	my $title    = $$::data{REQUEST}{title};
+	my $title    = $revision{mTitle};
 	my $wgServer = $$::data{wgServer};
 	if ( $page and $user ) {
 		if ( lc $user ne lc $wikiuser ) {
