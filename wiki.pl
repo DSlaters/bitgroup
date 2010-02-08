@@ -748,30 +748,52 @@ sub wikiParse {
 }
 
 # Return a hash of properties that have changed in the last revision
+# - we assume that the passed title has at least two revisions
+# - and that it is a record with the first brace structure being the record type
 sub wikiPropertyChanges {
-	
-	# get the last diff
-	
-	# extract changed param names and cauurent vals
-	
-
-	my $wtext = wikiRawPage( $wiki, $title );
+	my( $wiki, $title ) = @_;
 	$title = encodeTitle( $title );
 
-	# Use examine braces to get all content
-	my @articleBraces = examineBraces( $wtext );
+	# Get the second to last revision if there is one
+	my $response = $::client->request( HTTP::Request->new( GET => "$wiki?title=$title&action=history&limit=1" ) );
+	if ( $response->is_success and $response->content =~ m|<a.+?\?title=.+?&(amp;)?diff=\d+&(amp;)?oldid=(\d+)| ) {
 
-	# Array of matches
-	my @matches  = ();
-	# Array of ambig braces
-	my @brace    = ();
-	my$templateParams;
-	my $newparams;
-	foreach ( @articleBraces ) {
-		if ( $_->{'NAME'} eq $template ) {
-			push @matches, $_;
+		# Get the text of the last two revisions
+		my $text1 = wikiRawPage( $wiki, $title, 0, $3 );
+		my $text2 = wikiRawPage( $wiki, $title );
+
+		# Get the first brace statement of the last and previous revisions
+		my @brace1 = wikiExamineBraces( $text1 );
+		my @brace2 = wikiExamineBraces( $text2 );
+
+		# Return nothing if results aren't sane
+		return undef if $#brace1 < 0 or $#brace2 < 0;
+		return undef if $brace1[0]->{NAME} ne $brace2[0]->{NAME};
+		
+		# Extract the brace segments from their respective content
+		my $text1 = substr $text1, $brace1[0]->{OFFSET}, $brace1[0]->{LENGTH};
+		my $text2 = substr $text2, $brace2[0]->{OFFSET}, $brace2[0]->{LENGTH};
+
+		# Convert both sets of parameters into hashes
+		my %args1 = ( $text1 =~ /(?<=\|)\s*(\w+)\s*=\s*(.*?)\s*$\s*[|}]/msg );
+		my %args2 = ( $text2 =~ /(?<=\|)\s*(\w+)\s*=\s*(.*?)\s*$\s*[|}]/msg );
+
+		# Ensure their are no keys in the first that aren't in the second
+		for my $k ( keys %args1 ) {
+			$args2{$k} = '' unless exists $args2{$k};
 		}
-	}
 
-	
+		# Merge the two sets into a single one containing just the changes
+		my %args = ();
+		for my $k ( keys %args2 ) {
+			my $v = $args2{$k};
+			if ( exists $args1{$k} ) {
+				$args{$k} = $v if $args1{$k} ne $v;
+			} else {
+				$args{$k} = $v;
+			}
+		}
+
+		return %args;
+	}
 }
