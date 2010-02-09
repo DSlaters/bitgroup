@@ -12,7 +12,7 @@
 #   - get namespaces
 #   - get messages used in patterns (and make methods use messages in their regexp's so lang-independent)
 
-$::wikipl_version = '1.12.1'; # 2010-02-08
+$::wikipl_version = '1.12.2'; # 2010-02-09
 
 use HTTP::Request;
 use LWP::UserAgent;
@@ -648,7 +648,7 @@ sub wikiAllPages {
 	my $url = "$wiki?action=query&list=allpages&format=json&apfilterredir=nonredirects&apnamespace=$ns&aplimit=5000";
 	my $json = $::client->get( $url )->content;
 	my @list = $json =~ /"title":"(.+?[^\\])"/g;
-	s/\\"/"/g for @list;
+	s/\\(.)/$1/g for @list;
 	return @list;
 }
 
