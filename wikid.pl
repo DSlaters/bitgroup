@@ -33,7 +33,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.13.3'; # 2009-02-08
+$::ver      = '3.14.0'; # 2009-02-09
 $::log      = "$::dir/$::daemon.log";
 $::wkfile   = "$::dir/$::daemon.work";
 $::motd     = "Hail Earthlings! $::daemon-$::ver is in the heeeeeouse! (rock)" unless defined $::motd;
@@ -397,10 +397,10 @@ sub serverProcessMessage {
 				# Handle property changes separately from RevisionInsertComplete
 				if ( $hook eq 'RevisionInsertComplete' ) {
 					my %revision = %{$$::data{args}[0]};
-					my( $type, %props ) = wikiPropertyChanges( $::script, $revision{mTitle} );
-					my $v = $props{$k};
+					my $title = $revision{mTitle};
+					my( $type, $args1, $args2, $args ) = wikiPropertyChanges( $::script, $title );
 					my $handler = 'on' . $type . 'PropertyChange';
-					&$handler( %props ) if defined &$handler;
+					&$handler( $title, $args1, $args2, $args ) if defined &$handler;
 					logAdd( "$type properties changed in $::site" );
 				}
 
@@ -695,6 +695,65 @@ sub onRevisionInsertComplete {
 			logIRC( "Comment: $comment" ) if $comment;
 		}
 	} else { logAdd( "Not processing (page='$page', user='$user', title='$title')" ) }
+}
+
+# Person record property changes
+sub onPersonPropertyChange {
+	my ( $title, $args1, $args2, $args ) = @_;
+
+	# Email autoreply
+	if ( exists $$args{AutoReply} ) {
+		my $reply = $$args2{AutoReply};
+		my $email = $$args2{Email};
+		my $user = lc $$args2{User};
+		$user =~ s/ /_/g;
+		my $comment = "No valid email address for \"$user\", not changing autoreply!";
+		if ( $email =~ /@(.+)$/ ) {
+			my $domain = $1;
+			my $msg = "/home/$user/.vacation.msg";
+			my $fwd = readFile( "/home/$user/.forward" );
+			$fwd = $1 if $fwd =~ /^(.+?endif)/s;
+			if ( $reply ) {
+				$comment = "Changing AutoReply for user \"$user\"";
+				writeFile( $msg, $reply );
+				$fwd = "$fwd\n\n" . eximVacation( $domain, "Out of office auto-reply" );
+			} else {
+				$comment = "Clearing AutoReply for user \"$user\"";
+				unlink $msg;
+			}
+			writeFile( "/home/$user/.forward", $fwd );
+		}
+		logAdd( $comment );
+		logIRC( $comment );
+	}
+
+}
+
+sub eximVacation {
+	my $domain = shift;
+	my $subject = shift;
+"if
+	not error_message and
+	\$message_headers does not contain \"\\nList-\" and
+	\$h_auto-submitted: does not contain \"auto-\" and
+	\$h_precedence: does not contain \"bulk\" and
+	\$h_precedence: does not contain \"list\" and
+	\$h_precedence: does not contain \"junk\" and
+	foranyaddress \$h_to: ( \$thisaddress contains \"\$local_part\@\" ) and
+	not foranyaddress \$h_from: (
+		\$thisaddress contains \"server@\" or
+		\$thisaddress contains \"daemon@\" or
+		\$thisaddress contains \"root@\" or
+		\$thisaddress contains \"listserv@\" or
+		\$thisaddress contains \"majordomo@\" or
+		\$thisaddress contains \"-request@\" or
+		\$thisaddress matches  \"^owner-[^@]+@\"
+	)
+then
+	vacation
+	from \$local_part\@$domain
+	subject \"$subject\"
+endif"
 }
 
 

@@ -750,6 +750,7 @@ sub wikiParse {
 # Return a hash of properties that have changed in the last revision
 # - we assume that the passed title has at least two revisions
 # - and that it is a record with the first brace structure being the record type
+# - an array of record type and three hashrefs is returned, original values, new values, changed values
 sub wikiPropertyChanges {
 	my( $wiki, $title ) = @_;
 	$title = encodeTitle( $title );
@@ -795,6 +796,6 @@ sub wikiPropertyChanges {
 		}
 
 		# Return the record type and the hash of changed properties
-		return ( $brace1[0]->{NAME}, %args );
+		return ( $brace1[0]->{NAME}, \%args1, \%args2, \%args );
 	}
 }
