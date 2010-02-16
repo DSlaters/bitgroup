@@ -33,7 +33,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.14.0'; # 2009-02-09
+$::ver      = '3.14.1'; # 2009-02-16
 $::log      = "$::dir/$::daemon.log";
 $::wkfile   = "$::dir/$::daemon.work";
 $::motd     = "Hail Earthlings! $::daemon-$::ver is in the heeeeeouse! (rock)" unless defined $::motd;
@@ -697,15 +697,39 @@ sub onRevisionInsertComplete {
 	} else { logAdd( "Not processing (page='$page', user='$user', title='$title')" ) }
 }
 
+
+#---------------------------------------------------------------------------------------------------------#
+# RECORD PROPERTY EVENTS
+
 # Person record property changes
 sub onPersonPropertyChange {
 	my ( $title, $args1, $args2, $args ) = @_;
+	checkEmailProperties( @_ );
+	
+}
+
+# Role record property changes
+sub onPersonPropertyChange {
+	my ( $title, $args1, $args2, $args ) = @_;
+	checkEmailProperties( @_ );
+	
+}
+
+# Update email config if any email related properties have changed
+# - Person and Role records have email properties
+sub checkEmailProperties {
+	my ( $title, $args1, $args2, $args ) = @_;
+	return unless exists $$args2{Email};
+	return unless $$args2{Email};
+	my $email    = $$args2{Email};
+	my $euser    = $1 if $email =~ /^(.+)@/;
+	my $user     = exists $$args2{User} ? lc $$args2{User} : $euser;
+	my $oldrules = readFile( '/var/www/exim4/virtual.users' );
+	my %rules    = ( $oldrules =~ /^\s*(\S+?)\s*:\s*(\S+?)\s*$"/gim );
 
 	# Email autoreply
 	if ( exists $$args{AutoReply} ) {
 		my $reply = $$args2{AutoReply};
-		my $email = $$args2{Email};
-		my $user = lc $$args2{User};
 		$user =~ s/ /_/g;
 		my $comment = "No valid email address for \"$user\", not changing autoreply!";
 		if ( $email =~ /@(.+)$/ ) {
@@ -726,7 +750,37 @@ sub onPersonPropertyChange {
 		logAdd( $comment );
 		logIRC( $comment );
 	}
-
+	
+	# Email aliases
+	if ( exists $$args{EmailAliases} ) {
+		my @aliases = split /^/, $$args{EmailAliases};
+		$rules{$_} = "$user\@localhost" for @aliases;
+	}
+	
+	# Email forwards - needs to have deliver directives added to .forward
+	if ( exists $$args{EmailForwards} ) {
+		my @forwards = split /^/, $$args{EmailForwards};
+	}
+	
+	# Format the rules and write them back if any changes
+	my $newrules = '';
+	my $longest = 0;
+	for my $k ( keys %rules ) {
+		my $l = length $k;
+		$longest = $l if $l > $longest;
+	}
+	for my $k ( keys %rules ) {
+		my $v = $rules{$k};
+		my $l = length $k;
+		my $line = $k . ( ' ' x ( $longest + 2 - $k ) ) . ": $v";
+	}
+	if ( $oldrules ne $newrules ) {
+		my $file = '/var/www/exim4/virtual.users';
+		writeFile( $file, $newrules );
+		my $comment = "$file updated";
+		logAdd( $comment );
+		logIRC( $comment );
+	}
 }
 
 sub eximVacation {
