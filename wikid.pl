@@ -33,7 +33,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.15.0'; # 2009-02-27
+$::ver      = '3.15.1'; # 2009-02-27
 $::log      = "$::dir/$::daemon.log";
 $::wkfile   = "$::dir/$::daemon.work";
 $::motd     = "Hail Earthlings! $::daemon-$::ver is in the heeeeeouse! (rock)" unless defined $::motd;
@@ -737,6 +737,7 @@ sub checkEmailProperties {
 
 	# Config file locations
 	my $vuserf = '/etc/exim4/virtual.users';
+	my $vdomf  = '/etc/exim4/virtual.domains';
 	my $msgf   = "/home/$user/.vacation.msg";
 	my $fwdf   = "/home/$user/.forward";
 	my $fwd    = readFile( $fwdf );
@@ -772,17 +773,19 @@ sub checkEmailProperties {
 			$fwd2 = $1 if $fwd2 =~ /^(.+?endif)/s;
 			if ( $reply ) {
 				if ( $msg ne $reply ) {
-					$comment = "Changing AutoReply for user \"$user\" (from \"$msg\" to \"$reply\")";
 					writeFile( $msgf, $reply );
 					$fwd2 = "$fwd2\n\n" . eximVacation( $domain, "Out of office auto-reply" );
+					$comment = "Changing AutoReply for user \"$user\" (from \"$msg\" to \"$reply\")";
+					logAdd( $comment );
+					logIRC( $comment );
 				}
 			} else {
-				$comment = "Clearing AutoReply for user \"$user\"";
 				unlink $msgf;
+				$comment = "Clearing AutoReply for user \"$user\"";
+				logAdd( $comment );
+				logIRC( $comment );
 			}
 		}
-		logAdd( $comment );
-		logIRC( $comment );
 	}
 	
 	# Email aliases
@@ -800,7 +803,18 @@ sub checkEmailProperties {
 			$fwd2 .= "deliver $_\n" for @forwards;
 		}
 	}
-	
+
+	# Remove any rules which are not listed in virtual.domains
+	my $vdom = readFile( $vdomf );
+	$vdom =~ s/^\s*//g;
+	$vdom =~ s/\s*$//g;
+	$vdom =~ s/\s+/\|/g;
+	my %tmp = ( %rules );
+	my %rules = ();
+	for my $k ( keys %tmp ) {
+		$rules{$k} = $tmp{$k} if $k =~ /\@$vdom/;
+	}
+
 	# Format the rules and write them back if any changes
 	my $vuser2 = '';
 	my $longest = 0;
