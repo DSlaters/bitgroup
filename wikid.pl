@@ -33,7 +33,7 @@ $::daemon   = 'wikid';
 $::host     = uc( hostname );
 $::name     = hostname;
 $::port     = 1729;
-$::ver      = '3.14.1'; # 2009-02-16
+$::ver      = '3.15.0'; # 2009-02-27
 $::log      = "$::dir/$::daemon.log";
 $::wkfile   = "$::dir/$::daemon.work";
 $::motd     = "Hail Earthlings! $::daemon-$::ver is in the heeeeeouse! (rock)" unless defined $::motd;
@@ -709,7 +709,7 @@ sub onPersonPropertyChange {
 }
 
 # Role record property changes
-sub onPersonPropertyChange {
+sub onRolePropertyChange {
 	my ( $title, $args1, $args2, $args ) = @_;
 	checkEmailProperties( @_ );
 	
@@ -724,60 +724,114 @@ sub checkEmailProperties {
 	my $email    = $$args2{Email};
 	my $euser    = $1 if $email =~ /^(.+)@/;
 	my $user     = exists $$args2{User} ? lc $$args2{User} : $euser;
-	my $oldrules = readFile( '/var/www/exim4/virtual.users' );
-	my %rules    = ( $oldrules =~ /^\s*(\S+?)\s*:\s*(\S+?)\s*$"/gim );
+	return unless $user;
+	my $elocal   = "$user\@localhost";
+
+	# Bail if no home dir for this user
+	unless ( -d "/home/$user" ) {
+		$comment = "Cannot change properties for user \"$user\", not Unix account set up!";
+		logAdd( $comment );
+		logIRC( $comment );
+		return;
+	}
+
+	# Config file locations
+	my $vuserf = '/etc/exim4/virtual.users';
+	my $msgf   = "/home/$user/.vacation.msg";
+	my $fwdf   = "/home/$user/.forward";
+	my $fwd    = readFile( $fwdf );
+	my $fwd2   = $fwd;
+
+	# Obtain the current rules and remove all rules for this user
+	my $vuser  = readFile( $vuserf );
+	my %tmp    = ( $vuser =~ /^\s*(\S+?)\s*:\s*(\S+?)\s*$/gim );
+	my %rules  = ();
+	for ( keys %tmp ) {
+		$rules{$_} = $tmp{$_} unless $tmp{$_} eq $elocal;
+	}
+
+	# Ensure the primary email address exists and is conrrect in config
+	if ( exists $rules{$email} ) {
+		my $r = $rules{$email};
+		if ( $r ne $elocal ) {
+			$comment = "Email address $e was assigned to user \"$r\", but has been changed to \"$user\"";
+			logAdd( $comment );
+			logIRC( $comment );
+		}
+	}
+	$rules{$email} = $elocal;
 
 	# Email autoreply
-	if ( exists $$args{AutoReply} ) {
+	if ( exists $$args2{AutoReply} ) {
 		my $reply = $$args2{AutoReply};
 		$user =~ s/ /_/g;
 		my $comment = "No valid email address for \"$user\", not changing autoreply!";
 		if ( $email =~ /@(.+)$/ ) {
 			my $domain = $1;
-			my $msg = "/home/$user/.vacation.msg";
-			my $fwd = readFile( "/home/$user/.forward" );
-			$fwd = $1 if $fwd =~ /^(.+?endif)/s;
+			my $msg = readFile( $msgf );
+			$fwd2 = $1 if $fwd2 =~ /^(.+?endif)/s;
 			if ( $reply ) {
-				$comment = "Changing AutoReply for user \"$user\"";
-				writeFile( $msg, $reply );
-				$fwd = "$fwd\n\n" . eximVacation( $domain, "Out of office auto-reply" );
+				if ( $msg ne $reply ) {
+					$comment = "Changing AutoReply for user \"$user\" (from \"$msg\" to \"$reply\")";
+					writeFile( $msgf, $reply );
+					$fwd2 = "$fwd2\n\n" . eximVacation( $domain, "Out of office auto-reply" );
+				}
 			} else {
 				$comment = "Clearing AutoReply for user \"$user\"";
-				unlink $msg;
+				unlink $msgf;
 			}
-			writeFile( "/home/$user/.forward", $fwd );
 		}
 		logAdd( $comment );
 		logIRC( $comment );
 	}
 	
 	# Email aliases
-	if ( exists $$args{EmailAliases} ) {
-		my @aliases = split /^/, $$args{EmailAliases};
-		$rules{$_} = "$user\@localhost" for @aliases;
+	if ( exists $$args2{EmailAliases} ) {
+		my @aliases = split /\s+/, $$args2{EmailAliases};
+		$rules{$_} = $elocal for @aliases;
 	}
 	
 	# Email forwards - needs to have deliver directives added to .forward
-	if ( exists $$args{EmailForwards} ) {
-		my @forwards = split /^/, $$args{EmailForwards};
+	$fwd2 = $1 if $fwd2 =~ /^(.+?)\s*# Forwards/s;
+	if ( exists $$args2{EmailForwards} ) {
+		my @forwards = split /\s+/, $$args2{EmailForwards};
+		if ( $#forwards >= 0 ) {
+			$fwd2 .= "\n\n# Forwards\n";
+			$fwd2 .= "deliver $_\n" for @forwards;
+		}
 	}
 	
 	# Format the rules and write them back if any changes
-	my $newrules = '';
+	my $vuser2 = '';
 	my $longest = 0;
+	my $last = 0;
 	for my $k ( keys %rules ) {
 		my $l = length $k;
 		$longest = $l if $l > $longest;
 	}
-	for my $k ( keys %rules ) {
+	for my $k ( sort { ( $a =~ /^(.+)\@(.+)$/ . $2 . $1 ) cmp ( $b =~ /^(.+)\@(.+)$/ . $2 . $1 ) } keys %rules ) {
+		if ( $k =~ /^.+\@(.+)$/ and $1 ne $last ) {
+			$vuser2 .= "\n" if $last;
+			$last = $1;
+		}
 		my $v = $rules{$k};
 		my $l = length $k;
-		my $line = $k . ( ' ' x ( $longest + 2 - $k ) ) . ": $v";
+		my $line = $k . ( ' ' x ( $longest + 2 - $l ) ) . ": $v";
+		$vuser2 .= "$line\n";
 	}
-	if ( $oldrules ne $newrules ) {
-		my $file = '/var/www/exim4/virtual.users';
-		writeFile( $file, $newrules );
-		my $comment = "$file updated";
+
+	# Update rules if changed
+	if ( $vuser ne $vuser2 ) {
+		writeFile( $vuserf, $vuser2 );
+		my $comment = "$vuserf updated";
+		logAdd( $comment );
+		logIRC( $comment );
+	}
+
+	# Update forwards if changed
+	if ( $fwd ne $fwd2 ) {
+		writeFile( $fwdf, $fwd2 );
+		my $comment = "$fwdf updated";
 		logAdd( $comment );
 		logIRC( $comment );
 	}
