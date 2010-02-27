@@ -12,7 +12,7 @@
 #   - get namespaces
 #   - get messages used in patterns (and make methods use messages in their regexp's so lang-independent)
 
-$::wikipl_version = '1.12.2'; # 2010-02-09
+$::wikipl_version = '1.12.3'; # 2010-02-28
 
 use HTTP::Request;
 use LWP::UserAgent;
@@ -615,9 +615,12 @@ sub wikiExamineBraces {
 	while ( $content =~ m/\G.*?(\{\{\s*([#a-z0-9_:]*)|\}\})/sig ) {
 		my $offset = pos( $content ) - length( $2 ) - 2;
 		if ( $1 eq '}}' ) {
-			$brace = $braces[$depths[$depth - 1]];
-			$$brace{LENGTH} = $offset - $$brace{OFFSET} + 2;
-			$$brace{DEPTH}  = $depth--;
+			if ( $depth > 0 ) {
+				$brace = $braces[$depths[$depth - 1]];
+				$$brace{LENGTH} = $offset - $$brace{OFFSET} + 2;
+				$$brace{DEPTH}  = $depth--;
+			}
+			$depth = 0 if $depth < 0;
 		} else {
 			push @braces, { NAME => $2, OFFSET => $offset };
 			$depths[$depth++] = $#braces;
