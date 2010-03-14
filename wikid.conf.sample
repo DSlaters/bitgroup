@@ -5,16 +5,20 @@ $name         = 'FooBot';
 $organisation = 'Foo Inc.';
 
 # The local wiki associated with this bot
+# - defaults to http://localhost/wiki/index.php
+# - set to empty string to disable wiki (not recommended)
 $wiki         = 'http://wiki.foo.bar/wiki/index.php';
-$wikiuser     = 'FooBot'; # defaults to $name
+$wikiuser     = 'FooBot'; # defaults to $daemon
 $wikipass     = '******';
-$wgDBname     = 'foo';
-$wgDBprefix   = 'foo_';
 $wgDBuser     = 'foobot';
 $wgDBpassword = '******';
 
+# If not supplied, it will attempt to extract them from the specified wikis LocalSettings.php
+$wgDBname     = 'foo';
+$wgDBprefix   = 'foo_';
+
 # Set if bots are to reside in an IRC channel
-$ircserver    = 'irc.foo.bar'; # defaults to irc.organicdesign.tv
+$ircserver    = 'irc.foo.bar'; # defaults to irc.organicdesign.co.nz
 $ircpass      = '******';
 
 # Set if using a namecheap.com domain for dynamic DNS
