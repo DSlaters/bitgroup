@@ -40,16 +40,15 @@ $dnspass      = '****************************';
 #        this is done because there will be a corresponding unix user
 #        on all peers in the network due to the user propagation and
 #        account synchronisation
-# Note2: $netuser is an ssh login common to all peers
-# Note3: $netpass is a password common to all peers in the group and is
+# Note2: $netpass is a password common to all peers in the group and is
 #        used for encrypting messages between them
-# Note4: $netsync is an optional list to restrict users that are sync'd
-$network = 'FooBarNet';
-$netuser = 'foobotshell'; # default to $::daemon (wikid)
-$netpass = '****************************';
-$netself = 'foo.baz:1729';
-$netpeer = 'bar.baz:1729';
-$netsync = [ 'Foo', 'Bar', 'Baz' ];
+#
+$network = 'FooBarNet';      # set this to enable the distributed netework system
+$netuser = 'foobotshell';    # defaults to $wikiuser
+$netpass = '***********';    # defaults to $wikipass
+$netself = 'foo.baz:1729';   # defaults to $name.$dnsdomain:$port
+$netpeer = 'bar.baz:1729';   # next peer in the loop, no default value
+$netsync = [ 'Foo', 'Bar' ]; # optional list to restrict users that are sync'd
 
 # Periodic file synchronisation
 sub MailDirSync_every5minutes {
