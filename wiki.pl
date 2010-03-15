@@ -12,12 +12,12 @@
 #   - get namespaces
 #   - get messages used in patterns (and make methods use messages in their regexp's so lang-independent)
 
-$::wikipl_version = '1.12.3'; # 2010-02-28
+$::wikipl_version = '1.12.4'; # 2010-03-15
 
 use HTTP::Request;
 use LWP::UserAgent;
-use POSIX qw(strftime);
-use Digest::MD5 qw(md5_hex);
+use POSIX qw( strftime );
+use Digest::MD5 qw( md5_hex );
 
 sub wikiLogin;
 sub wikiLogout;
@@ -44,6 +44,7 @@ sub wikiGetConfig;
 sub wikiAllPages;
 sub wikiUpdateAccount;
 sub wikiParse;
+sub wikiGetProperties;
 sub wikiPropertyChanges;
 
 # Set up a global client for making HTTP requests as a browser
@@ -748,6 +749,15 @@ sub wikiParse {
 	}
 
 	return $links ? $html =~ m|title="(.+?)"|g : $html;
+}
+
+# Return a hash of properties from the first template of the passed title
+sub wikiGetProperties {
+	my( $wiki, $title ) = @_;
+	my $text   = wikiRawPage( $wiki, $title );
+	my @braces = wikiExamineBraces( $text );
+	my $text = substr $text, $braces[0]->{OFFSET}, $braces[0]->{LENGTH};
+	return ( $text =~ /(?<=\|)\s*(\w+)\s*=\s*(.*?)\s*$\s*[|}]/msg );
 }
 
 # Return a hash of properties that have changed in the last revision
