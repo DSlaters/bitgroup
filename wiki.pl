@@ -12,7 +12,7 @@
 #   - get namespaces
 #   - get messages used in patterns (and make methods use messages in their regexp's so lang-independent)
 
-$::wikipl_version = '1.12.4'; # 2010-03-15
+$::wikipl_version = '1.13.0'; # 2010-03-22
 
 use HTTP::Request;
 use LWP::UserAgent;
@@ -132,16 +132,16 @@ sub wikiEdit {
 		# Request the page for editing and extract the edit-token
 		my $response = $::client->get( "$wiki?title=$utitle&action=edit&useskin=standard" );
 		if ( $response->is_success and (
-				$response->content =~ m|<input type='hidden' value="(.+?)" name="wpEditToken" />|
+				$response->content =~ m|<input type=['"]hidden["'] value=['"](.+?)["'] name=['"]wpEditToken["'] />|
 		)) {
 
 			# Got token etc, construct a form to post
 			my %form = ( wpEditToken => $1, wpTextbox1 => $content, wpSummary => $comment, wpSave => 'Save page' );
 			$form{wpMinoredit}   = 1  if $minor;
-			$form{wpSection}     = $1 if $response->content =~ m|<input type='hidden' value="(.*?)" name="wpSection" />|;
-			$form{wpStarttime}   = $1 if $response->content =~ m|<input type='hidden' value="(.*?)" name="wpStarttime" />|;
-			$form{wpEdittime}    = $1 if $response->content =~ m|<input type='hidden' value="(.*?)" name="wpEdittime" />|;
-			$form{wpAutoSummary} = $1 if $response->content =~ m|<input name="wpAutoSummary" type="hidden" value="(.*?)" />|;
+			$form{wpSection}     = $1 if $response->content =~ m|<input type='hidden["'] value=['"](.*?)["'] name=['"]wpSection["'] />|;
+			$form{wpStarttime}   = $1 if $response->content =~ m|<input type='hidden["'] value=['"](.*?)["'] name=['"]wpStarttime["'] />|;
+			$form{wpEdittime}    = $1 if $response->content =~ m|<input type='hidden["'] value=['"](.*?)["'] name=['"]wpEdittime["'] />|;
+			$form{wpAutoSummary} = $1 if $response->content =~ m|<input name="wpAutoSummary["'] type="hidden["'] value=['"](.*?)["'] />|;
 
 			# Post the form
 			$response = $::client->post( "$wiki?title=$utitle&action=submit&useskin=standard", \%form );
@@ -243,7 +243,7 @@ sub wikiDelete {
 	while ( $retries-- ) {
 		my $html = '';
 		my $response = $::client->get( $url );
-		if ( $response->is_success && $response->content =~ m/<input name="wpEditToken".*? value="(.*?)".*?<\/form>/s ) {
+		if ( $response->is_success && $response->content =~ m/<input name=['"]wpEditToken["'].*? value=['"](.*?)["'].*?<\/form>/s ) {
 			my %form = ( wpEditToken => $1, wpReason => $reason );
 			$response = $::client->post( $url, \%form );
 			$html = $response->content;
@@ -270,9 +270,9 @@ sub wikiRestore {
 	while ( $retries-- ) {
 		my $html = '';
 		my $response = $::client->get( "$url&target=$title" );
-		if ( $response->is_success && $response->content =~ m/<input name="wpEditToken".*? value="(.*?)".*?<\/form>/s ) {
+		if ( $response->is_success && $response->content =~ m/<input name=['"]wpEditToken["'].*? value=['"](.*?)["'].*?<\/form>/s ) {
 			my %form = ( wpComment => $reason, target => $title, wpEditToken => $1, restore=>"Restore" );
-			my @timestamps = $response->content =~ m/<input .*?"(ts\d*?)".*?/g;
+			my @timestamps = $response->content =~ m/<input .*?['"](ts\d*?)["'].*?/g;
 
 			# Restore specified $revision
 			if ( $revision ) {
@@ -354,7 +354,7 @@ sub wikiDeleteFile {
 				return $success;
 			}
 			if ( $response->is_success &&
-				$response->content =~ m/Delete $imagename.+?<input.+?name="wpEditToken".+?value="(.*?)".+?Reason for deletion:/is ) {
+				$response->content =~ m/Delete $imagename.+?<input.+?name=['"]wpEditToken["'].+?value=['"](.*?)["'].+?Reason for deletion:/is ) {
 				%form = (
 					wpEditToken            => $1,
 					wpDeleteReasonList     => "other",
@@ -454,7 +454,7 @@ sub wikiProtect {
 		if ( $response->is_success and
 			$response->content =~ m/Confirm protection.+?You may view and change the protection level here for the page/s ) {
 			# Same problem, post on line 392 doesn't return content
-			$success = $response->is_success && $response->content =~ m/<input.+?name="wpEditToken".+?value="(.*?)"/s;
+			$success = $response->is_success && $response->content =~ m/<input.+?name=['"]wpEditToken["'].+?value=['"](.*?)["']/s;
 
 			%form = (
 				"wpEditToken"       => $1,
@@ -730,20 +730,20 @@ sub wikiParse {
 	my $marker = '<p class="wikiParseMarker"></p>';
 	my $response = $::client->get( "$wiki?title=Sandbox&action=edit&useskin=standard" );
 	if ( $response->is_success and (
-		$response->content =~ m|<input type='hidden' value="(.+?)" name="wpEditToken" />|
+		$response->content =~ m|<input type=['"]hidden["'] value=['"](.+?)["'] name=['"]wpEditToken["'] />|
 	)) {
 
 		# Got token etc, construct a form data structure to post
 		my %form = ( wpEditToken => $1, wpTextbox1 => "$marker\n$content\n$marker", wpPreview => 'Show preview' );
-		$form{wpSection}     = $1 if $response->content =~ m|<input type='hidden' value="(.*?)" name="wpSection" />|;
-		$form{wpStarttime}   = $1 if $response->content =~ m|<input type='hidden' value="(.*?)" name="wpStarttime" />|;
-		$form{wpEdittime}    = $1 if $response->content =~ m|<input type='hidden' value="(.*?)" name="wpEdittime" />|;
-		$form{wpAutoSummary} = $1 if $response->content =~ m|<input name="wpAutoSummary" type="hidden" value="(.*?)" />|;
+		$form{wpSection}     = $1 if $response->content =~ m|<input type=['"]hidden["'] value=['"](.*?)["'] name=['"]wpSection["'] />|;
+		$form{wpStarttime}   = $1 if $response->content =~ m|<input type=['"]hidden["'] value=['"](.*?)["'] name=['"]wpStarttime["'] />|;
+		$form{wpEdittime}    = $1 if $response->content =~ m|<input type=['"]hidden["'] value=['"](.*?)["'] name=['"]wpEdittime["'] />|;
+		$form{wpAutoSummary} = $1 if $response->content =~ m|<input name=['"]wpAutoSummary["'] type=['"]hidden["'] value=['"](.*?)["'] />|;
 
 		# Post the form
 		$response = $::client->post( "$wiki?title=Sandbox&action=submit&useskin=standard", \%form );
 		$html = $response->content if $response->content =~ m|<h2 id="mw-previewheader">|;
-		
+
 		# Extract preview content out of resulting page
 		$html = $1 if $html =~ m|$marker\s*(.+)\s*$marker|s;
 	}
