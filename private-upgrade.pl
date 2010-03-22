@@ -12,7 +12,7 @@ wikiLogin( $wiki, $wikiuser, $wikipass );
 my $comment = "Updated by private-upgrade.pl";
 
 # Projects
-my @titles = wikiParse( $wiki, '{{#dpl:uses=Project}}', 1 );
+my @titles = wikiParse( $wiki, '{{#dpl:uses=Template:Project}}', 1 );
 for my $title ( @titles ) {
 	$text = wikiRawPage( $wiki, $title );
 
@@ -23,7 +23,7 @@ for my $title ( @titles ) {
 }
 
 # Issues
-my @titles = wikiParse( $wiki, '{{#dpl:uses=Issue}}', 1 );
+my @titles = wikiParse( $wiki, '{{#dpl:uses=Template:Issue}}', 1 );
 for my $title ( @titles ) {
 	$text = wikiRawPage( $wiki, $title );
 
@@ -35,7 +35,7 @@ for my $title ( @titles ) {
 }
 
 # Activities
-my @titles = wikiParse( $wiki, '{{#dpl:uses=Activity}}', 1 );
+my @titles = wikiParse( $wiki, '{{#dpl:uses=Template:Activity}}', 1 );
 for my $title ( @titles ) {
 	$text = wikiRawPage( $wiki, $title );
 
