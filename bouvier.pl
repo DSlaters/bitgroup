@@ -13,9 +13,9 @@ $ver = '1.0.0'; # 2009-11-07
 
 require( '/var/www/tools/wiki.pl' );
 
-$wiki     = 'http://114.localhost/wiki/index.php';
-$wikiuser = '****';
-$wikipass = '****';
+$wiki     = 'http://wiki.noconfidence.org.nz/wiki/index.php';
+$wikiuser = 'Nad';
+$wikipass = 'yN$ger0';
 $file     = '/home/nad/Knowledge/Economy/Freemen Documents/Bouviers Law Dictionary/Bouvier.txt';
 
 # Log into the target wiki
@@ -91,7 +91,6 @@ for $key ( keys %dict ) {
 		$text = "#REDIRECT [[$key]]\n" if $comment;
 		$comment = '';
 	}
-	exit if $x++ > 20;
 }
 
 

@@ -11,10 +11,10 @@
 # - license GNU General Public Licence 2.0 or later
 #
 qx( cd /var/www/tools );
-$::dir = '/var/www/tools';
+$dir = '/var/www/tools';
 
 # Dependencies
-use POSIX qw(strftime setsid);
+use POSIX qw( strftime setsid );
 use HTTP::Request;
 use LWP::UserAgent;
 use Expect;
@@ -25,18 +25,17 @@ use IO::Select;
 use MIME::Base64;
 use Sys::Hostname;
 use DBI;
-use PHP::Serialization qw(serialize unserialize);
-require "$::dir/wiki.pl";
+use PHP::Serialization qw( serialize unserialize );
+require "$dir/wiki.pl";
 
 # Daemon parameters
-$::daemon   = 'wikid';
-$::host     = uc( hostname );
-$::name     = hostname;
-$::port     = 1729;
-$::ver      = '3.15.1'; # 2009-02-27
-$::log      = "$::dir/$::daemon.log";
-$::wkfile   = "$::dir/$::daemon.work";
-$::motd     = "Hail Earthlings! $::daemon-$::ver is in the heeeeeouse! (rock)" unless defined $::motd;
+$daemon   = 'wikid';
+$host     = uc( hostname );
+$name     = hostname;
+$port     = 1729;
+$ver      = '3.17.1'; # 2010-03-21
+$log      = "$dir/$daemon.log";
+$wkfile   = "$dir/$daemon.work";
 
 # Wiki - try and determine wikidb from wiki's localsettings.php
 if ( -e '/var/www/domains/localhost/LocalSettings.php' ) {
@@ -46,23 +45,30 @@ if ( -e '/var/www/domains/localhost/LocalSettings.php' ) {
 	$::short  = $1 if $ls =~ /\$wgShortName\s*=\s*['"](.+?)["']/;
 }
 
-# Defaults
+# Pre-conf defaults
+$motd       = "$daemon ($ver) has started";
+$user       = lc $name;
+$wiki       = 'http://localhost/wiki/index.php';
 $dnsdomain  = 'organicdesign.tv';
-$ircserver  = 'irc.organicdesign.tv';
+$ircserver  = 'irc.organicdesign.co.nz';
 $ircport    = 6667;
 $ircchannel = '#organicdesign';
-$ircpass    = '*****';
+$ircpass    = '******';
 
-# Override default with config file (this is included again at the end so that it can replace event functions)
-require "$::dir/$::daemon.conf";
-$::dbname = $wgDBname if defined $wgDBname;
-$::dbuser = $wgDBuser if defined $wgDBuser;
-$::dbpass = $wgDBpassword if defined $wgDBpassword;
-$::dbpre  = $wgDBprefix if defined $wgDBprefix;
-$::name   = $name if $name;
-$::port   = $port if $port;
-$wikiuser = $::name unless $wikiuser;
-$ircuser  = $::name unless $ircuser;
+# Override default with conf file
+# NOTE: this is included again at the end so that it can replace event functions
+require "$dir/$daemon.conf";
+
+# Post-conf defaults
+$dbname   = $wgDBname     if defined $wgDBname;
+$dbuser   = $wgDBuser     if defined $wgDBuser;
+$dbpass   = $wgDBpassword if defined $wgDBpassword;
+$dbpre    = $wgDBprefix   if defined $wgDBprefix;
+$wikiuser = $daemon   unless defined $wikiuser;
+$ircuser  = $name     unless defined $ircuser;
+$netuser  = $wikiuser unless defined $netuser;
+$netpass  = $wikipass unless defined $netpass;
+$netself  = "$user.$dnsdomain:$port" unless defined $netself;
 
 # If --rpc, send data down the running instance's event pipe and exit
 if ( $ARGV[0] eq '--rpc' ) {
@@ -87,18 +93,18 @@ $0 = "$daemon ($name)";
 
 # Install the service into init.d and rc2-5.d if --install arg passed
 if ( $ARGV[0] eq '--install' ) {
-	writeFile( my $target = "/etc/init.d/$daemon", "#!/bin/sh\n/usr/bin/perl $::dir/$daemon.pl\n" );
+	writeFile( my $target = "/etc/init.d/$daemon", "#!/bin/sh\n/usr/bin/perl $dir/$daemon.pl\n" );
 	symlink $target, "/etc/rc$_.d/S99$daemon" for 2..5;
-	symlink "$::dir/$daemon.pl", "/usr/bin/$daemon";
+	symlink "$dir/$daemon.pl", "/usr/bin/$daemon";
 	chmod 0755, "/etc/init.d/$daemon";
-	logAdd( "$::daemon added to /etc/init.d and /usr/bin" );
+	logAdd( "$daemon added to /etc/init.d and /usr/bin" );
 }
 
 # Remove the named service and exit
 if ( $ARGV[0] eq '--remove' ) {
-	unlink "/etc/rc$_.d/S99$::daemon" for 2..5;
-	unlink "/etc/init.d/$::daemon.sh";
-	logAdd( "$::daemon.sh removed from /etc/init.d" );
+	unlink "/etc/rc$_.d/S99$daemon" for 2..5;
+	unlink "/etc/init.d/$daemon.sh";
+	logAdd( "$daemon.sh removed from /etc/init.d" );
 	exit 0;
 }
 
@@ -106,10 +112,10 @@ if ( $ARGV[0] eq '--remove' ) {
 serverInitialise();
 ircInitialise();
 wikiLogin( $wiki, $wikiuser, $wikipass );
-dbConnect() if defined $::dbuser;
-%::streams = ();
+dbConnect() if defined $dbuser;
+%streams = ();
 workInitialise();
-logIRC( $::motd );
+logIRC( $motd );
 
 # Initialise watched files list
 # TODO: this list should be drawn from shared record index
@@ -187,6 +193,24 @@ sub DynamicDNS_every10minutes {
 	}
 }
 
+# Update the extensions and tools each day and restart
+sub UpdateEnvironment_every1440minutes {
+	if ( $::wiki ) {
+
+		# Update /var/www/extensions
+		qx( /var/www/tools/update-extensions.sh );
+		logAll( "Updated /var/www/extensions from OD snapshot" );
+
+		# Update /var/www/tools
+		qx( /var/www/tools/update-tools.sh );
+		logAll( "Updated /var/www/tools from OD snapshot" );
+
+		# Update the local wiki's content to the OD content snapshot
+		#qx( /var/www/tools/update-content.sh );
+		#logAll( "Updated local wiki content from OD snapshot" );
+
+	}
+}
 
 #---------------------------------------------------------------------------------------------------------#
 # GENERAL SUPPORT FUNCTIONS
@@ -273,11 +297,7 @@ sub unison {
 
 	# Bail if unison is all ready running for this dir
 	$ps = qx( ps x );
-	if ( $ps =~ /$::daemon-unison $dir/ ) {
-		my $msg = "Not spawning unison child for \"$dir\", last instance still running";
-		logAdd( $msg );
-		logIRC( $msg );
-	}
+	logAll( "Not spawning unison child for \"$dir\", last instance still running" ) if $ps =~ /$::daemon-unison $dir/;
 
 	# Start a thread to synchronise this dir (glob)
 	$SIG{CHLD} = 'IGNORE';
@@ -515,15 +535,9 @@ sub ircHandleConnections {
 							$::args = $4;
 							$::action = "do$title";
 							if ( defined &$::action ) {
-								$msg = "Processing \"$title\" action issued by $nick";
-								logIRC( $msg );
-								logAdd( $msg );
+								logAll( "Processing \"$title\" action issued by $nick" );
 								&$::action;
-							} else {
-								$msg = "Unknown action \"$title\" requested!";
-								logIRC( $msg );
-								logAdd( $msg );
-							}
+							} else { logAll( "Unknown action \"$title\" requested!" ) }
 						}
 					}
 				}
@@ -555,6 +569,13 @@ sub logIRC {
 	return $msg;
 }
 
+# OUtput a comment to both IRC and normal log
+sub logAll {
+	my $msg = shift;
+	logAdd( $msg );
+	logIRC( $msg );
+	return $msg;
+}
 
 
 #---------------------------------------------------------------------------------------------------------#
@@ -638,11 +659,7 @@ sub onStopJob {
 	my $id = $$::data{args};
 	return if workSetJobFromId( $id ) < 0;
 	$$::job{errors} = "Job cancelled\n" . $$::job{errors};
-	if ( workStopJob( $id ) ) {
-		my $msg = "Job $id cancelled";
-		logIRC( $msg );
-		logAdd( $msg );
-	}
+	logAll( "Job $id cancelled" ) if workStopJob( $id );
 }
 
 sub onPauseJobToggle {
@@ -650,9 +667,7 @@ sub onPauseJobToggle {
 	workSetJobFromId( $id );
 	$$::job{paused} = $$::job{paused} ? 0 : 1;
 	workSave();
-	$msg = "Job $id " . ( $$::job{paused} ? '' : 'un' ) . "paused";
-	logIRC( $msg );
-	logAdd( $msg );
+	logAll( "Job $id " . ( $$::job{paused} ? '' : 'un' ) . "paused" );
 }
 
 sub onUserLoginComplete {
@@ -704,46 +719,45 @@ sub onRevisionInsertComplete {
 # Person record property changes
 sub onPersonPropertyChange {
 	my ( $title, $args1, $args2, $args ) = @_;
-	checkEmailProperties( @_ );
-	
+	checkEmailProperties( $title, $args2 );
 }
 
 # Role record property changes
 sub onRolePropertyChange {
 	my ( $title, $args1, $args2, $args ) = @_;
-	checkEmailProperties( @_ );
-	
+	checkEmailProperties( $title, $args2 );	
 }
 
 # Update email config if any email related properties have changed
 # - Person and Role records have email properties
 sub checkEmailProperties {
-	my ( $title, $args1, $args2, $args ) = @_;
-	return unless exists $$args2{Email};
-	return unless $$args2{Email};
-	my $email    = $$args2{Email};
+	my ( $title, $args ) = @_;
+	return unless exists $$args{Email};
+	return unless $$args{Email};
+	my $email    = $$args{Email};
 	my $euser    = $1 if $email =~ /^(.+)@/;
-	my $user     = exists $$args2{User} ? lc $$args2{User} : $euser;
+	my $user     = exists $$args{User} ? $$args{User} : $euser;
+	$user        =~ s/\W+/_/g;
+	$user        = lc $user;
 	return unless $user;
 	my $elocal   = "$user\@localhost";
-
-	# Bail if no home dir for this user
-	unless ( -d "/home/$user" ) {
-		$comment = "Cannot change properties for user \"$user\", not Unix account set up!";
-		logAdd( $comment );
-		logIRC( $comment );
-		return;
-	}
 
 	# Config file locations
 	my $vuserf = '/etc/exim4/virtual.users';
 	my $vdomf  = '/etc/exim4/virtual.domains';
-	my $msgf   = "/home/$user/.vacation.msg";
-	my $fwdf   = "/home/$user/.forward";
-	my $fwd    = readFile( $fwdf );
-	my $fwd2   = $fwd;
+	my $vdom = readFile( $vdomf );
 
-	# Obtain the current rules and remove all rules for this user
+	# Bail if primary email invalid
+	return logAll( "Email address \"$email\" not valid, exiting without changing server configuration." ) unless $email =~ /^.+@(.+)$/;
+	my $domain = $1;
+
+	# Bail if not managed by this server
+	logAll( "Email address \"$email\" not managed by this server, exiting without changing configuration." ) unless $vdom =~ /$domain/;
+
+	# Bail if no home dir for this user
+	logAll( "No unix account for \"$user\", exiting without changing configuration." ) unless -d "/home/$user";
+
+	# Obtain the current rules from the virtual.users file and remove all rules for this user
 	my $vuser  = readFile( $vuserf );
 	my %tmp    = ( $vuser =~ /^\s*(\S+?)\s*:\s*(\S+?)\s*$/gim );
 	my %rules  = ();
@@ -754,58 +768,73 @@ sub checkEmailProperties {
 	# Ensure the primary email address exists and is conrrect in config
 	if ( exists $rules{$email} ) {
 		my $r = $rules{$email};
-		if ( $r ne $elocal ) {
-			$comment = "Email address $e was assigned to user \"$r\", but has been changed to \"$user\"";
-			logAdd( $comment );
-			logIRC( $comment );
-		}
+		logAll( "Email address $e was assigned to user \"$r\", but has been changed to \"$user\"" ) if $r ne $elocal;
 	}
 	$rules{$email} = $elocal;
 
-	# Email autoreply
-	if ( exists $$args2{AutoReply} ) {
-		my $reply = $$args2{AutoReply};
-		$user =~ s/ /_/g;
+	# If this user has an AutoReply set, update the .forward content and .vacation.msg
+	if ( exists $$args{AutoReply} ) {
+		my $reply = $$args{AutoReply};
+		my $msgf   = "/home/$user/.vacation.msg";
+		my $fwdf   = "/home/$user/.forward";
+		my $fwd    = readFile( $fwdf );
+		my $fwd2   = $fwd;
 		my $comment = "No valid email address for \"$user\", not changing autoreply!";
-		if ( $email =~ /@(.+)$/ ) {
-			my $domain = $1;
-			my $msg = readFile( $msgf );
-			$fwd2 = $1 if $fwd2 =~ /^(.+?endif)/s;
-			if ( $reply ) {
-				if ( $msg ne $reply ) {
-					writeFile( $msgf, $reply );
-					$fwd2 = "$fwd2\n\n" . eximVacation( $domain, "Out of office auto-reply" );
-					$comment = "Changing AutoReply for user \"$user\" (from \"$msg\" to \"$reply\")";
-					logAdd( $comment );
-					logIRC( $comment );
-				}
-			} else {
-				unlink $msgf;
-				$comment = "Clearing AutoReply for user \"$user\"";
-				logAdd( $comment );
-				logIRC( $comment );
+
+		my $msg = readFile( $msgf );
+		$fwd2 = $1 if $fwd2 =~ /^(.+?endif)/s;
+		if ( $reply ) {
+			if ( $msg ne $reply ) {
+				writeFile( $msgf, $reply );
+				$fwd2 = "$fwd2\n\n" . eximVacation( $domain, "Out of office auto-reply" );
+				logAll( "Changing AutoReply for user \"$user\" (from \"$msg\" to \"$reply\")" )
 			}
+		} else {
+			unlink $msgf;
+			logAll( "Clearing AutoReply for user \"$user\"" );
 		}
-	}
-	
-	# Email aliases
-	if ( exists $$args2{EmailAliases} ) {
-		my @aliases = split /\s+/, $$args2{EmailAliases};
-		$rules{$_} = $elocal for @aliases;
-	}
-	
-	# Email forwards - needs to have deliver directives added to .forward
-	$fwd2 = $1 if $fwd2 =~ /^(.+?)\s*# Forwards/s;
-	if ( exists $$args2{EmailForwards} ) {
-		my @forwards = split /\s+/, $$args2{EmailForwards};
-		if ( $#forwards >= 0 ) {
-			$fwd2 .= "\n\n# Forwards\n";
-			$fwd2 .= "deliver $_\n" for @forwards;
+
+		# Update this users .forward file if changed
+		if ( $fwd ne $fwd2 ) {
+			writeFile( $fwdf, $fwd2 );
+			logAll( "$fwdf updated" );
 		}
 	}
 
-	# Remove any rules which are not listed in virtual.domains
-	my $vdom = readFile( $vdomf );
+	# Loop through five potential accounts for this user (base account plus up to four additional)
+	for my $i ( '', 2, 3, 4, 5 ) {
+		my $account = $i ? $$args{"User$i"} : $user;
+		$account =~ s/\W+/_/g;
+		$account = lc $account;
+		if ( -d "/home/$account" ) {
+			my $alocal = "$account\@localhost";
+		
+			# If this account has EmailAliases, add them to the virtual.users rules
+			if ( exists $$args{"EmailAliases$i"} ) {
+				$rules{$_} = $alocal for split /\s+/, $$args{"EmailAliases$i"};
+			}
+			
+			# If this account has EmailForwards, update the account's .forward file
+			my $fwdf = "/home/$account/.forward";
+			my $fwd  = readFile( $fwdf );
+			my $fwd2 = $fwd;
+			$fwd2 = $1 if $fwd2 =~ /^(.+?)\s*# Forwards/s;
+			if ( exists $$args{"EmailForwards$i"} ) {
+				my @forwards = split /\s+/, $$args{"EmailForwards$i"};
+				if ( $#forwards >= 0 ) {
+					$fwd2 .= "\n\n# Forwards\n";
+					$fwd2 .= "deliver $_\n" for @forwards;
+				}
+				if ( $fwd ne $fwd2 ) {
+					writeFile( $fwdf, $fwd2 );
+					logAll( "$fwdf updated" );
+				}
+			}
+		} else { logAll( "No unix account for \"$account\", set password for user \"$user\" to create it." }
+
+	}
+
+	# Remove any virtual.users rules which are not listed in virtual.domains
 	$vdom =~ s/^\s*//g;
 	$vdom =~ s/\s*$//g;
 	$vdom =~ s/\s+/\|/g;
@@ -815,7 +844,7 @@ sub checkEmailProperties {
 		$rules{$k} = $tmp{$k} if $k =~ /\@$vdom/;
 	}
 
-	# Format the rules and write them back if any changes
+	# Build nicely spaced virtual.users file from the rules
 	my $vuser2 = '';
 	my $longest = 0;
 	my $last = 0;
@@ -834,23 +863,14 @@ sub checkEmailProperties {
 		$vuser2 .= "$line\n";
 	}
 
-	# Update rules if changed
+	# Update virtual.users file if changed
 	if ( $vuser ne $vuser2 ) {
 		writeFile( $vuserf, $vuser2 );
-		my $comment = "$vuserf updated";
-		logAdd( $comment );
-		logIRC( $comment );
-	}
-
-	# Update forwards if changed
-	if ( $fwd ne $fwd2 ) {
-		writeFile( $fwdf, $fwd2 );
-		my $comment = "$fwdf updated";
-		logAdd( $comment );
-		logIRC( $comment );
+		logAll( "$vuserf updated" );
 	}
 }
 
+# Returns a vacation statement for an exim .forward file
 sub eximVacation {
 	my $domain = shift;
 	my $subject = shift;
@@ -883,8 +903,8 @@ endif"
 # ACTIONS
 
 # Synchronise the unix system passwords and samba passwords with the wiki users and passwords
-# - users must be in the wiki group for their passwd to be valid (updatable by this action)
 # - the samba passwords are built from the system passwords
+# - sub-accounts have the same name but with a number appended and are also password-sync'd
 sub doUpdateAccount {
 	my $user  = lc shift;
 	my $pass  = shift;
@@ -908,8 +928,8 @@ sub doUpdateAccount {
 	# Otherwise this is a local wiki account event and needs to be propagated over RPC
 	else {
 
-		# Obtain all the info for this user (if DB connection available)
-		if ( $::db ) {
+		# Obtain all the info for this user (if DB connection available and not a sub-account)
+		if ( $::db and $user =~ /\D$/ ) {
 			my $query = $::db->prepare( 'SELECT * from ' . $::dbpre . 'user where user_name = "' . $User . '"' );
 			$query->execute();
 			%prefs = %{ $query->fetchrow_hashref };
@@ -948,20 +968,43 @@ sub doUpdateAccount {
 		$exp->soft_close();
 
 		# Ensure the user has a Maildir and it's owned by the shared SSH user
-		if ( defined $::netuser ) {
-			qx( "mkdir /home/$user/Maildir" );
-			qx( "chown -R $::netuser:$::netuser /home/$user/Maildir" );
-		}
+		#if ( defined $::netuser ) {
+		#	qx( "mkdir /home/$user/Maildir" );
+		#	qx( "chown -R $::netuser:$::netuser /home/$user/Maildir" );
+		#}
 	}
 
-	# Update the samba passwd too
-	if ( my $exp = Expect->spawn( "smbpasswd -a $user" ) ) {
-		logIRC( "Synchronising samba account" );
-		$exp->expect( 5,
-			[ qr/password:/ => sub { my $exp = shift; $exp->send( "$pass\n" ); exp_continue; } ],
-			[ qr/password:/ => sub { my $exp = shift; $exp->send( "$pass\n" ); } ],
-		);
-		$exp->soft_close();
+	# If this is a master account
+	if ( $user =~ /\D$/ ) {
+
+		# Get the users Person record if exists and update/create sub-accounts
+		my %person = wikiGetProperties( $::wiki, $prefs{user_real_name} );
+		if ( $persin{User} ) {
+
+			# Update the password for any sub-accounts of this user
+			for ( 2 .. 5 ) {
+				my $account = $user . $_;
+				if ( -d "/home/$account" ) {
+					logIRC( "Updating unix account details for sub-account \"$account\"" );
+					my $exp = Expect->spawn( "passwd $account" );
+					$exp->expect( 5,
+						[ qr/password:/ => sub { my $exp = shift; $exp->send( "$pass\n" ); exp_continue; } ],
+						[ qr/password:/ => sub { my $exp = shift; $exp->send( "$pass\n" ); } ],
+					);
+					$exp->soft_close();				
+				}
+			}
+		}
+
+		# Update the samba password for this master account
+		if ( my $exp = Expect->spawn( "smbpasswd -a $user" ) ) {
+			logIRC( "Synchronising samba account" );
+			$exp->expect( 5,
+				[ qr/password:/ => sub { my $exp = shift; $exp->send( "$pass\n" ); exp_continue; } ],
+				[ qr/password:/ => sub { my $exp = shift; $exp->send( "$pass\n" ); } ],
+			);
+			$exp->soft_close();
+		}
 	}
 
 	logIRC( "Done." );
@@ -1111,9 +1154,7 @@ sub mainRpcSendAction {
 
 	# If the SSH connection was not established try again in 5min or so
 	unless ( $ssh ) {
-		my $msg = "RpcSendAction job could not establish an SSH connection with $peer, retrying in 5 minutes";
-		logAdd( $msg );
-		logIRC( $msg );
+		logAll( "RpcSendAction job could not establish an SSH connection with $peer, retrying in 5 minutes" );
 		$$::job{wait} = time() + 300;
 	}
 
@@ -1133,19 +1174,13 @@ sub workInitialise {
 	} else {
 		@::work = ();
 		$::wptr = 0;
-		my $msg = "New work file created";
-		logAdd( $msg );
-		logIRC( $msg );
+		logAll( "New work file created" );
 	}
 	
 	# Rebuild installed work types
 	@::types = ();
 	for ( keys %:: ) { push @::types, $1 if defined &$_ and /^main(\w+)$/ }
-	if ( $#::types >= 0 ) {
-		my $msg = "Installed job types: " . join ', ', @::types;
-		logAdd( $msg );
-		logIRC( $msg );
-	}
+	logAll( "Installed job types: " . join ', ', @::types ) if $#::types >= 0;
 
 	# Save any changes
 	workSave();
@@ -1163,11 +1198,7 @@ sub workSetJobFromId {
 			$i = $_;
 		}
 	}
-	if ( $i < 0 ) {
-		my $msg = "Job $id not found in work list!";
-		logAdd( $msg );
-		logIRC( $msg );
-	}
+	logAll( "Job $id not found in work list!" ) if $i < 0;
 	return $i;
 }
 
@@ -1193,9 +1224,7 @@ sub workExecute {
 		# Increment the *job* work pointer and stop if finished
 		if ( $$::job{length} > 0 && ++$$::job{wptr} > $$::job{length} ) {
 			my $id = $$::job{id};
-			my $msg = "Job $id has finished successfully";
-			logAdd( $msg );
-			logIRC( $msg );
+			logAll( "Job $id has finished successfully" );
 			workStopJob();
 		}
 
@@ -1208,8 +1237,7 @@ sub workExecute {
 		my $msg = "$main() did not return success on iteration " . $$::job{wptr};
 		workLogError( $msg );
 		workStopJob();
-		logAdd( $msg );
-		logIRC( $msg );
+		logAll( $msg );
 	}
 }
 
@@ -1246,9 +1274,7 @@ sub workStartJob {
 		# Write changes to work file
 		workSave();
 
-		my $msg = "$type job started with ID $id";
-		logAdd( $msg );
-		logIRC( $msg );
+		logAll( "$type job started with ID $id" );
 
 	} else { logAdd( "Unknown job type \"$type\"!" ) }
 }

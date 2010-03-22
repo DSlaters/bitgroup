@@ -21,6 +21,7 @@ $query = "
 	{{#dpl:namespace=Form}}
 	{{#dpl:uses=Template:Portal}}
 	{{#dpl:category=Records}}
+	{{#dpl:category=RecordAdmin}}
 	{{#dpl:category=Symbols}}
 	{{#dpl:category=Formatting templates}}
 	{{#dpl:category=Organisational templates}}
