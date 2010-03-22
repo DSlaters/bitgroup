@@ -19,7 +19,7 @@ wikiLogin( $dstwiki, $dstuser, $dstpass ) if $dstuser;
 # - does not select record instances
 $query = "
 	{{#dpl:namespace=Form}}
-	{{#dpl:uses=Portal}}
+	{{#dpl:uses=Template:Portal}}
 	{{#dpl:category=Records}}
 	{{#dpl:category=Symbols}}
 	{{#dpl:category=Formatting templates}}
@@ -32,7 +32,7 @@ $query = "
 # Ensure the list exhibits only unique titles
 %tmp = ();
 $tmp{$_} = 1 for @titles;
-@titles = keys %tmp;
+@titles = sort keys %tmp;
 
 # Copy the titles from source wiki to destination wiki
 $srcdomain = $1 if $srcwiki =~ m|//(.+?)/|;
