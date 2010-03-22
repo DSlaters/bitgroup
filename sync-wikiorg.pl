@@ -35,6 +35,6 @@ $tmp{$_} = 1 for @titles;
 @titles = keys %tmp;
 
 # Copy the titles from source wiki to destination wiki
-$srcdomain = $1 if $srcwiki =~ |//(.+?)/|;
+$srcdomain = $1 if $srcwiki =~ m|//(.+?)/|;
 $comment = "Imported from $srcdomain by sync-wikiorg.pl";
 wikiEdit( $dstwiki, $_, wikiRawPage( $srcwiki, $_ ), $comment ) for @titles;
