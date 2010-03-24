@@ -3,7 +3,7 @@
 # - Authors: [http://www.organicdesign.co.nz/Nad Nad], [http://www.organicdesign.co.nz/Sven Sven]
 # - Source:  http://www.organicdesign.co.nz/wiki.pl
 # - Started: 2008-03-16
-# - Tested versions: 1.6.10, 1.8.4, 1.9.3, 1.10.2, 1.11.0, 1.12.rc1, 1.13.2, 1.14.0, 1.15.1, 1.16.0
+# - Tested versions: 1.6.10, 1.8.4, 1.9.3, 1.10.2, 1.11.0, 1.12.rc1, 1.13.2, 1.14.0, 1.15.1, 1.16.0, 1.17alpha
 
 # NOTES REGARDING CHANGING TO PERL PACKAGE AND ADDING API SUPPORT
 # - constructor:
@@ -12,7 +12,7 @@
 #   - get namespaces
 #   - get messages used in patterns (and make methods use messages in their regexp's so lang-independent)
 
-$::wikipl_version = '1.14.1'; # 2010-03-24
+$::wikipl_version = '1.14.2'; # 2010-03-25
 
 use HTTP::Request;
 use LWP::UserAgent;
@@ -753,15 +753,48 @@ sub wikiParse {
 }
 
 # Get the preferences for the passed user name
+# - requires globals for DB connection and table prefix, $::db and $::dbpre
+# - actually this returns a hash of the users whole DB row including prefs in user_options
 # - add the fields from the Person Record if there is one
 sub wikiGetPreferences {
 	my $user = ucfirst shift;
-	return logAll( "Could not get preferences for user \"$user\", no DB connection!" ) unless defined $::db;
+	return logAdd( "Could not get preferences for user \"$user\", no DB connection!" ) unless defined $::db;
+
+	# Fetch a hash of the users DB row
 	my $query = $::db->prepare( 'SELECT * FROM ' . $::dbpre . 'user WHERE user_name="' . $user . '"' );
 	$query->execute();
 	my %prefs = %{ $query->fetchrow_hashref };
 	$query->finish;
+
+	# If the user has a corresponding Person record, grab that too
+	if ( $prefs{user_real_name} ) {
+
+		# Get the text of the Person record from the DB
+		my $name = $prefs{user_real_name};
+		$name =~ s/ /_/g;
+		my $query = $::db->prepare( 'SELECT page_latest FROM ' . $::dbpre . 'page WHERE page_title="' . $name . '"' );
+		$query->execute();
+		my $rev_id = $query->fetchrow;
+		$query->finish;
+		my $query = $::db->prepare( 'SELECT rev_text_id FROM ' . $::dbpre . 'revision WHERE rev_id=' . $rev_id );
+		$query->execute();
+		my $text_id = $query->fetchrow;
+		$query->finish;
+		my $query = $::db->prepare( 'SELECT old_text FROM ' . $::dbpre . 'text WHERE old_id=' . $text_id );
+		$query->execute();
+		my $text = $query->fetchrow;
+		$query->finish;
+
+		# Extract the parameters from the record text
+		my @braces = wikiExamineBraces( $text );
+		my $text = substr $text, $braces[0]->{OFFSET}, $braces[0]->{LENGTH};
+		my %person = $text =~ /(?<=\|)\s*(\w+)\s*=\s*(.*?)\s*$\s*[|}]/msg;
+		
+		# Copy the parameters into the prefs hash
+		$prefs{$_} = $person{$_} for keys %person;
+	}
 	
+	return %prefs;
 }
 
 # Return a hash of properties from the first template of the passed title
