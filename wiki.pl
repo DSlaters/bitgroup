@@ -12,7 +12,7 @@
 #   - get namespaces
 #   - get messages used in patterns (and make methods use messages in their regexp's so lang-independent)
 
-$::wikipl_version = '1.13.0'; # 2010-03-22
+$::wikipl_version = '1.14.1'; # 2010-03-24
 
 use HTTP::Request;
 use LWP::UserAgent;
@@ -45,6 +45,7 @@ sub wikiAllPages;
 sub wikiUpdateAccount;
 sub wikiParse;
 sub wikiGetProperties;
+sub wikiGetPreferences;
 sub wikiPropertyChanges;
 
 # Set up a global client for making HTTP requests as a browser
@@ -749,6 +750,18 @@ sub wikiParse {
 	}
 
 	return $links ? $html =~ m|title="(.+?)"|g : $html;
+}
+
+# Get the preferences for the passed user name
+# - add the fields from the Person Record if there is one
+sub wikiGetPreferences {
+	my $user = ucfirst shift;
+	return logAll( "Could not get preferences for user \"$user\", no DB connection!" ) unless defined $::db;
+	my $query = $::db->prepare( 'SELECT * FROM ' . $::dbpre . 'user WHERE user_name="' . $user . '"' );
+	$query->execute();
+	my %prefs = %{ $query->fetchrow_hashref };
+	$query->finish;
+	
 }
 
 # Return a hash of properties from the first template of the passed title
