@@ -33,7 +33,7 @@ $daemon   = 'wikid';
 $host     = uc( hostname );
 $name     = hostname;
 $port     = 1729;
-$ver      = '3.17.1'; # 2010-03-21
+$ver      = '3.17.3'; # 2010-03-25
 $log      = "$dir/$daemon.log";
 $wkfile   = "$dir/$daemon.work";
 
@@ -747,6 +747,9 @@ sub checkEmailProperties {
 	my $vdomf  = '/etc/exim4/virtual.domains';
 	my $vdom = readFile( $vdomf );
 
+	# Bail if IMAP property not enabled for this user
+	return logAdd( "IMAP option not enabled for user \"$user\", exiting without changing server configuration." ) unless $$args{IMAP};
+
 	# Bail if primary email invalid
 	return logAll( "Email address \"$email\" not valid, exiting without changing server configuration." ) unless $email =~ /^.+@(.+)$/;
 	my $domain = $1;
@@ -830,7 +833,7 @@ sub checkEmailProperties {
 					logAll( "$fwdf updated" );
 				}
 			}
-		} else { logAll( "No unix account for \"$account\", set password for user \"$user\" to create it." }
+		} else { logAll( "No unix account for \"$account\", set password for user \"$user\" to create it." ) }
 
 	}
 
@@ -902,47 +905,51 @@ endif"
 #---------------------------------------------------------------------------------------------------------#
 # ACTIONS
 
-# Synchronise the unix system passwords and samba passwords with the wiki users and passwords
+# A user password of prefs has changed
+# - if in the @netsync list changes are propagated around the wikis
+# - if the user has IMAP, SSH or FTP access enabled, unix account is created/sync'd
 # - the samba passwords are built from the system passwords
 # - sub-accounts have the same name but with a number appended and are also password-sync'd
+# - this should only ever be called for master accounts, not sub-accounts
 sub doUpdateAccount {
-	my $user  = lc shift;
+	my $user  = lc shift; # ensure usernames are lowercase
 	my $pass  = shift;
-	my %prefs = (@_);
-	$user =~ s/ /_/g;
+	$user =~ s/\W/_/g;    # only allow word characters in usernames
+	$user =~ s/\d+$//;    # ensure master accounts don't end in numbers
 	my $User = ucfirst $user;
+	my %prefs = (@_);
 
-	# if the @netsync array exists, bail unless user is in it
-	return if defined @$::netsync and not grep /$user/i, @$::netsync;
+	# Everything here requires that the global DB connection be active
+	return logAll( "No DB connection available, bailing without updating user account for \"$user\"!" ) unless $::db;
 
-	# If there are prefs then this is from RPC so we may need to create/update the local wiki account
-	my @npref = keys %prefs;
-	if ( $#npref >= 0 ) {
+	# If the @netsync array exists, and this user is in it, do the RPC stuff
+	# - this will propagate regardless of whether there is an associated unix account
+	unless ( defined @$::netsync and not grep /$user/i, @$::netsync ) {
 
-		# Update/create the local wiki account if non existent or not up to date
-		# - this can happen if its an RPC action from another peer
-		# - update directly in DB so that the event doesn't propagate again
-		wikiUpdateAccount( $::wiki, $user, $pass, $::db, %prefs );
-	}
+		# If there are prefs then this is from RPC so we may need to create/update the local wiki account
+		my @npref = keys %prefs;
+		if ( $#npref >= 0 ) {
 
-	# Otherwise this is a local wiki account event and needs to be propagated over RPC
-	else {
-
-		# Obtain all the info for this user (if DB connection available and not a sub-account)
-		if ( $::db and $user =~ /\D$/ ) {
-			my $query = $::db->prepare( 'SELECT * from ' . $::dbpre . 'user where user_name = "' . $User . '"' );
-			$query->execute();
-			%prefs = %{ $query->fetchrow_hashref };
-			$query->finish;
+			# Update/create the local wiki account if non existent or not up to date
+			# - this can happen if its an RPC action from another peer
+			# - update directly in DB so that the event doesn't propagate again
+			wikiUpdateAccount( $::wiki, $user, $pass, $::db, %prefs );
 		}
 
-		# Propagate the action and its args
-		rpcBroadcastAction( 'UpdateAccount', $user, $pass, %prefs );
+		# Otherwise this is a local wiki account event and needs to be propagated over RPC
+		else {
+			%prefs = wikiGetPreferences( $user );
+			rpcBroadcastAction( 'UpdateAccount', $user, $pass, %prefs );
+		}
 	}
 
-	# If unix account exists, change its password
+	# For unix account synchronisation to occur, the user must have a Person record with IMAP,SSH or FTP enabled
+	return logAll( "Not synchronising a unix account for \"$user\" because no IMAP, SSH or FTP access enabled" )
+		unless $prefs{IMAP} or $prefs{SSH} or $prefs{FTP};
+
+	# If unix account exists, set its password
 	if ( -d "/home/$user" ) {
-		logIRC( "Updating unix account details for user \"$user\"" );
+		logAll( "Updating unix account details for user \"$user\"" );
 		my $exp = Expect->spawn( "passwd $user" );
 		$exp->expect( 5,
 			[ qr/password:/ => sub { my $exp = shift; $exp->send( "$pass\n" ); exp_continue; } ],
@@ -951,9 +958,9 @@ sub doUpdateAccount {
 		$exp->soft_close();
 	}
 
-	# Unix account doesn't exist, create now
+	# Otherwise create it now
 	else {
-		logIRC( "Creating unix account for user \"$user\"" );
+		logAll( "Creating unix account for user \"$user\"" );
 		my $exp = Expect->spawn( "adduser $user" );
 		$exp->expect( 5,
 			[ qr/password:/ => sub { my $exp = shift; $exp->send( "$pass\n" ); exp_continue; } ],
@@ -966,44 +973,31 @@ sub doUpdateAccount {
 			[ qr/correct?/  => sub { my $exp = shift; $exp->send( "Y\n" ); exp_continue; } ],
 		);
 		$exp->soft_close();
-
-		# Ensure the user has a Maildir and it's owned by the shared SSH user
-		#if ( defined $::netuser ) {
-		#	qx( "mkdir /home/$user/Maildir" );
-		#	qx( "chown -R $::netuser:$::netuser /home/$user/Maildir" );
-		#}
 	}
 
-	# If this is a master account
-	if ( $user =~ /\D$/ ) {
+	# Update the samba password for this master account
+	if ( my $exp = Expect->spawn( "smbpasswd -a $user" ) ) {
+		logAll( "Synchronising samba account" );
+		$exp->expect( 5,
+			[ qr/password:/ => sub { my $exp = shift; $exp->send( "$pass\n" ); exp_continue; } ],
+			[ qr/password:/ => sub { my $exp = shift; $exp->send( "$pass\n" ); } ],
+		);
+		$exp->soft_close();
+	}
 
-		# Get the users Person record if exists and update/create sub-accounts
-		my %person = wikiGetProperties( $::wiki, $prefs{user_real_name} );
-		if ( $persin{User} ) {
-
-			# Update the password for any sub-accounts of this user
-			for ( 2 .. 5 ) {
-				my $account = $user . $_;
-				if ( -d "/home/$account" ) {
-					logIRC( "Updating unix account details for sub-account \"$account\"" );
-					my $exp = Expect->spawn( "passwd $account" );
-					$exp->expect( 5,
-						[ qr/password:/ => sub { my $exp = shift; $exp->send( "$pass\n" ); exp_continue; } ],
-						[ qr/password:/ => sub { my $exp = shift; $exp->send( "$pass\n" ); } ],
-					);
-					$exp->soft_close();				
-				}
+	# Check for sub-accounts to sync
+	for ( 2 .. 5 ) {
+		my $account = $user.$_;
+		if ( $prefs{$User.$_} ) {
+			if ( -d "/home/$account" ) {
+				logAll( "Updating unix account details for sub-account \"$account\"" );
+				my $exp = Expect->spawn( "passwd $account" );
+				$exp->expect( 5,
+					[ qr/password:/ => sub { my $exp = shift; $exp->send( "$pass\n" ); exp_continue; } ],
+					[ qr/password:/ => sub { my $exp = shift; $exp->send( "$pass\n" ); } ],
+				);
+				$exp->soft_close();			
 			}
-		}
-
-		# Update the samba password for this master account
-		if ( my $exp = Expect->spawn( "smbpasswd -a $user" ) ) {
-			logIRC( "Synchronising samba account" );
-			$exp->expect( 5,
-				[ qr/password:/ => sub { my $exp = shift; $exp->send( "$pass\n" ); exp_continue; } ],
-				[ qr/password:/ => sub { my $exp = shift; $exp->send( "$pass\n" ); } ],
-			);
-			$exp->soft_close();
 		}
 	}
 
