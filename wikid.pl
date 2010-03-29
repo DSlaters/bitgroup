@@ -33,7 +33,7 @@ $daemon   = 'wikid';
 $host     = uc( hostname );
 $name     = hostname;
 $port     = 1729;
-$ver      = '3.17.3'; # 2010-03-25
+$ver      = '3.17.5'; # 2010-03-29
 $log      = "$dir/$daemon.log";
 $wkfile   = "$dir/$daemon.work";
 
@@ -198,12 +198,12 @@ sub UpdateEnvironment_every1440minutes {
 	if ( $::wiki ) {
 
 		# Update /var/www/extensions
-		qx( /var/www/tools/update-extensions.sh );
-		logAll( "Updated /var/www/extensions from OD snapshot" );
+		#qx( /var/www/tools/update-extensions.sh );
+		#logAll( "Updated /var/www/extensions from OD snapshot" );
 
 		# Update /var/www/tools
-		qx( /var/www/tools/update-tools.sh );
-		logAll( "Updated /var/www/tools from OD snapshot" );
+		#qx( /var/www/tools/update-tools.sh );
+		#logAll( "Updated /var/www/tools from OD snapshot" );
 
 		# Update the local wiki's content to the OD content snapshot
 		#qx( /var/www/tools/update-content.sh );
@@ -804,37 +804,38 @@ sub checkEmailProperties {
 		}
 	}
 
-	# Loop through five potential accounts for this user (base account plus up to four additional)
-	for my $i ( '', 2, 3, 4, 5 ) {
-		my $account = $i ? $$args{"User$i"} : $user;
-		$account =~ s/\W+/_/g;
-		$account = lc $account;
-		if ( -d "/home/$account" ) {
-			my $alocal = "$account\@localhost";
-		
-			# If this account has EmailAliases, add them to the virtual.users rules
-			if ( exists $$args{"EmailAliases$i"} ) {
-				$rules{$_} = $alocal for split /\s+/, $$args{"EmailAliases$i"};
-			}
+	# Loop through five potential sub-accounts for this user (base account plus up to four additional)
+	for ( '', 2, 3, 4, 5 ) {
+		if ( $$args{"User$_"} ) {
+			my $account = $user . $_;
+			$account =~ s/\W+/_/g;
+			$account = lc $account;
+			if ( -d "/home/$account" ) {
+				my $alocal = "$account\@localhost";
 			
-			# If this account has EmailForwards, update the account's .forward file
-			my $fwdf = "/home/$account/.forward";
-			my $fwd  = readFile( $fwdf );
-			my $fwd2 = $fwd;
-			$fwd2 = $1 if $fwd2 =~ /^(.+?)\s*# Forwards/s;
-			if ( exists $$args{"EmailForwards$i"} ) {
-				my @forwards = split /\s+/, $$args{"EmailForwards$i"};
-				if ( $#forwards >= 0 ) {
-					$fwd2 .= "\n\n# Forwards\n";
-					$fwd2 .= "deliver $_\n" for @forwards;
+				# If this account has EmailAliases, add them to the virtual.users rules
+				if ( exists $$args{"EmailAliases$i"} ) {
+					$rules{$_} = $alocal for split /\s+/, $$args{"EmailAliases$i"};
 				}
-				if ( $fwd ne $fwd2 ) {
-					writeFile( $fwdf, $fwd2 );
-					logAll( "$fwdf updated" );
+				
+				# If this account has EmailForwards, update the account's .forward file
+				my $fwdf = "/home/$account/.forward";
+				my $fwd  = readFile( $fwdf );
+				my $fwd2 = $fwd;
+				$fwd2 = $1 if $fwd2 =~ /^(.+?)\s*# Forwards/s;
+				if ( exists $$args{"EmailForwards$i"} ) {
+					my @forwards = split /\s+/, $$args{"EmailForwards$i"};
+					if ( $#forwards >= 0 ) {
+						$fwd2 .= "\n\n# Forwards\n";
+						$fwd2 .= "deliver $_\n" for @forwards;
+					}
+					if ( $fwd ne $fwd2 ) {
+						writeFile( $fwdf, $fwd2 );
+						logAll( "$fwdf updated" );
+					}
 				}
-			}
-		} else { logAll( "No unix account for \"$account\", set password for user \"$user\" to create it." ) }
-
+			} else { logAll( "No unix account for \"$account\", set password for user \"$user\" to create it." ) }
+		}
 	}
 
 	# Remove any virtual.users rules which are not listed in virtual.domains
@@ -947,6 +948,21 @@ sub doUpdateAccount {
 	return logAll( "Not synchronising a unix account for \"$user\" because no IMAP, SSH or FTP access enabled" )
 		unless $prefs{IMAP} or $prefs{SSH} or $prefs{FTP};
 
+	# Update the master account's password or create the account and same for any sub-accounts
+	# - only master accounts have an associated Samba password
+	syncUnixAccount( $user, $pass, 1 );
+	for ( 2 .. 5 ) { syncUnixAccount( $user.$_, $pass, 0 ) if $prefs{"User$_"} }
+
+	logIRC( "Done." );
+}
+
+# Called internally by doUpdateAccount to update/create a unix account & password
+# - if $smb set then also update the corresponding Samba password
+sub syncUnixAccount {
+	my $user = shift;
+	my $pass = shift;
+	my $smb  = shift;
+
 	# If unix account exists, set its password
 	if ( -d "/home/$user" ) {
 		logAll( "Updating unix account details for user \"$user\"" );
@@ -976,32 +992,16 @@ sub doUpdateAccount {
 	}
 
 	# Update the samba password for this master account
-	if ( my $exp = Expect->spawn( "smbpasswd -a $user" ) ) {
-		logAll( "Synchronising samba account" );
-		$exp->expect( 5,
-			[ qr/password:/ => sub { my $exp = shift; $exp->send( "$pass\n" ); exp_continue; } ],
-			[ qr/password:/ => sub { my $exp = shift; $exp->send( "$pass\n" ); } ],
-		);
-		$exp->soft_close();
-	}
-
-	# Check for sub-accounts to sync
-	for ( 2 .. 5 ) {
-		my $account = $user.$_;
-		if ( $prefs{$User.$_} ) {
-			if ( -d "/home/$account" ) {
-				logAll( "Updating unix account details for sub-account \"$account\"" );
-				my $exp = Expect->spawn( "passwd $account" );
-				$exp->expect( 5,
-					[ qr/password:/ => sub { my $exp = shift; $exp->send( "$pass\n" ); exp_continue; } ],
-					[ qr/password:/ => sub { my $exp = shift; $exp->send( "$pass\n" ); } ],
-				);
-				$exp->soft_close();			
-			}
+	if ( $smb ) {
+		if ( my $exp = Expect->spawn( "smbpasswd -a $user" ) ) {
+			logAll( "Synchronising samba account" );
+			$exp->expect( 5,
+				[ qr/password:/ => sub { my $exp = shift; $exp->send( "$pass\n" ); exp_continue; } ],
+				[ qr/password:/ => sub { my $exp = shift; $exp->send( "$pass\n" ); } ],
+			);
+			$exp->soft_close();
 		}
 	}
-
-	logIRC( "Done." );
 }
 
 # Output information about self
