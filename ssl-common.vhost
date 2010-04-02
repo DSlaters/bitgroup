@@ -1,0 +1,12 @@
+DocumentRoot /var/www/domains
+
+LogFormat "%h %l %u %t \"%r\" %>s %b" common
+CustomLog /var/log/apache2/access.log common
+
+RewriteEngine On
+
+RewriteCond %{HTTP_HOST} ^webmail\.
+RewriteRule (.*) /webmail$1 [L]
+
+SSLEngine on
+

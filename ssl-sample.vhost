@@ -1,0 +1,13 @@
+<VirtualHost foo.com:443>
+
+	ServerAlias www.foo.com
+	ServerAlias wiki.foo.com
+
+        SSLEngine on
+        SSLCertificateFile /var/www/ssl/foo.com.crt
+        SSLCertificateKeyFile /var/www/ssl/foo.com.key
+
+	Include /var/www/tools/common.vhost
+	Include /var/www/tools/wiki.vhost
+
+</VirtualHost>

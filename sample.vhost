@@ -1,0 +1,21 @@
+NameVirtualHost *:80
+<VirtualHost *:80>
+
+	Include /var/www/tools/common.vhost
+
+        RewriteCond %{HTTP_HOST} ^packages\.
+        RewriteRule (.*) /packages$1 [L]
+
+        RewriteCond %{HTTP_HOST} ^svn\.
+        RewriteRule (.*) /websvn$1 [L]
+
+        RewriteCond %{HTTP_HOST} ^crm\.organicdesign\.co\.nz
+        RewriteRule (.*) /crm$1 [L]
+
+	Include /var/www/tools/wiki.vhost
+
+</VirtualHost>
+
+Include /var/www/ssl/foo.com.vhost
+Include /var/www/ssl/bar.com.vhost
+
