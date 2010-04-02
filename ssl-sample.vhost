@@ -1,3 +1,4 @@
+NameVirtualHost foo.com:443
 <VirtualHost foo.com:443>
 
 	ServerAlias www.foo.com
