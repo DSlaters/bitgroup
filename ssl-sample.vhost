@@ -6,7 +6,6 @@
 	Include /var/www/tools/ssl-common.vhost
 	Include /var/www/tools/wiki.vhost
 
-        SSLCertificateFile /var/www/ssl/foo.com.crt
-        SSLCertificateKeyFile /var/www/ssl/foo.com.key
+        SSLCertificateFile /var/www/ssl/foo.com.pem
 
 </VirtualHost>
