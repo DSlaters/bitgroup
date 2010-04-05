@@ -6,7 +6,7 @@ RewriteCond %{REQUEST_URI} ^/files/thumb/./../.+?/[0-9]+px-
 RewriteCond %{HTTP_HOST} ^(www\.|wiki\.)?(.+)$
 RewriteRule ^.+/(.+?)/([0-9]+)px- /%2/wiki/thumb.php?w=$2&f=$1 [L]
 
-RewriteCond %{REQUEST_URI} ^/(wiki/|html|files/|common/|blogs|[fF]avicon.ico|[rR]obots.txt)
+RewriteCond %{REQUEST_URI} ^/(wiki/|html/|forums/|files/|common/|blogs|[fF]avicon.ico|[rR]obots.txt)
 RewriteCond %{HTTP_HOST} ^(www\.|wiki\.)?(.+)$
 RewriteRule (.*) /%2$1 [L]
 
