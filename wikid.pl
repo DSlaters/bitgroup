@@ -33,7 +33,7 @@ $daemon   = 'wikid';
 $host     = uc( hostname );
 $name     = hostname;
 $port     = 1729;
-$ver      = '3.17.5'; # 2010-03-29
+$ver      = '3.17.6'; # 2010-03-30
 $log      = "$dir/$daemon.log";
 $wkfile   = "$dir/$daemon.work";
 
@@ -805,9 +805,9 @@ sub checkEmailProperties {
 	}
 
 	# Loop through five potential sub-accounts for this user (base account plus up to four additional)
-	for ( '', 2, 3, 4, 5 ) {
-		if ( $$args{"User$_"} ) {
-			my $account = $user . $_;
+	for my $i ( '', 2, 3, 4, 5 ) {
+		if ( $$args{"User$i"} ) {
+			my $account = $user . $i;
 			$account =~ s/\W+/_/g;
 			$account = lc $account;
 			if ( -d "/home/$account" ) {
@@ -952,6 +952,9 @@ sub doUpdateAccount {
 	# - only master accounts have an associated Samba password
 	syncUnixAccount( $user, $pass, 1 );
 	for ( 2 .. 5 ) { syncUnixAccount( $user.$_, $pass, 0 ) if $prefs{"User$_"} }
+
+	# Check email properties incase account creation has occured and requires email config updates
+	checkEmailProperties( $user, \%prefs );
 
 	logIRC( "Done." );
 }
