@@ -12,7 +12,7 @@
 #   - get namespaces
 #   - get messages used in patterns (and make methods use messages in their regexp's so lang-independent)
 
-$::wikipl_version = '1.14.2'; # 2010-03-25
+$::wikipl_version = '1.14.3'; # 2010-04-15
 
 use HTTP::Request;
 use LWP::UserAgent;
@@ -297,7 +297,8 @@ sub wikiRestore {
 	return $success;
 }
 
-
+ use Data::Dumper;
+ 
 # Upload a files into a wiki using its Special:Upload page
 sub wikiUploadFile {
     my ( $wiki, $sourcefile, $destname, $summary ) = @_;
@@ -312,12 +313,21 @@ sub wikiUploadFile {
 			wpUploadDescription  => $summary,
 			wpUpload             => "Upload file",
 			wpDestFileWarningAck => '',
-			wpUploadFile         => [$sourcefile => $destname],
 			wpWatchthis          => '0',
 	    );
-		my $response = $::client->post( $url, \%form, Content_Type => 'form-data' );
-		$success = $response->is_success;
 
+		# Allow the source file to be an URL
+		if ( $sourcefile =~ /^https?:\/\// ) {
+			$form{wpSourceType} = 'url';
+			$form{wpUploadFileURL} = $sourcefile;
+		} else {
+			$form{wpSourceType} = 'File';
+			$form{wpUploadFile} = [$sourcefile => $destname];
+		}
+
+		my $response = $::client->post( $url, \%form, Content_Type => 'multipart/form-data' );
+		$success = $response->is_success;
+print Dumper($response);
 		# Check if file is already uploaded
 		if ( $success && $response->content =~ m/Upload warning.+?(A file with this name exists already|File name has been changed to)/s ) {
 			$response->content =~ m/<input type='hidden' name='wpSessionKey' value="(.+?)" \/>/;
@@ -327,7 +337,7 @@ sub wikiUploadFile {
 			$form{'wpDestFileWarningAck'} = 1,
 			$form{'wpLicense'}            = '';
 			$form{'wpUpload'}             =  "Save file",
-			$response = $::client->post( "$url&action=submit", \%form, Content_Type => 'form-data' );
+			$response = $::client->post( "$url&action=submit", \%form, Content_Type => 'multipart/form-data' );
 			logAdd( "Uploaded a new version of $destname" );
 		} else { logAdd( "Uploaded $destname" ) }
 	}

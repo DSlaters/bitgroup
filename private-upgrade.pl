@@ -35,8 +35,9 @@ for my $title ( @titles ) {
 }
 
 # Activities
-my @titles = wikiParse( $wiki, '{{#dpl:uses=Template:Activity|offset=500}}', 1 );
-for my $title ( @titles ) {
+my @titles = wikiParse( $wiki, '{{#dpl:uses=Template:Activity}}', 1 );
+my @titles2 = wikiParse( $wiki, '{{#dpl:uses=Template:Activity|offset=500}}', 1 );
+for my $title ( @titles, @titles2 ) {
 	$text = wikiRawPage( $wiki, $title );
 
 	&changeOrganisation;
@@ -49,15 +50,7 @@ for my $title ( @titles ) {
 
 # Change first names to full names
 sub changePeople {
-	$text =~ s/Angela( Smith)*/Angela Smith/g;
-	$text =~ s/Aran( Dunkley)*/Aran Dunkley/g;
-	$text =~ s/Jack( Henderson)*/Jack Henderson/g;
-	$text =~ s/Milan( Holzapfel)*/Milan Holzapfel/g;
-	$text =~ s/Rob(?!=ert)/Robert Carter/g;
-	$text =~ s/Dana( Darwin)*/Dana Darwin/g;
-	$text =~ s/Sven/Marcus Davy/g;
-	$text =~ s/Phalseid/Peder Halseid/g;
-	$text =~ s/Robert Carterert Carter/Robert Carter/g;
+	$text =~ s/Peder( Halseid)*/Peder Halseid/g;
 }
 
 # Change organisation

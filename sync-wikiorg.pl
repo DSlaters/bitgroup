@@ -12,6 +12,9 @@ $srcpass = '';
 
 require "wikid.conf";
 
+$srcdomain = $1 if $srcwiki =~ m|//(.+?)/|;
+$comment = "Imported from $srcdomain by sync-wikiorg.pl";
+
 wikiLogin( $srcwiki, $srcuser, $srcpass ) if $srcuser;
 wikiLogin( $dstwiki, $dstuser, $dstpass ) if $dstuser;
 
@@ -27,6 +30,8 @@ $query = "
 	{{#dpl:category=Organisational templates}}
 ";
 
+$query = "{{#dpl:category=Icons}}";
+
 # Get the list of titles from the DPL queries
 @titles = wikiParse( $srcwiki, $query, 1 );
 
@@ -36,6 +41,17 @@ $tmp{$_} = 1 for @titles;
 @titles = sort keys %tmp;
 
 # Copy the titles from source wiki to destination wiki
-$srcdomain = $1 if $srcwiki =~ m|//(.+?)/|;
-$comment = "Imported from $srcdomain by sync-wikiorg.pl";
-wikiEdit( $dstwiki, $_, wikiRawPage( $srcwiki, $_ ), $comment ) for @titles;
+for $title ( @titles ) {
+	$text = wikiRawPage( $srcwiki, $title );
+	if ( $title =~ /^(Image|File):(.+)$/ ) {
+
+		# Title is an image (not finished)
+		wikiUploadFile( $wiki, $sourcefile, $destname, $summary );
+
+	} else {
+
+		# Title is a normal article
+		wikiEdit( $dstwiki, $title, $text, $comment );
+
+	}
+}
