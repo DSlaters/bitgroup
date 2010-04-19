@@ -1,4 +1,3 @@
-NameVirtualHost *:80
 <VirtualHost *:80>
 
 	Include /var/www/tools/common.vhost
