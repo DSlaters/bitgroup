@@ -1,7 +1,7 @@
 #!/usr/bin/perl
-# - Licenced under LGPL (http://www.gnu.org/copyleft/lesser.html)
+# - Licenced under GPL
 # - Author: http://www.organicdesign.co.nz/nad
-# - Started: 2007-08-25 {{perl}}{{Category:OD2}}
+# - Started: 2007-08-25
 use DBI;
 use Digest::MD5 qw( md5_hex );
 use File::Temp qw( tempfile );
@@ -69,7 +69,7 @@ close FH;
 # Update the sysop user and password if supplied
 if ( defined $sysopUser and defined $sysopPass ) {
 	$md5 = md5_hex( '1-' . md5_hex( $sysopPass ) );
-	$sql =~ s/^(\s*INSERT\s+INTO\s+`wiki_user`\s+VALUES\s+\(\s*1,\s*)'.+?'(.+?:B:1:)[a-z0-9]{32}'/$1'$sysopUser'$2$md5'/m;
+	$sql =~ s/^(\s*INSERT\s+INTO\s+`\W+?_user`\s+VALUES\s+\(\s*1,\s*)'.+?'(.+?:B:1:)[a-z0-9]{32}'/$1'$sysopUser'$2$md5'/m;
 }
 
 # Find the prefix (if not already set) being used in the template and prepare for use in replacement regexp
