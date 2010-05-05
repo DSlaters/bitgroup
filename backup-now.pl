@@ -15,6 +15,7 @@ qx( mysqldump -u $wgDBuser --password='$wgDBpassword' -A >$sql );
 qx( 7za a $dir/$s7z $sql );
 qx( chmod 644 $dir/$s7z );
 print "\n\nDB backup: $s7z (".size($sql)."/".size("$dir/$s7z").")\n";
+qx( rm $sql );
 
 # Backup config files
 $conf = join( ' ',
@@ -40,5 +41,5 @@ qx( tar -cf $tmp /var/www -X /var/www/tools/backup-exclusions );
 qx( 7za a $dir/$t7z $tmp );
 qx( chmod 644 $dir/$t7z );
 print "FS backup: $t7z (".size($tmp)."/".size("$dir/$t7z").")\n";
-
 qx( rm $tmp );
+
