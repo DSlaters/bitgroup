@@ -9,7 +9,7 @@ $date = strftime( '%Y-%m-%d', localtime );
 sub size { return (int([stat shift]->[7]/104857.6+0.5)/10).'MB'; }
 
 # Backup and compress databases
-$s7z = "all-$date.sql.7z";
+$s7z = "$wgDBname-db-$date.sql.7z";
 $sql = "$dir/all.sql";
 qx( mysqldump -u $wgDBuser --password='$wgDBpassword' -A >$sql );
 qx( 7za a $dir/$s7z $sql );
@@ -30,12 +30,12 @@ $conf = join( ' ',
 	"/etc/crontab",
 	"/etc/network/interfaces"
 );
-$tgz = "config-$date.tgz";
+$tgz = "$wgDBname-config-$date.tgz";
 qx( tar -czf $dir/$tgz $conf );
 print "\n\nConfig backup: $tgz (".size("$dir/$tgz").")\n";
 
 # Backup and compress wiki/web structure
-$t7z = "www-$date.t7z";
+$t7z = "$wgDBname-www-$date.t7z";
 $tmp = "$dir/tmp.tar";
 qx( tar -cf $tmp /var/www -X /var/www/tools/backup-exclusions );
 qx( 7za a $dir/$t7z $tmp );
