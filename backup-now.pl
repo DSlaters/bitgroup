@@ -16,7 +16,6 @@ qx( 7za a $dir/$s7z $sql );
 qx( chmod 644 $dir/$s7z );
 print "\n\nDB backup: $s7z (".size($sql)."/".size("$dir/$s7z").")\n";
 
-
 # Backup config files
 $conf = join( ' ',
 	"/var/www/tools/wikid.conf",
@@ -34,12 +33,10 @@ $tgz = "config-$date.tgz";
 qx( tar -czf $dir/$tgz $conf );
 print "\n\nConfig backup: $tgz (".size("$dir/$tgz").")\n";
 
-# Tmp file to use for tar's before compressed
-$tar = "$dir/tmp.tar";
-
 # Backup and compress wiki/web structure
 $t7z = "www-$date.t7z";
-qx( tar -cf $tar /var/www -X /var/www/tools/backup-exclusions );
-qx( 7za a $dir/$t7z $tar );
+$tmp = "$dir/tmp.tar";
+qx( tar -cf $tmp /var/www -X /var/www/tools/backup-exclusions );
+qx( 7za a $dir/$t7z $tmp );
 qx( chmod 644 $dir/$t7z );
-comment "FS backup: $t7z (".size($tar)."/".size("$dir/$t7z").")";
+print "FS backup: $t7z (".size($tmp)."/".size("$dir/$t7z").")\n";
