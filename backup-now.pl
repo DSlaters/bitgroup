@@ -21,7 +21,7 @@ print "\n\nDB backup: $s7z (".size($sql)."/".size("$dir/$s7z").")\n";
 $conf = join( ' ',
 	"/var/www/tools/wikid.conf",
 	"/var/www/tools/backup.pl",
-		"/etc/apache2/sites-available",
+	"/etc/apache2/sites-available",
 	"/etc/exim4",
 	"/etc/bind9",
 	"/var/cache/bind",
