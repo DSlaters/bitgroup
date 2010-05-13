@@ -12,7 +12,7 @@
 #   - get namespaces
 #   - get messages used in patterns (and make methods use messages in their regexp's so lang-independent)
 
-$::wikipl_version = '1.14.3'; # 2010-04-15
+$::wikipl_version = '1.14.4'; # 2010-05-13
 
 use HTTP::Request;
 use LWP::UserAgent;
@@ -297,51 +297,59 @@ sub wikiRestore {
 	return $success;
 }
 
- use Data::Dumper;
  
 # Upload a files into a wiki using its Special:Upload page
 sub wikiUploadFile {
     my ( $wiki, $sourcefile, $destname, $summary ) = @_;
-    my $url = "$wiki?title=Special:Upload&action=submit";
-    my $success = 0;
-    my $err = 'ERROR';
-    my $retries = 1;
-    while ( $retries-- ) {
-		%form = (
-			wpSourceType         => 'file',
-			wpDestFile           => $destname,
-			wpUploadDescription  => $summary,
-			wpUpload             => "Upload file",
-			wpDestFileWarningAck => '',
-			wpWatchthis          => '0',
-	    );
+    my $url = "$wiki?title=Special:Upload";
 
-		# Allow the source file to be an URL
-		if ( $sourcefile =~ /^https?:\/\// ) {
-			$form{wpSourceType} = 'url';
-			$form{wpUploadFileURL} = $sourcefile;
-		} else {
-			$form{wpSourceType} = 'File';
-			$form{wpUploadFile} = [$sourcefile => $destname];
-		}
+	# Populate a basic upload form
+	%form = (
+		wpDestFile           => $destname,
+		wpUploadDescription  => $summary,
+		wpUpload             => "Upload file",
+		wpDestFileWarningAck => '',
+		wpWatchthis          => '0',
+	);
 
-		my $response = $::client->post( $url, \%form, Content_Type => 'multipart/form-data' );
-		$success = $response->is_success;
-print Dumper($response);
-		# Check if file is already uploaded
-		if ( $success && $response->content =~ m/Upload warning.+?(A file with this name exists already|File name has been changed to)/s ) {
-			$response->content =~ m/<input type='hidden' name='wpSessionKey' value="(.+?)" \/>/;
-			# Need to grab the wpSessionKey input field
-			$form{'wpSessionKey'}         = $1;
-			$form{'wpIgnoreWarning'}      = 'true';
-			$form{'wpDestFileWarningAck'} = 1,
-			$form{'wpLicense'}            = '';
-			$form{'wpUpload'}             =  "Save file",
-			$response = $::client->post( "$url&action=submit", \%form, Content_Type => 'multipart/form-data' );
-			logAdd( "Uploaded a new version of $destname" );
-		} else { logAdd( "Uploaded $destname" ) }
+	# Check whether the source file is local or an URL
+	if ( $sourcefile =~ /^https?:\/\// ) {
+		$form{wpSourceType} = $::client->get( $url )->content =~ /name=['"]wpSourceType["'].+?value=["']web['"]/i ? 'web' : 'url';
+		$form{wpUploadFileURL} = $sourcefile;
+	} else {
+		$form{wpSourceType} = 'file';
+		$form{wpUploadFile} = [$sourcefile => $destname];
 	}
-    return $success;
+
+	# Post the upload form
+	my $response = $::client->post( $url, \%form, Content_Type => 'multipart/form-data' );
+
+	# If the response is another form with a session-key post again
+	if ( $response->content =~ /name=['"]wpSessionKey["'].+?value=["'](.+?)["']/ ) {
+		$form{wpSessionKey}         = $1;
+		$form{wpIgnoreWarning}      = 'true';
+		$form{wpDestFileWarningAck} = 1,
+		$form{wpLicense}            = '';
+		$form{wpUpload}             =  "Save file",
+		$response = $::client->post( $url, \%form, Content_Type => 'multipart/form-data' );
+		logAdd( "Uploaded a new version of $destname" );
+	}
+
+	# Or if it's a form with an edit token, post that
+	elsif ( $response->content =~ /value=["'](.+?)["'][^>]+?name=['"]wpEditToken["'].+?/ ) {
+		$form{'wpEditToken'}         = $1;
+		$form{'wpIgnoreWarning'}      = 'true';
+		$form{'wpDestFileWarningAck'} = 1,
+		$form{'wpLicense'}            = '';
+		$form{'wpUpload'}             =  "Upload file",
+		$response = $::client->post( $url, \%form, Content_Type => 'multipart/form-data' );
+		logAdd( "Uploaded a new version of $destname" );
+	}
+	
+	# Assumed file uploaded ok (should check if that's true)
+	else { logAdd( "Uploaded $destname" ) }
+
+    return 1;
 }
 
 

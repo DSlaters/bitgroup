@@ -45,6 +45,9 @@ for $title ( @titles ) {
 	$text = wikiRawPage( $srcwiki, $title );
 	if ( $title =~ /^(Image|File):(.+)$/ ) {
 
+		# Get the URL of the image
+
+
 		# Title is an image (not finished)
 		wikiUploadFile( $wiki, $sourcefile, $destname, $summary );
 
