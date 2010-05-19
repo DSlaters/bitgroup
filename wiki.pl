@@ -12,7 +12,7 @@
 #   - get namespaces
 #   - get messages used in patterns (and make methods use messages in their regexp's so lang-independent)
 
-$::wikipl_version = '1.14.4'; # 2010-05-13
+$::wikipl_version = '1.14.5'; # 2010-05-19
 
 use HTTP::Request;
 use LWP::UserAgent;
@@ -33,6 +33,7 @@ sub wikiDelete;
 sub wikiRestore;
 sub wikiUploadFile;
 sub wikiDeleteFile;
+sub wikiGetFileURL;
 sub wikiDownloadFile;
 sub wikiDownloadFiles;
 sub wikiProtect;
@@ -391,22 +392,29 @@ sub wikiDeleteFile {
 }
 
 
+# Obtain the URL of a file/image in a wiki given the filename
+# - don't supply namespace
+sub wikiGetFileURL {
+	my ( $wiki, $file ) = @_;
+	my $desc = $::client->get( "$wiki?title=Image:$file&useskin=standard" )->content;
+	return '' unless $desc =~ m|<a href=['"](/[^"']+?/[a-z0-9]/[a-z0-9]{2}/[^"']+?)['"]>$file</a>|;
+	my $url = $1;
+	$url = $1 . $url if $wiki =~ m|^(https?://.+?)/|;
+	return $url;
+}
+
+
 # Download an uploaded file by name from a wiki to a local file
-# - if no namespace is supplied with the source then "Image" is used
+# - don't supply namespace on source file article name
 # - if no destination filename is specified, the image name is used
 sub wikiDownloadFile {
 	my ( $wiki, $src, $dst ) = @_;
-	$src  =~ /^((.+?):)?(.+)$/;
-	$src  = $1 ? "$2$src" : "Image:$src";
-	$dst  = $dst ? $dst : $2;
-	my $base = $wiki =~ /(https?:\/\/(.+?))\// ? $1 : return 0;
-	my $page = $::client->get("$wiki?title=$src&action=render")->content;
-	if ( my $url = $page =~ /href\s*=\s*['"](\/[^"']+?\/.\/..\/[^'"]+?)["']/ ? $1 : 0 ) {
-		my $file = $url =~ /.+\/(.+?)$/ ? $1 : die 'wiki-downloaded-file';
-		logAdd( "Downloading \"$src\"" );
+	if ( my $url = wikiGetFileURL( $wiki, $src ) ) {
+		logAdd( "Downloading \"$src\" from \"$url\"" );
+		my $file = $1 if $url =~ m|^.+/(.+?)$|;
 		open FH, '>', $file;
 		binmode FH;
-		print FH $::client->get( $base . $url)->content;
+		print FH $::client->get( $url )->content;
 		close FH;
 	}
 }
