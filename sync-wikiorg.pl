@@ -28,6 +28,7 @@ $query = "
 	{{#dpl:category=Symbols}}
 	{{#dpl:category=Formatting templates}}
 	{{#dpl:category=Organisational templates}}
+	{{#dpl:category=Icons}}
 ";
 
 $query = "{{#dpl:category=Icons}}";
@@ -45,11 +46,8 @@ for $title ( @titles ) {
 	$text = wikiRawPage( $srcwiki, $title );
 	if ( $title =~ /^(Image|File):(.+)$/ ) {
 
-		# Get the URL of the image
-
-
-		# Title is an image (not finished)
-		wikiUploadFile( $wiki, $sourcefile, $destname, $summary );
+		# Title is a file/image
+		wikiUploadFile( $dstwiki, wikiGetFileURL( $srcwiki, $1 ), '', $text );
 
 	} else {
 
