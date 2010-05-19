@@ -300,9 +300,15 @@ sub wikiRestore {
 
  
 # Upload a files into a wiki using its Special:Upload page
+# - if dst name is empty, the name of the source file will be used
 sub wikiUploadFile {
     my ( $wiki, $sourcefile, $destname, $summary ) = @_;
     my $url = "$wiki?title=Special:Upload";
+
+	# Set dst name from source if empty
+	unless ( $destname ) {
+		$destname = $1 if $sourcefile =~ m|^.+/(.+?)$|;
+	}
 
 	# Populate a basic upload form
 	%form = (
