@@ -2,16 +2,17 @@
 use Win32;
 use Win32::Daemon;
 use Net::POP3;
+
 our $daemon = 'PerlService';
+our $description = "$daemon is a test of Perl's Win32 service functionality";
 
+# Install or remove the service if switch provided
 &svcInstall if $ARGV[0] =~ /^(-i|--install)$/i;
-
 &svcRemove if $ARGV[0] =~ /^(-r|--remove)$/i;
 
+# Redirect STDOUT and STDERR to log file
 my ( $cwd,$bn,$ext ) = ( Win32::GetFullPathName( $0 ) =~ /^(.*\\)(.*)\.(.*)$/ )[0..2] ;
 my $log = "$cwd$bn.log"; 
-
-# Redirect STDOUT and STDERR to log file
 open( STDOUT, ">> $log" ) or die "Couldn't open $log for appending: $!\n";
 open( STDERR, ">&STDOUT" );
 
@@ -84,7 +85,7 @@ sub svcInstall {
 		name         => $daemon,
 		display      => $daemon,
 		path         => $path,
-		description  => "$daemon checks a POP account and moves matching emails into a specified folder as a CSV file",
+		description  => $description,
 		parameters   => $parameters
 	);
 
