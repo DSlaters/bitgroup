@@ -403,7 +403,8 @@ sub wikiDeleteFile {
 sub wikiGetFileUrl {
 	my ( $wiki, $file ) = @_;
 	my $desc = $::client->get( "$wiki?title=Image:$file&useskin=standard" )->content;
-	return '' unless $desc =~ m|<a href=['"](/[^"']+?/[a-z0-9]/[a-z0-9]{2}/[^"']+?)['"][^>]+>$file</a>|;
+	return '' unless $desc =~ m|<a href=['"]([^"']+)['"]><img alt=['"]\w+:$file['"]|;
+#	<a href="/files/f/fb/Big_daisy.gif"><img alt="File:Big daisy.gif" 
 	my $url = $1;
 	$url = $1 . $url if $wiki =~ m|^(https?://.+?)/|;
 	return $url;
