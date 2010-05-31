@@ -12,7 +12,7 @@
 #   - get namespaces
 #   - get messages used in patterns (and make methods use messages in their regexp's so lang-independent)
 
-$::wikipl_version = '1.14.7'; # 2010-05-31
+$::wikipl_version = '1.14.8'; # 2010-05-31
 
 use HTTP::Request;
 use LWP::UserAgent;
@@ -320,7 +320,8 @@ sub wikiUploadFile {
 	);
 
 	# Check whether the source file is local or an URL
-	if ( $sourcefile =~ /^https?:\/\// ) {
+	if ( $sourcefile =~ /^(ftp|http)s?(:\/\/.+)$/ ) {
+		$sourcefile = $1 . $2;
 		$form{wpSourceType} = $::client->get( $url )->content =~ /name=['"]wpSourceType["'].+?value=["']web['"]/i ? 'web' : 'url';
 		$form{wpUploadFileURL} = $sourcefile;
 	} else {
@@ -354,7 +355,7 @@ sub wikiUploadFile {
 	}
 	
 	# Assumed file uploaded ok (should check if that's true)
-	else { logAdd( "Uploaded $destname" ) }
+	else { logAdd( "Uploaded $destname" ); }
 
     return 1;
 }
