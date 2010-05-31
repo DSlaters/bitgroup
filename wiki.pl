@@ -12,7 +12,7 @@
 #   - get namespaces
 #   - get messages used in patterns (and make methods use messages in their regexp's so lang-independent)
 
-$::wikipl_version = '1.14.8'; # 2010-05-31
+$::wikipl_version = '1.14.9'; # 2010-05-31
 
 use HTTP::Request;
 use LWP::UserAgent;
@@ -777,7 +777,7 @@ sub wikiParse {
 
 		# Post the form
 		$response = $::client->post( "$wiki?title=Sandbox&action=submit&useskin=standard", \%form );
-		$html = $response->content if $response->content =~ m|<h2 id="mw-previewheader">|;
+		$html = $response->content if $response->content =~ m|<div class=["']previewnote["']>|;
 
 		# Extract preview content out of resulting page
 		$html = $1 if $html =~ m|$marker\s*(.+)\s*$marker|s;
