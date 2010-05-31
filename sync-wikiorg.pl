@@ -31,8 +31,6 @@ $query = "
 	{{#dpl:category=Icons}}
 ";
 
-$query = "{{#dpl:category=Icons}}";
-
 # Get the list of titles from the DPL queries
 @titles = wikiParse( $srcwiki, $query, 1 );
 
@@ -47,7 +45,8 @@ for $title ( @titles ) {
 	if ( $title =~ /^(Image|File):(.+)$/ ) {
 
 		# Title is a file/image
-		wikiUploadFile( $dstwiki, wikiGetFileURL( $srcwiki, $1 ), '', $text );
+		my $url = wikiGetFileUrl( $srcwiki, $2 );
+		wikiUploadFile( $dstwiki, $url, '', $text );
 
 	} else {
 
