@@ -12,7 +12,7 @@
 #   - get namespaces
 #   - get messages used in patterns (and make methods use messages in their regexp's so lang-independent)
 
-$::wikipl_version = '1.14.9'; # 2010-05-31
+$::wikipl_version = '1.14.10'; # 2010-06-01
 
 use HTTP::Request;
 use LWP::UserAgent;
@@ -87,7 +87,7 @@ sub logHash {
 # todo: check if logged in first
 sub wikiLogin {
 	my ( $wiki, $user, $pass, $domain ) = @_;
-	my $url = "$wiki?title=Special:Userlogin";
+	my $url = "$wiki?title=Special:Userlogin&useskin=standard";
 	my $success = 0;
 	my $retries = 1;
 	while ( $retries-- ) {
@@ -113,7 +113,7 @@ sub wikiLogin {
 # Logout of a MediaWiki
 sub wikiLogout {
 	my $wiki = shift;
-	my $success = $::client->get( "$wiki?title=Special:Userlogout" )->is_success;
+	my $success = $::client->get( "$wiki?title=Special:Userlogout&useskin=standard" )->is_success;
 	logAdd $success
 		? "Successfully logged out of $wiki."
 		: "WARNING: couldn't log out of $wiki!";
@@ -168,10 +168,12 @@ sub wikiAppend {
 	return wikiEdit( $wiki, $title, $content . $append, $comment );
 }
 
-# Get the date of last edit of an article
+# Return date, user, oldid and comment of last edit of an article
+# <li>(cur) (prev)  <a href="/wiki/index.php?title=File:Activity.svg&amp;oldid=96757" title="File:Activity.svg">01:03, 1 June 2010</a> <span class='history-user'><a href="/User:Nad" title="User:Nad" class="mw-userlink">Nad</a>  <span class="mw-usertoollinks">(<a href="/User_talk:Nad" title="User talk:Nad">Talk</a> | <a href="/Special:Contributions/Nad" title="Special:Contributions/Nad">contribs</a> | <a href="/Special:Block/Nad" title="Special:Block/Nad">block</a>)</span></span> <span class="history-size">(18 bytes)</span> <span class="comment">(<a href="/Category:Icons" title="Category:Icons">Category:Icons</a>)</span></li>
+
 sub wikiLastEdit {
 	my( $wiki, $title ) = @_;
-	my $response = $::client->request( HTTP::Request->new( GET => "$wiki?title=$title&action=history&limit=1" ) );
+	my $response = $::client->request( HTTP::Request->new( GET => "$wiki?title=$title&action=history&limit=1&useskin=standard" ) );
 	return $1 if $response->is_success and $response->content =~ /<a.+?>(\d+:\d+.+?\d)<\/a>/;
 }
 
@@ -214,7 +216,7 @@ sub wikiGetVersion {
 # Return a hash (number => name) of the wiki's namespaces
 sub wikiGetNamespaces {
 	my $wiki = shift;
-	my $response = $::client->get( "$wiki?title=Special:Allpages" );
+	my $response = $::client->get( "$wiki?title=Special:Allpages&useskin=standard" );
 	$response->content =~ /<select id="namespace".+?>\s*(.+?)\s*<\/select>/s;
 	return ( $1 =~ /<option.*?value="([0-9]+)".*?>(.+?)<\/option>/gs, 0 => '' );
 }
@@ -223,7 +225,7 @@ sub wikiGetNamespaces {
 sub wikiGetList {
 	my( $wiki, $title ) = @_;
 	$title = encodeTitle( $title );
-	my $response = $::client->get( "$wiki?title=$title" );
+	my $response = $::client->get( "$wiki?title=$title&useskin=standard" );
 	$response->content =~ /<!-- start content -->(.+)<!-- end content -->/s;
 	my $html = $1;
 	my %list = $html =~ /<li>.*?<a.*?href="(.+?)".*?>(.+?)<\/a>\s*<\/li>/gs;
@@ -303,7 +305,7 @@ sub wikiRestore {
 # - if dst name is empty, the name of the source file will be used
 sub wikiUploadFile {
     my ( $wiki, $sourcefile, $destname, $summary ) = @_;
-    my $url = "$wiki?title=Special:Upload";
+    my $url = "$wiki?title=Special:Upload&useskin=standard";
 
 	# Set dst name from source if empty
 	unless ( $destname ) {
@@ -355,7 +357,7 @@ sub wikiUploadFile {
 	}
 	
 	# Assumed file uploaded ok (should check if that's true)
-	else { logAdd( "Uploaded $destname" ); }
+	else { print $response->content; logAdd( "Uploaded $destname" ); }
 
     return 1;
 }
@@ -434,7 +436,7 @@ sub wikiDownloadFiles {
 	my ( $wiki, $dir ) = @_;
 	$dir   = $wiki =~ /(https?:\/\/(.+?))\// ? $2 : 'wiki-downloaded-files';
 	my $base  = $1;
-	my $list  = $::client->get( "$wiki?title=Special:Imagelist&limit=500" )->content;
+	my $list  = $::client->get( "$wiki?title=Special:Imagelist&limit=500&useskin=standard" )->content;
 	my @files = $list =~ /href\s*=\s*['"](\/[^"']+?\/.\/..\/[^'"]+?)["']/g;
 
 	mkdir $dir;
@@ -475,7 +477,7 @@ sub wikiProtect {
 	#						"Sysops only"              => "sysop"
 	#					};
 
-	my $url = "$wiki?title=$title&action=protect";
+	my $url = "$wiki?title=$title&action=protect&useskin=standard";
 	my $success = 0;
 	my $err = 'ERROR';
 	my $retries = 1;
@@ -602,7 +604,7 @@ sub wikiUpdateTemplate {
 sub wikiMove {
 	my ( $wiki, $oldname, $newname, $reason, $movetalk ) = @_;
 	$oldname = encodeTitle( $oldname );
-	my $url = "$wiki?title=Special:Movepage&target=$oldname";
+	my $url = "$wiki?title=Special:Movepage&target=$oldname&useskin=standard";
 	logAdd( "URL=>$url" );
 	my $success = 0;
 	my $err = 'ERROR';
@@ -684,7 +686,7 @@ sub wikiAllPages {
 	my $ns = shift;
 	$ns = 0 unless $ns;
 	$wiki =~ s/index.php/api.php/;
-	my $url = "$wiki?action=query&list=allpages&format=json&apfilterredir=nonredirects&apnamespace=$ns&aplimit=5000";
+	my $url = "$wiki?action=query&useskin=standard&list=allpages&format=json&apfilterredir=nonredirects&apnamespace=$ns&aplimit=5000";
 	my $json = $::client->get( $url )->content;
 	my @list = $json =~ /"title":"(.+?[^\\])"/g;
 	s/\\(.)/$1/g for @list;
@@ -849,7 +851,7 @@ sub wikiPropertyChanges {
 	$title = encodeTitle( $title );
 
 	# Get the second to last revision if there is one
-	my $response = $::client->request( HTTP::Request->new( GET => "$wiki?title=$title&action=history&limit=1" ) );
+	my $response = $::client->request( HTTP::Request->new( GET => "$wiki?title=$title&action=history&limit=1&useskin=standard" ) );
 	if ( $response->is_success and $response->content =~ m|<a.+?\?title=.+?&(amp;)?diff=\d+&(amp;)?oldid=(\d+)| ) {
 
 		# Get the text of the last two revisions
