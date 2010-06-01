@@ -31,6 +31,10 @@ $query = "
 	{{#dpl:category=Icons}}
 ";
 
+$query = "
+	{{#dpl:category=Icons}}
+";
+
 # Get the list of titles from the DPL queries
 @titles = wikiParse( $srcwiki, $query, 1 );
 
@@ -41,6 +45,7 @@ $tmp{$_} = 1 for @titles;
 
 # Copy the titles from source wiki to destination wiki
 for $title ( @titles ) {
+	print "$title\n";
 	$text = wikiRawPage( $srcwiki, $title );
 	if ( $title =~ /^(Image|File):(.+)$/ ) {
 

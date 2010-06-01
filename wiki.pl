@@ -12,7 +12,7 @@
 #   - get namespaces
 #   - get messages used in patterns (and make methods use messages in their regexp's so lang-independent)
 
-$::wikipl_version = '1.14.10'; # 2010-06-01
+$::wikipl_version = '1.14.12'; # 2010-06-01
 
 use HTTP::Request;
 use LWP::UserAgent;
@@ -169,12 +169,11 @@ sub wikiAppend {
 }
 
 # Return date, user, oldid and comment of last edit of an article
-# <li>(cur) (prev)  <a href="/wiki/index.php?title=File:Activity.svg&amp;oldid=96757" title="File:Activity.svg">01:03, 1 June 2010</a> <span class='history-user'><a href="/User:Nad" title="User:Nad" class="mw-userlink">Nad</a>  <span class="mw-usertoollinks">(<a href="/User_talk:Nad" title="User talk:Nad">Talk</a> | <a href="/Special:Contributions/Nad" title="Special:Contributions/Nad">contribs</a> | <a href="/Special:Block/Nad" title="Special:Block/Nad">block</a>)</span></span> <span class="history-size">(18 bytes)</span> <span class="comment">(<a href="/Category:Icons" title="Category:Icons">Category:Icons</a>)</span></li>
-
 sub wikiLastEdit {
 	my( $wiki, $title ) = @_;
 	my $response = $::client->request( HTTP::Request->new( GET => "$wiki?title=$title&action=history&limit=1&useskin=standard" ) );
-	return $1 if $response->is_success and $response->content =~ /<a.+?>(\d+:\d+.+?\d)<\/a>/;
+	my $comment = $response->content =~ /<span class=['"]comment['"]>\((.+?)\)/ ? $1 : '';
+	return ( $2, $3, $1, $comment ) if $response->content =~ /oldid=(\d+).+?>(\d+:\d+,.+?)<\/a>.+?['"]User:(.+?)['"]/;
 }
 
 # Retrieve the raw content of a page
