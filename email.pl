@@ -2,16 +2,41 @@
 use Net::IMAP::Simple::SSL;
 use Net::POP3;
 
-	# open a connection to the IMAP server
-	$server = new Net::IMAP::Simple::SSL( 'organicdesign.co.nz' );
+# Takes named parameters: proto, host, path, user, pass, from, to, subject, content
+# - proto is "POP3" or "IMAP"
+# - host is IP or domain
+# - path is the folder to get the messages from
+# - from,to,subject,content are optional regular exression filters
+sub emailGetMessages {
+	my %args = (@_);
+	my $server;
 
-	# login
-	$server->login( 'nad', '***' );
+	# Connect to POP3 server and login
+	if ( $args{proto} eq 'POP3' ) {
+		$server = Net::POP3->new( $args{host} );
+		$server->login( $args{user}, $args{pass} );
+	}
+
+	# Connect to IMAP server and login
+	elsif ( $args{proto} eq 'IMAP' ) {	
+		$server = new Net::IMAP::Simple::SSL( $args{host} );
+		$server->login( $args{user}, $args{pass} );
+		$number_of_messages = $server->select( $args{path} or 'Inbox' );
+	}
 	
-	# select the desired folder
-	$number_of_messages = $server->select( 'Inbox' );
+	else { die "Unsupported email protocol!" }
 
-	# go through all the messages in the selected folder
+
+
+
+		
+	#pop3 message loop
+		my $list = $pop3->list();
+		my @messages = keys %$list;		
+
+
+
+	# imap message loop
 	foreach $msg ( 1..5 ) {
 
 		if ( $server->seen( $msg ) ) {
@@ -56,15 +81,9 @@ use Net::POP3;
 
 sub popCheck {
 
-	# Login in to POP box
-	my( $domain, $user ) = @_;
-	my $loggedIn = 0;
-	my $pop3 = Net::POP3->new( $domain );
-	$pop3->login( $user, $::pwd4 );
 
 	# Loop through all messages
-	my $list = $pop3->list();
-	my @messages = keys %$list;
+
 	logAdd( ($#messages+1)." messages on $user\@$domain" );
 	for ( @messages ) {
 
