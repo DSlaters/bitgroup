@@ -356,7 +356,7 @@ sub wikiUploadFile {
 	}
 	
 	# Assumed file uploaded ok (should check if that's true)
-	else { print $response->content; logAdd( "Uploaded $destname" ); }
+	else { print "$destname\n\n"; logAdd( "Uploaded $destname" ); }
 
     return 1;
 }
@@ -364,7 +364,7 @@ sub wikiUploadFile {
 
 # Delete an uploaded file from a wiki
 sub wikiDeleteFile {
-	my ( $wiki, $imagename, $comment ) =@_;
+	my ( $wiki, $imagename, $comment ) = @_;
 	my $url     = "$wiki?title=Image:$imagename&action=delete";
 	my $success = 0;
 	my $err     = 'ERROR';

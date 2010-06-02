@@ -31,9 +31,7 @@ $query = "
 	{{#dpl:category=Icons}}
 ";
 
-$query = "
-	{{#dpl:category=Icons}}
-";
+$query = "{{#dpl:category=Icons}}";
 
 # Get the list of titles from the DPL queries
 @titles = wikiParse( $srcwiki, $query, 1 );
