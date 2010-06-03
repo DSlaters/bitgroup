@@ -28,7 +28,7 @@
 #   - get namespaces
 #   - get messages used in patterns (and make methods use messages in their regexp's so lang-independent)
 
-$::wikipl_version = '1.14.13'; # 2010-06-03
+$::wikipl_version = '1.14.14'; # 2010-06-03
 
 use HTTP::Request;
 use LWP::UserAgent;
@@ -39,6 +39,7 @@ sub wikiLogin;
 sub wikiLogout;
 sub wikiEdit;
 sub wikiAppend;
+sub wikiFirstEdit;
 sub wikiLastEdit;
 sub wikiRawPage;
 sub wikiStructuredPage;
@@ -188,6 +189,14 @@ sub wikiAppend {
 sub wikiLastEdit {
 	my( $wiki, $title ) = @_;
 	my $response = $::client->request( HTTP::Request->new( GET => "$wiki?title=$title&action=history&limit=1&useskin=standard" ) );
+	my $comment = $response->content =~ /<span class=['"]comment['"]>\((.+?)\)/ ? $1 : '';
+	return ( $2, $3, $1, $comment ) if $response->content =~ /oldid=(\d+).+?>(\d+:\d+,.+?)<\/a>.+?['"]User:(.+?)['"]/;
+}
+
+# Return date, user, oldid and comment of the first edit of an article
+sub wikiFirstEdit {
+	my( $wiki, $title ) = @_;
+	# some query
 	my $comment = $response->content =~ /<span class=['"]comment['"]>\((.+?)\)/ ? $1 : '';
 	return ( $2, $3, $1, $comment ) if $response->content =~ /oldid=(\d+).+?>(\d+:\d+,.+?)<\/a>.+?['"]User:(.+?)['"]/;
 }
