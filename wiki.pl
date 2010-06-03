@@ -28,7 +28,7 @@
 #   - get namespaces
 #   - get messages used in patterns (and make methods use messages in their regexp's so lang-independent)
 
-$::wikipl_version = '1.14.12'; # 2010-06-01
+$::wikipl_version = '1.14.13'; # 2010-06-03
 
 use HTTP::Request;
 use LWP::UserAgent;
@@ -683,8 +683,30 @@ sub wikiExamineBraces {
 }
 
 # Create a GUID article title compatible with the RecordAdmin extension
+# - allow a date to be sent if the GUID is being back-dated
 sub wikiGuid {
-	$guid = strftime( '%Y%m%d', localtime ) . '-';
+	my $date = shift;
+	my $guid;
+	if ( $date ) {
+		$guid = '01' if $date =~ /jan/i;
+		$guid = '02' if $date =~ /feb/i;
+		$guid = '03' if $date =~ /mar/i;
+		$guid = '04' if $date =~ /apr/i;
+		$guid = '05' if $date =~ /may/i;
+		$guid = '06' if $date =~ /jun/i;
+		$guid = '07' if $date =~ /jul/i;
+		$guid = '08' if $date =~ /aug/i;
+		$guid = '09' if $date =~ /sep/i;
+		$guid = '10' if $date =~ /oct/i;
+		$guid = '11' if $date =~ /nov/i;
+		$guid = '12' if $date =~ /dec/i;
+		$guid = $guid . '0' . $2 if $date =~ /(^|[, ])(\d{1}) /;
+		$guid = $guid . $2 if $date =~ /(^|[, ])(\d{2}) /;
+		$guid = $1 . $guid if $date =~ /(\d{4})/;
+	} else {
+		$guid = strftime( '%Y%m%d', localtime );
+	}
+	$guid .= '-';
 	$guid .= chr( rand() < 0.72 ? int( rand( 26 ) + 65 ) : int( rand( 10 ) + 48 ) ) for 1 .. 5;
 	return $guid;
 }
