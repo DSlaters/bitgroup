@@ -1,10 +1,26 @@
 #!/usr/bin/perl
-# - Licenced under LGPL (http://www.gnu.org/copyleft/lesser.html)
-# - Authors: [http://www.organicdesign.co.nz/Nad Nad], [http://www.organicdesign.co.nz/Sven Sven]
+#
+# Copyright (C) 2008-2010 Aran Dunkley, Marcus Davy and others.
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+# http://www.gnu.org/copyleft/gpl.html
+#
 # - Source:  http://www.organicdesign.co.nz/wiki.pl
 # - Started: 2008-03-16
 # - Tested versions: 1.6.10, 1.8.4, 1.9.3, 1.10.2, 1.11.0, 1.12.rc1, 1.13.2, 1.14.0, 1.15.1, 1.16.0, 1.17alpha
-
+#
 # NOTES REGARDING CHANGING TO PERL PACKAGE AND ADDING API SUPPORT
 # - constructor:
 #   - login
