@@ -48,7 +48,7 @@ $daemon   = 'wikid';
 $host     = uc( hostname );
 $name     = hostname;
 $port     = 1729;
-$ver      = '3.17.6'; # 2010-03-30
+$ver      = '3.17.7'; # 2010-06-05
 $log      = "$dir/$daemon.log";
 $wkfile   = "$dir/$daemon.work";
 
@@ -1061,6 +1061,12 @@ sub doRestart {
 	spawn "start";
 	exit(0);
 }
+
+# Make the restart action available as a job
+BEGIN {
+   *mainRestart = \&doRestart;
+}
+
 
 # Stop
 sub doStop {
