@@ -1062,12 +1062,6 @@ sub doRestart {
 	exit(0);
 }
 
-# Make the restart action available as a job
-BEGIN {
-   *mainRestart = \&doRestart;
-}
-
-
 # Stop
 sub doStop {
 	logIRC( "Stopping..." );
@@ -1182,6 +1176,13 @@ sub mainRpcSendAction {
 
 #---------------------------------------------------------------------------------------------------------#
 # JOBS
+
+# Make the Restart action available as a job
+sub mainRestart {
+	workStopJob();
+	doRestart();
+}
+
 
 # Read in or initialise the persistent work hash
 sub workInitialise {
