@@ -1,7 +1,6 @@
 #!/usr/bin/perl
 use Win32;
 use Win32::Daemon;
-use Net::POP3;
 
 our $daemon = 'PerlService';
 our $description = "$daemon is a test of Perl's Win32 service functionality";
