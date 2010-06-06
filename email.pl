@@ -28,44 +28,41 @@ use Net::POP3;
 sub emailGetMessages {
 	my %args = (@_);
 	my $server;
-	my $maxsize = 4096;
+	
+	# All messages in the inbox will be scanned and stored in @messages if rules match
 	my @messages = ();
 
-	# POP3
-	if ( $args{proto} eq 'POP3' ) {
+	# Only read this much from each message
+	my $maxsize = 4096;
 
-		# Connect & login
+	# POP3 - open, login, loop, close
+	if ( $args{proto} eq 'POP3' ) {
 		$server = Net::POP3->new( $args{host} );
 		$server->login( $args{user}, $args{pass} );
-		
-		# Process messages
-		my @list = keys %{ $server->list() };
-		for ( @list ) {
+		for ( keys %{ $server->list() } ) {
 			my $content = join "\n", @{ $server->top( $_, $maxsize ) };
 			push @messages, emailProcessMessage( $content, \@args );
 		}
-		
-		# Close
 		$server->quit();
 	}
 
-	# IMAP
+	# IMAP - open, login, loop, close
 	elsif ( $args{proto} eq 'IMAP' ) {
-		
-		# Connect & login
 		$server = new Net::IMAP::Simple::SSL( $args{host} );
 		$server->login( $args{user}, $args{pass} );
-		
-		# Process messages
-		$count = $server->select( $args{path} or 'Inbox' );
-		for ( 1 .. $count ) {
-			$fh = $server->getfh( $_ );
+		$i = $server->select( $args{path} or 'Inbox' );
+		while ( $i > 0 ) {
+			print "message $i: ";
+			$fh = $server->getfh( $i );
 			sysread $fh, ( my $content ), $maxsize;
 			close $fh;
-			push @messages, emailProcessMessage( $content, \@args );
+			if ( my $message = emailProcessMessage( $content, \@args ) ) {
+				push @messages, $message;
+				my( $id, $date ) = @$message;
+				print "$date ($id)\n";
+			}
+			$i--;
 		}
-
-		# Close
 		$server->quit();
 	}
 	
@@ -78,16 +75,19 @@ sub emailGetMessages {
 sub emailProcessMessage {
 	my $content = shift;
 	my @args    = @{ shift };
-	my @return  = undef;
+	my $message = undef;
+	my $id      = $1 if $content =~ /^message-id:\s*(.+?)\s*$/mi;
+	my $date    = $1 if $content =~ /^date:\s*(.+?)\s*$/mi;
 	my $to      = $1 if $content =~ /^to:\s*(.+?)\s*$/mi;
 	my $from    = $1 if $content =~ /^from:\s*(.+?)\s*$/mi;
 	my $subject = $1 if $content =~ /^subject:\s*(.+?)\s*$/im;
 
 	# Test message against @args regex's
-	if ( matches ) {
-		@return = \( $from, $to, $subject, $content );
+	if ( 1 ) {
+		$message = [ $id, $date, $from, $to, $subject, $content ];
 	}
 
-	return @return;
+	return $message;
 }
 
+1;
