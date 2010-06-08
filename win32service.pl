@@ -2,8 +2,8 @@
 use Win32;
 use Win32::Daemon;
 
-our $daemon = 'PerlService';
-our $description = "$daemon is a test of Perl's Win32 service functionality";
+$::daemon = 'PerlService' unless $::daemon;
+$::description = "$daemon is a test of Perl's Win32 service functionality" unless $::description;
 
 # Install or remove the service if switch provided
 &svcInstall if $ARGV[0] =~ /^(-i|--install)$/i;
