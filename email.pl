@@ -20,11 +20,21 @@
 use Net::IMAP::Simple::SSL;
 use Net::POP3;
 
+# Determine log file and config file
+$0 =~ /^(.+)\..+?$/;
+$::log  = "$1.log";
+
+# Note the first ID of the last processed batch of messages if any
+$::last = emailGetLastId();
+
+
 # Takes named parameters: proto, host, path, user, pass, from, to, subject, content
 # - proto is "POP3" or "IMAP"
 # - host is IP or domain
 # - path is the folder to get the messages from
 # - from,to,subject,content are optional regular exression filters
+# - messages are read from most recent first
+# - most recent id is recorded in the log to allow detection of previously processed items
 sub emailGetMessages {
 	my %args = (@_);
 	my $server;
@@ -37,32 +47,37 @@ sub emailGetMessages {
 
 	# POP3 - open, login, loop, close
 	if ( $args{proto} eq 'POP3' ) {
+
 		$server = Net::POP3->new( $args{host} );
 		$server->login( $args{user}, $args{pass} );
+		emailLog( "Logged \"$args{user}\" into POP3 server \"$args{host}\"" );
+
 		for ( keys %{ $server->list() } ) {
 			my $content = join "\n", @{ $server->top( $_, $maxsize ) };
-			push @messages, emailProcessMessage( $content, \@args );
+			last unless my $message = emailProcessMessage( $content );
+			push @messages, $message if emailMatchMessage( $message, \@args );
 		}
+
 		$server->quit();
 	}
 
 	# IMAP - open, login, loop, close
 	elsif ( $args{proto} eq 'IMAP' ) {
+
 		$server = new Net::IMAP::Simple::SSL( $args{host} );
 		$server->login( $args{user}, $args{pass} );
+		emailLog( "Logged \"$args{user}\" into IMAP server \"$args{host}\"" );
+
 		$i = $server->select( $args{path} or 'Inbox' );
 		while ( $i > 0 ) {
-			print "message $i: ";
 			$fh = $server->getfh( $i );
 			sysread $fh, ( my $content ), $maxsize;
 			close $fh;
-			if ( my $message = emailProcessMessage( $content, \@args ) ) {
-				push @messages, $message;
-				my( $id, $date ) = @$message;
-				print "$date ($id)\n";
-			}
+			last unless my $message = emailProcessMessage( $content );
+			push @messages, $message if emailMatchMessage( $message, \@args );
 			$i--;
 		}
+
 		$server->quit();
 	}
 	
@@ -71,23 +86,67 @@ sub emailGetMessages {
 	return @messages;
 }
 
-# Returns passed message as an array reference if its attributes match the rules in @args
+
+# Expand the message into an useful array and return a reference to it
 sub emailProcessMessage {
 	my $content = shift;
-	my @args    = @{ shift };
-	my $message = undef;
+
+	# Extract useful information from the message header
 	my $id      = $1 if $content =~ /^message-id:\s*(.+?)\s*$/mi;
 	my $date    = $1 if $content =~ /^date:\s*(.+?)\s*$/mi;
 	my $to      = $1 if $content =~ /^to:\s*(.+?)\s*$/mi;
 	my $from    = $1 if $content =~ /^from:\s*(.+?)\s*$/mi;
 	my $subject = $1 if $content =~ /^subject:\s*(.+?)\s*$/im;
 
-	# Test message against @args regex's
-	if ( 1 ) {
-		$message = [ $id, $date, $from, $to, $subject, $content ];
+	# If this message has already been processed return null to bail
+	if ( $::last eq $id ) {
+		emailLog( "Message with ID $id has already been processed, stopping" );
+		return undef;
+	}
+	
+	# If this is the first message processed (which is the most recent of this batch) then log the ID
+	unless ( $::logged ) {
+		$::logged = 1;
+		emailLog( "Processing a batch, first message ID is $id" );
 	}
 
-	return $message;
+	# return the useful informations array ref
+	return [ $id, $date, $from, $to, $subject, $content ];
+}
+
+
+# Returns true if the passed message array ref matches the regex's in @args
+sub emailMatchMessage {
+	my @message = @{ shift };
+	my @args    = @{ shift };
+
+	# Test @message against @args regex's
+	if ( 1 ) {
+	}
+
+	return 1;
+}
+
+
+# Output an item to the email log file with timestamp
+sub emailLog {
+	my $entry = shift;
+	open LOGH, '>>', $::log or die "Can't open $::log for writing!";
+	print LOGH localtime() . " : $entry\n";
+	close LOGH;
+	return $entry;
+}
+
+
+# Scan the log for the ID of the last batch processed
+sub emailGetLastId {
+	if ( open FH, '<', $::log ) {
+		my $size = -s $::log;
+		seek FH, $size - 4096, 0; 
+		read FH, ( my $out ), 4096;
+		close FH;
+		return $1 if $out =~ /.+first message ID is (.+?)$/sm;
+	}
 }
 
 1;

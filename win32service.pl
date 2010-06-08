@@ -10,10 +10,13 @@ our $description = "$daemon is a test of Perl's Win32 service functionality";
 &svcRemove if $ARGV[0] =~ /^(-r|--remove)$/i;
 
 # Redirect STDOUT and STDERR to log file
-my ( $cwd,$bn,$ext ) = ( Win32::GetFullPathName( $0 ) =~ /^(.*\\)(.*)\.(.*)$/ )[0..2] ;
-my $log = "$cwd$bn.log"; 
-open( STDOUT, ">> $log" ) or die "Couldn't open $log for appending: $!\n";
-open( STDERR, ">&STDOUT" );
+my ( $cwd, $bn, $ext ) = ( Win32::GetFullPathName( $0 ) =~ /^(.*\\)(.*)\.(.*)$/ )[0..2] ;
+# Determine log file and config file
+$0 =~ /^(.+)\..+?$/;
+$::log  = "$1.log";
+open STDIN, '/dev/null';
+open STDOUT, ">>$log" or die "Couldn't open $log for appending: $!";
+open STDERR, ">>$log";
 
 # Autoflush, no buffering
 $| = 1;
