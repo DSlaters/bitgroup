@@ -55,7 +55,7 @@ sub emailGetMessages {
 		for ( keys %{ $server->list() } ) {
 			my $content = join "\n", @{ $server->top( $_, $maxsize ) };
 			last unless my $message = emailProcessMessage( $content );
-			push @messages, $message if emailMatchMessage( $message, \@args );
+			push @messages, $message if emailMatchMessage( $message, $args{filter} );
 		}
 
 		$server->quit();
@@ -74,7 +74,7 @@ sub emailGetMessages {
 			sysread $fh, ( my $content ), $maxsize;
 			close $fh;
 			last unless my $message = emailProcessMessage( $content );
-			push @messages, $message if emailMatchMessage( $message, \@args );
+			push @messages, $message if emailMatchMessage( $message, $args{filter} );
 			$i--;
 		}
 
@@ -87,7 +87,7 @@ sub emailGetMessages {
 }
 
 
-# Expand the message into an useful array and return a reference to it
+# Expand the message into an useful hash and return a reference to it
 sub emailProcessMessage {
 	my $content = shift;
 
@@ -110,18 +110,31 @@ sub emailProcessMessage {
 		emailLog( "Processing a batch, first message ID is $id" );
 	}
 
-	# return the useful informations array ref
-	return [ $id, $date, $from, $to, $subject, $content ];
+	# Return the useful information's hashref
+	return {
+		id      => $id,
+		date    => $date,
+		from    => $from,
+		to      => $to,
+		subject => $subject,
+		content => $content
+	}
 }
 
 
 # Returns true if the passed message array ref matches the regex's in @args
 sub emailMatchMessage {
-	my @message = @{ shift };
-	my @args    = @{ shift };
+	my %message = %{ shift };
+	my %filter  = %{ shift };
+	my $pass    = 1;
 
-	# Test @message against @args regex's
-	if ( 1 ) {
+	# Test @message against @args regex's (and maxage)
+	while ( ( $k, $v ) = each( %filter ) ) {
+		if ( $k eq 'maxage' ) {
+			# compare age
+		} else {
+			$pass = 0 unless $message{$k} =~ /$v/;
+		}
 	}
 
 	return 1;
