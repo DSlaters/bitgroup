@@ -36,7 +36,7 @@ $::last = emailGetLastId();
 # - messages are read from most recent first
 # - most recent id is recorded in the log to allow detection of previously processed items
 sub emailGetMessages {
-	my %args = (@_);
+	my %args = %{ shift };
 	my $server;
 	
 	# All messages in the inbox will be scanned and stored in @messages if rules match
