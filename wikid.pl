@@ -48,7 +48,7 @@ $daemon   = 'wikid';
 $host     = uc( hostname );
 $name     = hostname;
 $port     = 1729;
-$ver      = '3.17.7'; # 2010-06-05
+$ver      = '3.17.8'; # 2010-06-10
 $log      = "$dir/$daemon.log";
 $wkfile   = "$dir/$daemon.work";
 
@@ -435,8 +435,10 @@ sub serverProcessMessage {
 					my $title = $revision{mTitle};
 					my( $type, $args1, $args2, $args ) = wikiPropertyChanges( $::script, $title );
 					my $handler = 'on' . $type . 'PropertyChange';
-					&$handler( $title, $args1, $args2, $args ) if defined &$handler;
-					logAdd( "$type properties changed in $::site" );
+					if ( defined &$handler ) {
+						&$handler( $title, $args1, $args2, $args );
+						logAdd( "$type properties changed in $::site" );
+					}
 				}
 
 			} else { logAdd( "Unknown event \"$hook\" received!" ) }
