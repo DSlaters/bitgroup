@@ -25,7 +25,7 @@ $0 =~ /^(.+)\..+?$/;
 $::log  = "$1.log";
 
 # Note the first ID of the last processed batch of messages if any
-$::last = emailGetLastId();
+$::last = emailGetLastId() unless $::last < 0;
 
 
 # Takes named parameters: proto, host, path, user, pass, from, to, subject, content
@@ -36,7 +36,8 @@ $::last = emailGetLastId();
 # - messages are read from most recent first
 # - most recent id is recorded in the log to allow detection of previously processed items
 sub emailGetMessages {
-	my %args = %{ shift };
+	my %args = %{ scalar shift };
+	$args{filter} = {} unless defined $args{filter};
 	my $server;
 	
 	# All messages in the inbox will be scanned and stored in @messages if rules match
@@ -45,43 +46,42 @@ sub emailGetMessages {
 	# Only read this much from each message
 	my $maxsize = 4096;
 
-	# POP3 - open, login, loop, close
+	# Process messages in a POP3 mailbox
 	if ( $args{proto} eq 'POP3' ) {
-
-		$server = Net::POP3->new( $args{host} );
-		$server->login( $args{user}, $args{pass} );
-		emailLog( "Logged \"$args{user}\" into POP3 server \"$args{host}\"" );
-
-		for ( keys %{ $server->list() } ) {
-			my $content = join "\n", @{ $server->top( $_, $maxsize ) };
-			last unless my $message = emailProcessMessage( $content );
-			push @messages, $message if emailMatchMessage( $message, $args{filter} );
-		}
-
-		$server->quit();
+		if ( $server = Net::POP3->new( $args{host} ) ) {
+			emailLog( "Connected to $args{proto} server \"$args{host}\"" );
+			if ( $server->login( $args{user}, $args{pass} ) > 0 ) {
+				emailLog( "Logged \"$args{user}\" into $args{proto} server \"$args{host}\"" );
+				for ( keys %{ $server->list() } ) {
+					my $content = join "\n", @{ $server->top( $_, $maxsize ) };
+					last unless my $message = emailProcessMessage( $content );
+					push @messages, $message if emailMatchMessage( $message, $args{filter} );
+				}
+			} else { emailLog( "Couldn't log \"$args{user}\" into $args{proto} server \"$args{host}\"" ) }
+			$server->quit();
+		} else { emailLog( "Couldn't connect to $args{proto} server \"$args{host}\"" ) }
 	}
 
-	# IMAP - open, login, loop, close
+	# Process messages in an IMAP mailbox
 	elsif ( $args{proto} eq 'IMAP' ) {
-
-		$server = new Net::IMAP::Simple::SSL( $args{host} );
-		$server->login( $args{user}, $args{pass} );
-		emailLog( "Logged \"$args{user}\" into IMAP server \"$args{host}\"" );
-
-		$i = $server->select( $args{path} or 'Inbox' );
-		while ( $i > 0 ) {
-			$fh = $server->getfh( $i );
-			sysread $fh, ( my $content ), $maxsize;
-			close $fh;
-			last unless my $message = emailProcessMessage( $content );
-			push @messages, $message if emailMatchMessage( $message, $args{filter} );
-			$i--;
-		}
-
-		$server->quit();
+		if ( $server = new Net::IMAP::Simple::SSL( $args{host} ) ) {
+			if ( $server->login( $args{user}, $args{pass} ) > 0 ) {
+				emailLog( "Logged \"$args{user}\" into IMAP server \"$args{host}\"" );
+				$i = $server->select( $args{path} or 'Inbox' );
+				while ( $i > 0 ) {
+					$fh = $server->getfh( $i );
+					sysread $fh, ( my $content ), $maxsize;
+					close $fh;
+					last unless my $message = emailProcessMessage( $content );
+					push @messages, $message if emailMatchMessage( $message, $args{filter} );
+					$i--;
+				}
+			} else { emailLog( "Couldn't log \"$args{user}\" into $args{proto} server \"$args{host}\"" ) }
+			$server->quit();
+		} else { emailLog( "Couldn't connect to $args{proto} server \"$args{host}\"" ) }
 	}
 	
-	else { die "Unsupported email protocol!" }
+	else { die "Unsupported email protocol \"$args{proto}\"" }
 
 	return @messages;
 }
@@ -124,20 +124,13 @@ sub emailProcessMessage {
 
 # Returns true if the passed message array ref matches the regex's in @args
 sub emailMatchMessage {
-	my %message = %{ shift };
-	my %filter  = %{ shift };
+	my %message = %{ scalar shift };
+	my %filter  = %{ scalar shift };
 	my $pass    = 1;
-
-	# Test @message against @args regex's (and maxage)
 	while ( ( $k, $v ) = each( %filter ) ) {
-		if ( $k eq 'maxage' ) {
-			# compare age
-		} else {
-			$pass = 0 unless $message{$k} =~ /$v/;
-		}
+		$pass = 0 unless $message{$k} =~ /$v/sm;
 	}
-
-	return 1;
+	return $pass;
 }
 
 

@@ -4,6 +4,7 @@ use Win32::Daemon;
 
 $::daemon = 'PerlService' unless $::daemon;
 $::description = "$daemon is a test of Perl's Win32 service functionality" unless $::description;
+$::sleep = 1000 unless $::sleep;
 
 # Install or remove the service if switch provided
 &svcInstall if $ARGV[0] =~ /^(-i|--install)$/i;
@@ -31,7 +32,7 @@ Win32::Daemon::RegisterCallbacks( {
 } );
 
 # Start the service
-Win32::Daemon::StartService( 0, 1000 );
+Win32::Daemon::StartService( 0, $::sleep );
 close STDERR;
 close STDOUT;
 
