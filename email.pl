@@ -88,6 +88,10 @@ sub emailGetMessages {
 
 
 # Expand the message into an useful hash and return a reference to it
+
+# NOTE: combine matching and formatting/saving into processign function
+#       needs to rul all rule-sets on each message
+
 sub emailProcessMessage {
 	my $content = shift;
 
