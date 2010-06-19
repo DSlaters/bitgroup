@@ -28,7 +28,7 @@
 #   - get namespaces
 #   - get messages used in patterns (and make methods use messages in their regexp's so lang-independent)
 
-$::wikipl_version = '1.14.14'; # 2010-06-03
+$::wikipl_version = '1.14.15'; # 2010-06-19
 
 use HTTP::Request;
 use LWP::UserAgent;
@@ -109,8 +109,10 @@ sub wikiLogin {
 	my $retries = 1;
 	while ( $retries-- ) {
 		my $html = '';
-		if ( $::client->get( $url )->is_success ) {
-			my %form = ( wpName => $user, wpPassword => $pass, wpDomain => $domain, wpLoginattempt => 'Log in', wpRemember => '1' );
+		my $response = $::client->get( $url );
+		if ( $response->is_success ) {
+			my $token = $response->content =~ /name=['"]wpLoginToken["']\s*value=['"](.+?)["']/ ? $1 : '';
+			my %form = ( wpName => $user, wpPassword => $pass, wpLoginToken => $token, wpDomain => $domain, wpLoginattempt => 'Log in', wpRemember => '1' );
 			my $response = $::client->post( "$url&action=submitlogin&type=login", \%form );
 			$html = $response->content;
 			$success = $response->is_redirect || ( $response->is_success && $html =~ /You are now logged in/ );
