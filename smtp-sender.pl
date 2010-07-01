@@ -1,13 +1,12 @@
 use threads;
 use Net::SMTP;
-$n = 3;
 
-@threads = ();
-push( @threads, threads->new( \&send ) ) for ( 1 .. $n );
-sleep( 3 );
-$_->join for @threads;
+# Send message from 3 threads simultaneously
+threads->new( \&send ) for ( 1 .. 3 );
 
+# Send a 20 line message to the local a SMTP server on port 2525
 sub send {
+	threads->detach;
 	$thread = threads->tid();
 	$to   = "thread$thread\@bar.com";
 	$from = "thread$thread\@foo.com";
