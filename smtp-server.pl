@@ -1,6 +1,5 @@
 #!/usr/bin/perl
 use threads;
-use threads::shared;
 use Win32;
 use Win32::Daemon;
 use Net::SMTP::Server;
@@ -11,8 +10,6 @@ $::version = '2.2.6 (2010-07-01)';
 # Determine log file and config file
 $0 =~ /^(.+)\..+?$/;
 $::log  = "$1.log";
-$::std  = "$1.std";
-$::err  = "$1.err";
 require( "$1.cfg.pl" );
 logAdd();
 logAdd( "$::daemon program executed" );
@@ -24,12 +21,9 @@ die "No action specified, --install or --remove parameter required!" unless $ARG
 logAdd( "Starting service..." );
 
 # Redirect STDOUT and STDERR to log file
-open STDOUT, ">>$::std";
-open STDERR, ">>$::err";
+open STDOUT, ">>$::log";
+open STDERR, ">>$::log";
 $| = 1;
-
-# Shared list of finished threads
-our @join_threads:shared = ();
 
 # Register the events which the service responds to
 Win32::Daemon::RegisterCallbacks( {
@@ -59,20 +53,11 @@ sub svcStart {
 # Main service processing function
 sub svcRunning {
 	if ( SERVICE_RUNNING == Win32::Daemon::State() ) {
-
-		# Grab any messages from the listener and process in a separate thread
 		while ( my $conn = $::server->accept() ) {
 			if ( my $client = new Net::SMTP::Server::Client( $conn ) ) {
 				my $thread = threads->new( \&processMessage, $client );
 				logAdd( "Started message-processor thread with ID " . $thread->tid() );
 			} else { logAdd( "Unable to handle incoming SMTP connection: $!" ) }
-		}
-		
-		# Close any finished threads
-		while ( $#join_threads >= 0 ) {
-			my $id = pop @join_threads;
-			logAdd( "Closing message-processor thread with ID $id" );
-			threads->object( $id )->join;
 		}
 	}
 }
@@ -153,9 +138,14 @@ sub svcStop {
 # - if match is positive, format the result and write to file
 sub processMessage {
 	my $client = shift;
+
+	# This sub is called in its own thread
 	my $thread = threads->tid();
 	my $t = "[Thread $thread]";
+	threads->detach(); # no need to join on return
+	threads->yield();  # if other processing threads are open let them run first
 
+	# Process the stream
 	if ( $client->process ) {
 	
 		my $content = $client->{MSG};
@@ -230,10 +220,6 @@ sub processMessage {
 			}
 		}
 	}
-
-	# This thread is finished add it to the list of threads to close
-	logAdd( "$t Done." );
-	push( @join_threads, $thread );
 }
 
 
