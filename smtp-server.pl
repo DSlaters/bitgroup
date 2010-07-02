@@ -6,7 +6,7 @@ use Win32::Daemon;
 use Net::SMTP::Server;
 use Net::SMTP::Server::Client;
 use strict;
-$::ver = '2.3.0 (2010-07-02)';
+$::ver = '2.3.1 (2010-07-02)';
 
 # Determine log file and config file
 $0 =~ /^(.+)\..+?$/;
@@ -63,7 +63,7 @@ sub svcRunning {
 				# Start a new message-processing thread and insert its ID into the shared queue
 				my $thread = threads->new( \&processMessage, $client );
 				my $id = $thread->tid();
-				unshift( @queue, $id );
+				unshift @queue, $id;
 				logAdd( "Started message-processor thread with ID $id" );
 
 			} else { logAdd( "Unable to handle incoming SMTP connection: $!" ) }
