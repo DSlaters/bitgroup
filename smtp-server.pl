@@ -6,7 +6,7 @@ use Win32::Daemon;
 use Net::SMTP::Server;
 use Net::SMTP::Server::Client;
 use strict;
-$::ver = '2.3.5 (2010-07-02)';
+$::ver = '2.3.6 (2010-07-02)';
 
 # Determine log file and config file
 $0 =~ /^(.+)\..+?$/;
@@ -157,10 +157,10 @@ sub processMessage {
 	# This thread doesn't need to be rejoined on return
 	threads->detach();
 
-	# Wait until this thread is at the front of the queue
+	# Give other threads time until this thread is at the front of the queue
 	while ( $queue[0] != $id ) {
 		logAdd( "$t Waiting. Queue: " . join( ',', @queue ) ) if $::debug;
-		sleep( 0.1 );
+		threads->yield();
 	}
 
 	# Process the stream
