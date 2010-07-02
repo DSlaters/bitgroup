@@ -1,18 +1,19 @@
 #!/usr/bin/perl
 use threads;
+use threads::shared;
 use Win32;
 use Win32::Daemon;
 use Net::SMTP::Server;
 use Net::SMTP::Server::Client;
 use strict;
-$::version = '2.2.6 (2010-07-01)';
+$::ver = '2.3.0 (2010-07-02)';
 
 # Determine log file and config file
 $0 =~ /^(.+)\..+?$/;
 $::log  = "$1.log";
 require( "$1.cfg.pl" );
 logAdd();
-logAdd( "$::daemon program executed" );
+logAdd( "$::daemon $::ver program executed" );
 
 # Install or remove the service if switch provided
 &svcInstall if $ARGV[0] =~ /^(-i|--install)$/i;
@@ -24,6 +25,9 @@ logAdd( "Starting service..." );
 open STDOUT, ">>$::log";
 open STDERR, ">>$::log";
 $| = 1;
+
+# Shared queue of open threads
+our @queue:shared = ();
 
 # Register the events which the service responds to
 Win32::Daemon::RegisterCallbacks( {
@@ -55,8 +59,13 @@ sub svcRunning {
 	if ( SERVICE_RUNNING == Win32::Daemon::State() ) {
 		while ( my $conn = $::server->accept() ) {
 			if ( my $client = new Net::SMTP::Server::Client( $conn ) ) {
+
+				# Start a new message-processing thread and insert its ID into the shared queue
 				my $thread = threads->new( \&processMessage, $client );
-				logAdd( "Started message-processor thread with ID " . $thread->tid() );
+				my $id = $thread->tid();
+				unshift( @queue, $id );
+				logAdd( "Started message-processor thread with ID $id" );
+
 			} else { logAdd( "Unable to handle incoming SMTP connection: $!" ) }
 		}
 	}
@@ -138,12 +147,14 @@ sub svcStop {
 # - if match is positive, format the result and write to file
 sub processMessage {
 	my $client = shift;
+	my $id = threads->tid();
+	my $t = "[Thread $id]";
 
-	# This sub is called in its own thread
-	my $thread = threads->tid();
-	my $t = "[Thread $thread]";
-	threads->detach(); # no need to join on return
-	threads->yield();  # if other processing threads are open let them run first
+	# This thread doesn't need to be rejoined on return
+	threads->detach();
+
+	# Wait until this thread is at the front of the queue
+	sleep( 0.1 ) while $queue[0] != $id;
 
 	# Process the stream
 	if ( $client->process ) {
@@ -220,6 +231,10 @@ sub processMessage {
 			}
 		}
 	}
+
+	# Remove this thread off the head of the queue
+	shift @queue;
+	
 }
 
 
