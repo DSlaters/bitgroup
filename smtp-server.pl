@@ -6,20 +6,19 @@ use Win32::Daemon;
 use Net::SMTP::Server;
 use Net::SMTP::Server::Client;
 use strict;
-$::ver = '2.3.1 (2010-07-02)';
+$::ver = '2.3.2 (2010-07-02)';
 
 # Determine log file and config file
 $0 =~ /^(.+)\..+?$/;
 $::log  = "$1.log";
 require( "$1.cfg.pl" );
 logAdd();
-logAdd( "$::daemon $::ver program executed" );
+logAdd( "$::daemon-$::ver" );
 
 # Install or remove the service if switch provided
 &svcInstall if $ARGV[0] =~ /^(-i|--install)$/i;
 &svcRemove if $ARGV[0] =~ /^(-r|--remove)$/i;
-die "No action specified, --install or --remove parameter required!" unless $ARGV[0] =~ /^(--run)$/;
-logAdd( "Starting service..." );
+die "No action specified, --install or --remove parameter required!" unless $ARGV[0] =~ /^--run$/;
 
 # Redirect STDOUT and STDERR to log file
 open STDOUT, ">>$::log";
@@ -39,6 +38,7 @@ Win32::Daemon::RegisterCallbacks( {
 } );
 
 # Start the service
+logAdd( "Starting service..." );
 Win32::Daemon::StartService( 0, 250 );
 close STDERR;
 close STDOUT;
@@ -46,6 +46,7 @@ close STDOUT;
 
 # Start-service callback: Set up non-blocking SMTP listener
 sub svcStart {
+	logAdd( "Service started successfully" );
 	$::server = new Net::SMTP::Server( '127.0.0.1', $::port )
 		or logAdd( "Unable to start SMTP server on port $::port: $!" ) && die;
 	IO::Handle::blocking( $::server->{SOCK}, 0 );
@@ -116,9 +117,9 @@ sub svcInstall {
 # Remove the service
 sub svcRemove {
 	if ( Win32::Daemon::DeleteService( $::daemon ) ) {
-		logAdd( "Service successfully removed" );
+		logAdd( "Service removed successfully" );
 	} else {
-		logAdd( "Failed to uninstall service!" );
+		logAdd( "Failed to remove service!" );
 		die;
 	}
 	logAdd( "Exiting." );
@@ -154,7 +155,10 @@ sub processMessage {
 	threads->detach();
 
 	# Wait until this thread is at the front of the queue
-	sleep( 0.1 ) while $queue[0] != $id;
+	while ( $queue[0] != $id ) {
+		logAdd( "$t Waiting..." ) if $::debug;
+		sleep( 0.1 );
+	}
 
 	# Process the stream
 	if ( $client->process ) {
@@ -233,6 +237,7 @@ sub processMessage {
 	}
 
 	# Remove this thread off the head of the queue
+	logAdd( "$t Done." ) if $::debug;
 	shift @queue;
 	
 }
