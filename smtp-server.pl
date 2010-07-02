@@ -6,7 +6,7 @@ use Win32::Daemon;
 use Net::SMTP::Server;
 use Net::SMTP::Server::Client;
 use strict;
-$::ver = '2.3.2 (2010-07-02)';
+$::ver = '2.3.5 (2010-07-02)';
 
 # Determine log file and config file
 $0 =~ /^(.+)\..+?$/;
@@ -61,11 +61,14 @@ sub svcRunning {
 		while ( my $conn = $::server->accept() ) {
 			if ( my $client = new Net::SMTP::Server::Client( $conn ) ) {
 
-				# Start a new message-processing thread and insert its ID into the shared queue
+				# Start a new message-processing thread
 				my $thread = threads->new( \&processMessage, $client );
 				my $id = $thread->tid();
-				unshift @queue, $id;
 				logAdd( "Started message-processor thread with ID $id" );
+				
+				# Push the new thread's ID onto the queue
+				push @queue, $id;
+				logAdd( 'Queue: ' . join( ',', @queue ) ) if $::debug;
 
 			} else { logAdd( "Unable to handle incoming SMTP connection: $!" ) }
 		}
@@ -156,7 +159,7 @@ sub processMessage {
 
 	# Wait until this thread is at the front of the queue
 	while ( $queue[0] != $id ) {
-		logAdd( "$t Waiting..." ) if $::debug;
+		logAdd( "$t Waiting. Queue: " . join( ',', @queue ) ) if $::debug;
 		sleep( 0.1 );
 	}
 
@@ -236,9 +239,10 @@ sub processMessage {
 		}
 	}
 
-	# Remove this thread off the head of the queue
-	logAdd( "$t Done." ) if $::debug;
+	# Remove this thread's ID from the head of the queue
 	shift @queue;
+	logAdd( "$t Finished." );
+	logAdd( "Queue: " . join( ',', @queue ) ) if $::debug;
 	
 }
 
