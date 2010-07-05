@@ -169,7 +169,7 @@ sub processMessage {
 		# Hack to cater for the multiple messages problem
 		my %content = ( $client->{MSG} =~ /(from:.+?)(?=(from:|$))/sig );
 		my @messages = keys %content;
-		logAdd( "Warning: " . ( 1 + $#messages ) . " messages have arrived as one, but have now been separated out" ) if $#messages > 0;
+		logAdd( "$t Warning: " . ( 1 + $#messages ) . " messages have arrived as one, but have now been separated out" ) if $#messages > 0;
 		for my $content ( @messages ) {
 
 			my $match;
