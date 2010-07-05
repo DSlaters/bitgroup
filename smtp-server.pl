@@ -6,7 +6,7 @@ use Win32::Daemon;
 use Net::SMTP::Server;
 use Net::SMTP::Server::Client;
 use strict;
-$::ver = '2.3.6 (2010-07-02)';
+$::ver = '2.4.1 (2010-07-05)';
 
 # Determine log file and config file
 $0 =~ /^(.+)\..+?$/;
@@ -57,9 +57,9 @@ sub svcStart {
 
 # Main service processing function
 sub svcRunning {
-	if ( SERVICE_RUNNING == Win32::Daemon::State() ) {
-		while ( my $conn = $::server->accept() ) {
-			if ( my $client = new Net::SMTP::Server::Client( $conn ) ) {
+	if( SERVICE_RUNNING == Win32::Daemon::State() ) {
+		while( my $conn = $::server->accept() ) {
+			if( my $client = new Net::SMTP::Server::Client( $conn ) ) {
 
 				# Start a new message-processing thread
 				my $thread = threads->new( \&processMessage, $client );
@@ -158,7 +158,7 @@ sub processMessage {
 	threads->detach();
 
 	# Give other threads time until this thread is at the front of the queue
-	while ( $queue[0] != $id ) {
+	while( $queue[0] != $id ) {
 		logAdd( "$t Waiting. Queue: " . join( ',', @queue ) ) if $::debug;
 		threads->yield();
 	}
@@ -166,75 +166,79 @@ sub processMessage {
 	# Process the stream
 	if ( $client->process ) {
 	
-		my $content = $client->{MSG};
-		my $match;
-		my %message = ();
-		my %extract = ();
-		my %rules   = ();
+		# Hack to cater for the multiple messages problem
+		my %messages = ( $client->{MSG} =~ /(From:.+?)(?=(From:|$))/sg );
+		for my $content ( keys %messages ) {
 
-		# Extract useful information from the content
-		$message{content} = $1 if $content =~ /\r?\n\r?\n\s*(.+?)\s*$/s;
-		$message{id}      = $1 if $content =~ /^message-id:\s*(.+?)\s*$/mi;
-		$message{date}    = $1 if $content =~ /^date:\s*(.+?)\s*$/mi;
-		$message{to}      = $1 if $content =~ /^to:\s*(.+?)\s*$/mi;
-		$message{from}    = $1 if $content =~ /^from:\s*(.+?)\s*$/mi;
-		$message{subject} = $1 if $content =~ /^subject:\s*(.+?)\s*$/im;
+			my $match;
+			my %message = ();
+			my %extract = ();
+			my %rules   = ();
 
-		if ( $::debug ) {
-			logAdd( "$t Message received from $message{from}" );
-			logAdd( "$t    To: $message{to}" );
-			logAdd( "$t    Subject: $message{subject}" );
-			logAdd( "$t    Content: $message{content}" );
-		}
+			# Extract useful information from the content
+			$message{content} = $1 if $content =~ /\r?\n\r?\n\s*(.+?)\s*$/s;
+			$message{id}      = $1 if $content =~ /^message-id:\s*(.+?)\s*$/mi;
+			$message{date}    = $1 if $content =~ /^date:\s*(.+?)\s*$/mi;
+			$message{to}      = $1 if $content =~ /^to:\s*(.+?)\s*$/mi;
+			$message{from}    = $1 if $content =~ /^from:\s*(.+?)\s*$/mi;
+			$message{subject} = $1 if $content =~ /^subject:\s*(.+?)\s*$/im;
 
-		# Apply the matching rules to the message and keep the captures for building the output
-		while ( my( $k, $v ) = each( %$::ruleset ) ) {
-			logAdd( "$t    Ruleset: $k" ) if $::debug;
-			%rules = %$v;
-			$match = 1;
-			while ( my( $field, $pattern ) = each( %{ $rules{rules} } ) ) {
-				logAdd( "$t       Rule: $field => $pattern" ) if $::debug;
-				$match = 0 unless defined $message{$field} and $message{$field} =~ /$pattern/sm;
-				$extract{$field} = [ 0, $1, $2, $3, $4, $5, $6, $7, $8, $9 ];
-				logAdd( "$t          Match failed!" ) unless $match or not $::debug;
-				logAdd( "$t          Match!" ) if $match and $::debug;
+			if( $::debug ) {
+				logAdd( "$t Message received from $message{from}" );
+				logAdd( "$t    To: $message{to}" );
+				logAdd( "$t    Subject: $message{subject}" );
+				logAdd( "$t    Content: $message{content}" );
 			}
-			last if $match;
-		}
 
-		if ( $match ) {
+			# Apply the matching rules to the message and keep the captures for building the output
+			while( my( $k, $v ) = each( %$::ruleset ) ) {
+				logAdd( "$t    Ruleset: $k" ) if $::debug;
+				%rules = %$v;
+				$match = 1;
+				while( my( $field, $pattern ) = each( %{ $rules{rules} } ) ) {
+					logAdd( "$t       Rule: $field => $pattern" ) if $::debug;
+					$match = 0 unless defined $message{$field} and $message{$field} =~ /$pattern/sm;
+					$extract{$field} = [ 0, $1, $2, $3, $4, $5, $6, $7, $8, $9 ];
+					logAdd( "$t          Match failed!" ) unless $match or not $::debug;
+					logAdd( "$t          Match!" ) if $match and $::debug;
+				}
+				last if $match;
+			}
 
-			# Build the output
-			my $out = $rules{format};
-			$out =~ s/\$$_(\d)/$extract{$_}[$1]/eg for keys %extract;
-			logAdd( "$t    Output: $out" ) if $::debug;
+			if( $match ) {
 
-			# Write the output
-			my $file = $rules{file};
-			if ( $file =~ /\$1/ ) {
-				
-				# Find the next available filename
-				my $i = 1;
-				do {
-					$file = $rules{file};
-					$file =~ s/\$1/$i++/e;
-				} while -e $file;
-						
-				# Write the output to the new file
-				if ( open OUTH, '>', $file ) {
-					logAdd( "$t    Created: $file" );
-					print OUTH $out;
-					close OUTH;
-				} else { logAdd( "$t    Can't create \"$file\" for writing!" ) }
+				# Build the output
+				my $out = $rules{format};
+				$out =~ s/\$$_(\d)/$extract{$_}[$1]/eg for keys %extract;
+				logAdd( "$t    Output: $out" ) if $::debug;
 
-			} else {
+				# Write the output
+				my $file = $rules{file};
+				if( $file =~ /\$1/ ) {
+					
+					# Find the next available filename
+					my $i = 1;
+					do {
+						$file = $rules{file};
+						$file =~ s/\$1/$i++/e;
+					} while -e $file;
+							
+					# Write the output to the new file
+					if( open OUTH, '>', $file ) {
+						logAdd( "$t    Created: $file" );
+						print OUTH $out;
+						close OUTH;
+					} else { logAdd( "$t    Can't create \"$file\" for writing!" ) }
 
-				# Append the output to the new or existing file
-				if ( open OUTH, '>>', $file ) {
-					logAdd( "$t    Appended: $file" );
-					print OUTH $out;
-					close OUTH;
-				} else { logAdd( "$t    Can't open \"$file\" for appending!" ) }
+				} else {
+
+					# Append the output to the new or existing file
+					if( open OUTH, '>>', $file ) {
+						logAdd( "$t    Appended: $file" );
+						print OUTH $out;
+						close OUTH;
+					} else { logAdd( "$t    Can't open \"$file\" for appending!" ) }
+				}
 			}
 		}
 	}
