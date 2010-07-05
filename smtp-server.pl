@@ -6,7 +6,7 @@ use Win32::Daemon;
 use Net::SMTP::Server;
 use Net::SMTP::Server::Client;
 use strict;
-$::ver = '2.4.1 (2010-07-05)';
+$::ver = '2.4.2 (2010-07-05)';
 
 # Determine log file and config file
 $0 =~ /^(.+)\..+?$/;
@@ -167,8 +167,10 @@ sub processMessage {
 	if ( $client->process ) {
 	
 		# Hack to cater for the multiple messages problem
-		my %messages = ( $client->{MSG} =~ /(From:.+?)(?=(From:|$))/sg );
-		for my $content ( keys %messages ) {
+		my %content = ( $client->{MSG} =~ /(from:.+?)(?=(from:|$))/sig );
+		my @messages = keys %content;
+		logAdd( "Warning: " . ( 1 + $#messages ) . " messages have arrived as one, but have now been separated out" ) if $#messages > 0;
+		for my $content ( @messages ) {
 
 			my $match;
 			my %message = ();
