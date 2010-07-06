@@ -20,7 +20,6 @@ qx( rm $sql );
 # Backup config files
 $conf = join( ' ',
 	"/var/www/tools/wikid.conf",
-	"/var/www/tools/backup.pl",
 	"/etc/apache2/sites-available",
 	"/etc/exim4",
 	"/etc/bind9",
