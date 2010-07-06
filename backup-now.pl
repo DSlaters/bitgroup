@@ -9,9 +9,10 @@ $date = strftime( '%Y-%m-%d', localtime );
 sub size { return (int([stat shift]->[7]/104857.6+0.5)/10).'MB'; }
 
 # Backup and compress databases
-$s7z = "$wgDBname-db-$date.sql.7z";
-$sql = "$dir/all.sql";
-qx( mysqldump -u $wgDBuser --password='$wgDBpassword' -A >$sql );
+$s7z  = "$wgDBname-db-$date.sql.7z";
+$sql  = "$dir/all.sql";
+$lock = defined $wgDBnolock ? '--lock-tables=FALSE' : '';
+qx( mysqldump -u $wgDBuser --password='$wgDBpassword' $lock -A >$sql );
 qx( 7za a $dir/$s7z $sql );
 qx( chmod 644 $dir/$s7z );
 print "\n\nDB backup: $s7z (".size($sql)."/".size("$dir/$s7z").")\n";
