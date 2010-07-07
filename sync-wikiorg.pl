@@ -47,9 +47,9 @@ $query = "
 	{{#dpl:category=Formatting templates}}
 	{{#dpl:category=Organisational templates}}
 	{{#dpl:category=Icons}}
+	{{#dpl:category=Common roles}}
+	Organic Design
 ";
-
-$query = "{{#dpl:category=Adeft}}";
 
 # Get the list of titles from the DPL queries
 @titles = wikiParse( $srcwiki, $query, 1 );
@@ -61,7 +61,7 @@ $tmp{$_} = 1 for @titles;
 
 # Copy the titles from source wiki to destination wiki
 for $title ( @titles ) {
-	#print "$title\n";
+	print "$title\n";
 	$text = wikiRawPage( $srcwiki, $title );
 	if ( $title =~ /^(Image|File):(.+)$/ ) {
 
@@ -72,8 +72,7 @@ for $title ( @titles ) {
 	} else {
 
 		# Title is a normal article
-		#wikiEdit( $dstwiki, $title, $text, $comment ) if $text =~ /debt compliance wiki/i;
-		print "$title\n" if $text =~ /debt compliance wiki/i;
+		wikiEdit( $dstwiki, $title, $text, $comment );
 
 	}
 }
