@@ -24,7 +24,7 @@ use Win32::Daemon;
 use Net::SMTP::Server;
 use Net::SMTP::Server::Client;
 use strict;
-$::ver = '2.4.3 (2010-07-06)';
+$::ver = '2.4.6 (2010-07-13)';
 
 # Determine log file and config file
 $0 =~ /^(.+)\..+?$/;
@@ -169,8 +169,8 @@ sub svcStop {
 # - if match is positive, format the result and write to file
 sub processMessage {
 	my $client = shift;
-	my $id = threads->tid();
-	my $t = "[Thread $id]";
+	my $id     = threads->tid();
+	my $t      = "[Thread $id]";
 
 	# This thread doesn't need to be rejoined on return
 	threads->detach();
@@ -185,17 +185,13 @@ sub processMessage {
 	if ( $client->process ) {
 	
 		# Hack to cater for the multiple messages problem
-		my %content = ( $client->{MSG} =~ /(from:.+?)(?=(from:|$))/sig );
+		my %content  = ( $client->{MSG} =~ /(from:.+?)(?=(from:|$))/sig );
 		my @messages = keys %content;
 		logAdd( "$t Warning: " . ( 1 + $#messages ) . " messages have arrived as one, but have now been separated out" ) if $#messages > 0;
 		for my $content ( @messages ) {
 
-			my $match;
-			my %message = ();
-			my %extract = ();
-			my %rules   = ();
-
 			# Extract useful information from the content
+			my %message = ();
 			$message{content} = $1 if $content =~ /\r?\n\r?\n\s*(.+?)\s*$/s;
 			$message{id}      = $1 if $content =~ /^message-id:\s*(.+?)\s*$/mi;
 			$message{date}    = $1 if $content =~ /^date:\s*(.+?)\s*$/mi;
@@ -211,11 +207,15 @@ sub processMessage {
 			}
 
 			# Apply the matching rules to the message and keep the captures for building the output
-			while( my( $k, $v ) = each( %$::ruleset ) ) {
+			my %extract = ();
+			my %rules   = ();
+			my $match   = 0;
+			for my $k ( keys %$::ruleset ) {
 				logAdd( "$t    Ruleset: $k" ) if $::debug;
-				%rules = %$v;
+				%rules = %{ $$::ruleset{$k}{rules} };
 				$match = 1;
-				while( my( $field, $pattern ) = each( %{ $rules{rules} } ) ) {
+				for my $field ( keys %rules ) {
+					my $pattern = $rules{$field};
 					logAdd( "$t       Rule: $field => $pattern" ) if $::debug;
 					$match = 0 unless defined $message{$field} and $message{$field} =~ /$pattern/sm;
 					$extract{$field} = [ 0, $1, $2, $3, $4, $5, $6, $7, $8, $9 ];
