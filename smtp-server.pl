@@ -24,7 +24,7 @@ use Win32::Daemon;
 use Net::SMTP::Server;
 use Net::SMTP::Server::Client;
 use strict;
-$::ver = '2.4.6 (2010-07-13)';
+$::ver = '2.4.7 (2010-07-13)';
 
 # Determine log file and config file
 $0 =~ /^(.+)\..+?$/;
@@ -212,10 +212,10 @@ sub processMessage {
 			my $match   = 0;
 			for my $k ( keys %$::ruleset ) {
 				logAdd( "$t    Ruleset: $k" ) if $::debug;
-				%rules = %{ $$::ruleset{$k}{rules} };
+				%rules = %{$$::ruleset{$k}};
 				$match = 1;
-				for my $field ( keys %rules ) {
-					my $pattern = $rules{$field};
+				for my $field ( keys %{$rules{rules}} ) {
+					my $pattern = $rules{rules}{$field};
 					logAdd( "$t       Rule: $field => $pattern" ) if $::debug;
 					$match = 0 unless defined $message{$field} and $message{$field} =~ /$pattern/sm;
 					$extract{$field} = [ 0, $1, $2, $3, $4, $5, $6, $7, $8, $9 ];
