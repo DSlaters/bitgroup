@@ -17,6 +17,7 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 # http://www.gnu.org/copyleft/gpl.html
 #
+use attributes;
 use threads;
 use threads::shared;
 use Win32;
@@ -24,7 +25,7 @@ use Win32::Daemon;
 use Net::SMTP::Server;
 use Net::SMTP::Server::Client;
 use strict;
-$::ver = '2.4.7 (2010-07-13)';
+$::ver = '2.5.2 (2010-07-15)';
 
 # Determine log file and config file
 $0 =~ /^(.+)\..+?$/;
@@ -34,9 +35,8 @@ logAdd();
 logAdd( "$::daemon-$::ver" );
 
 # Install or remove the service if switch provided
-&svcInstall if $ARGV[0] =~ /^(-i|--install)$/i;
 &svcRemove if $ARGV[0] =~ /^(-r|--remove)$/i;
-die "No action specified, --install or --remove parameter required!" unless $ARGV[0] =~ /^--run$/;
+&svcInstall unless $ARGV[0] =~ /^--run$/i;
 
 # Redirect STDOUT and STDERR to log file
 open STDOUT, ">>$::log";
@@ -67,7 +67,9 @@ sub svcStart {
 	logAdd( "Service started successfully" );
 	$::server = new Net::SMTP::Server( '127.0.0.1', $::port )
 		or logAdd( "Unable to start SMTP server on port $::port: $!" ) && die;
-	IO::Handle::blocking( $::server->{SOCK}, 0 );
+	$::server->{SOCK}->blocking( 0 )
+		or logAdd( "Unable to set socket to non-blocking mode: $!" );
+	$::server->{SOCK}->timeout( 0 );
 	logAdd( "SMTP server listening on port $::port" );
 	Win32::Daemon::State( SERVICE_RUNNING );
 }
@@ -130,8 +132,10 @@ sub svcInstall {
 		logAdd( "Failed to install service!" );
 		die;
 	}
-	logAdd( "Exiting." );
-	exit;
+	
+	logAdd( "Starting service $::daemon..." );
+	qx( net start $::daemon );
+	exit();
 }
 
 
