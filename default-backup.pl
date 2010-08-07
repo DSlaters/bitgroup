@@ -48,7 +48,7 @@ push @ftpFiles, "$dir/$tgz";
 # Backup and compress wiki/web structure
 $t7z = "$wgDBname-www-$date.t7z";
 $tmp = "$dir/tmp.tar";
-qx( tar -cf $tmp /var/www -X /var/www/tools/backup-exclusions );
+qx( tar -cf $tmp /var/www -X ./backup-exclusions );
 qx( nice +19 7za a $dir/$t7z $tmp );
 qx( chmod 644 $dir/$t7z );
 print "FS backup: $t7z (".size($tmp)."/".size("$dir/$t7z").")\n";
