@@ -57,8 +57,9 @@ push @ftpFiles, "$dir/$t7z";
 
 # Transfer the files over FTP
 if( defined $ftpHost ) {
+	print "Transferring over FTP to $ftpHost...\n"
 	$ftp = Net::FTP->new( $ftpHost ) or die "Cannot connect to $ftpHost: $@";
 	$ftp->login( $ftpUser, $ftpPass ) or die "Cannot login ", $ftp->message;
 	$ftp->binary();
-	$ftp->put( $_, $_ ) for @ftpFiles;
+	$ftp->put( $_ ) for @ftpFiles;
 }
