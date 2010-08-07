@@ -8,7 +8,7 @@
 #
 use POSIX qw(strftime setsid);
 use Net::FTP;
-require "/var/www/tools/wikid.conf";
+require "wikid.conf";
 
 $dir  = '/backup';
 $date = strftime( '%Y-%m-%d', localtime );
