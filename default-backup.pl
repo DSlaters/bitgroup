@@ -10,7 +10,7 @@ use POSIX qw(strftime setsid);
 use Net::FTP;
 require "wikid.conf";
 
-$dir  = '/backup';
+$dir = defined $wgBackups ? $wgBackups : '/backup';
 $date = strftime( '%Y-%m-%d', localtime );
 @ftpFiles = ();
 
