@@ -55,7 +55,6 @@ print "FS backup: $t7z (".size($tmp)."/".size("$dir/$t7z").")\n";
 qx( rm -f $tmp );
 push @ftpFiles, "$dir/$t7z";
 
-
 # Transfer the files over FTP
 if( defined $ftpHost ) {
 	$ftp = Net::FTP->new( $ftpHost ) or die "Cannot connect to $ftpHost: $@";
