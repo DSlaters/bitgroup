@@ -46,7 +46,6 @@ $query = "
 	{{#dpl:category=Symbols}}
 	{{#dpl:category=Formatting templates}}
 	{{#dpl:category=Organisational templates}}
-	{{#dpl:category=Icons}}
 	{{#dpl:category=Common roles}}
 	Organic Design
 ";
