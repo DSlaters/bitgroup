@@ -22,10 +22,10 @@ $s7z  = "$wgDBname-db-$date.sql.7z";
 $sql  = "$dir/all.sql";
 $lock = defined $wgDBnolock ? '--lock-tables=FALSE' : '';
 qx( mysqldump -u $wgDBuser --password='$wgDBpassword' $lock -A >$sql );
-qx( nice +19 7za a $dir/$s7z $sql );
+qx( nice -n 19 7za a $dir/$s7z $sql );
 qx( chmod 644 $dir/$s7z );
 print "\n\nDB backup: $s7z (".size($sql)."/".size("$dir/$s7z").")\n";
-qx( rm $sql );
+qx( rm -f $sql );
 push @ftpFiles, "$dir/$s7z";
 
 # Backup config files
@@ -49,10 +49,10 @@ push @ftpFiles, "$dir/$tgz";
 $t7z = "$wgDBname-www-$date.t7z";
 $tmp = "$dir/tmp.tar";
 qx( tar -cf $tmp /var/www -X ./backup-exclusions );
-qx( nice +19 7za a $dir/$t7z $tmp );
+qx( nice -n 19 7za a $dir/$t7z $tmp );
 qx( chmod 644 $dir/$t7z );
 print "FS backup: $t7z (".size($tmp)."/".size("$dir/$t7z").")\n";
-qx( rm $tmp );
+qx( rm -f $tmp );
 push @ftpFiles, "$dir/$t7z";
 
 
