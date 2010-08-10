@@ -24,8 +24,12 @@ use Win32;
 use Win32::Daemon;
 use Net::SMTP::Server;
 use Net::SMTP::Server::Client;
+use Cwd qw(realpath);
 use strict;
-$::ver = '2.5.2 (2010-07-15)';
+$::ver = '2.5.3 (2010-08-10)';
+
+# Ensure CWD is in the dir containing this script
+chdir $1 if realpath( $0 ) =~ m|^(.+)/|;
 
 # Determine log file and config file
 $0 =~ /^(.+)\..+?$/;
@@ -129,7 +133,8 @@ sub svcInstall {
 	if ( Win32::Daemon::CreateService( \%svcInfo ) ) {
 		logAdd( "Service installed successfully" );
 	} else {
-		logAdd( "Failed to install service!" );
+		my $err = svcGetError();
+		logAdd( "Failed to install service! ($err)" );
 		die;
 	}
 	
@@ -141,10 +146,11 @@ sub svcInstall {
 
 # Remove the service
 sub svcRemove {
-	if ( Win32::Daemon::DeleteService( $::daemon ) ) {
+	if ( Win32::Daemon::DeleteService( "", $::daemon ) ) {
 		logAdd( "Service removed successfully" );
 	} else {
-		logAdd( "Failed to remove service!" );
+		my $err = svcGetError();
+		logAdd( "Failed to remove service! ($err)" );
 		die;
 	}
 	logAdd( "Exiting." );
@@ -167,6 +173,9 @@ sub svcStop {
 	Win32::Daemon::StopService();
 }
 
+sub svcGetError {
+	return( Win32::FormatMessage( Win32::Daemon::GetLastError() ) );
+}
 
 # Process a message
 # - match content against rules
