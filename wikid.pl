@@ -36,6 +36,7 @@ use Expect;
 use Net::SCP::Expect;
 use Crypt::CBC;
 use IO::Socket;
+use IO::Socket::SSL;
 use IO::Select;
 use MIME::Base64;
 use Sys::Hostname;
@@ -48,7 +49,7 @@ $daemon   = 'wikid';
 $host     = uc( hostname );
 $name     = hostname;
 $port     = 1729;
-$ver      = '3.17.8'; # 2010-06-10
+$ver      = '3.18.0'; # 2010-08-15
 $log      = "$dir/$daemon.log";
 $wkfile   = "$dir/$daemon.work";
 
@@ -469,11 +470,11 @@ sub ircInitialise {
 	}
 
 	# Attempt connection with the IRC server
-	$::ircsock = IO::Socket::INET->new(
-		PeerAddr => $::ircserver,
-		PeerPort => $::ircport,
-		Proto    => 'tcp'
-	);
+	if ( $::ircssl ) {
+		$::ircsock = new IO::Socket::SSL( PeerAddr => $::ircserver, PeerPort => $::ircport, Proto => 'tcp' );
+	} else {
+		$::ircsock = new IO::Socket::INET( PeerAddr => $::ircserver, PeerPort => $::ircport, Proto => 'tcp' );
+	}
 
 	# If connected, do login sequence
 	if ( $::ircsock ) {
