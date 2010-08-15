@@ -24,9 +24,11 @@ use Win32;
 use Win32::Daemon;
 use Net::SMTP::Server;
 use Net::SMTP::Server::Client;
+use Net::IMAP::Simple::SSL;
+use Net::POP3;
 use Cwd qw(realpath);
 use strict;
-$::ver = '2.5.3 (2010-08-10)';
+$::ver = '2.6.0 (2010-08-11)';
 
 # Ensure CWD is in the dir containing this script
 chdir $1 if realpath( $0 ) =~ m|^(.+)/|;
