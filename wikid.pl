@@ -49,7 +49,7 @@ $daemon   = 'wikid';
 $host     = uc( hostname );
 $name     = hostname;
 $port     = 1729;
-$ver      = '3.18.0'; # 2010-08-15
+$ver      = '3.18.1'; # 2010-08-15
 $log      = "$dir/$daemon.log";
 $wkfile   = "$dir/$daemon.work";
 
@@ -67,9 +67,10 @@ $user       = lc $name;
 $wiki       = 'http://localhost/wiki/index.php';
 $dnsdomain  = 'organicdesign.tv';
 $ircserver  = 'irc.organicdesign.co.nz';
-$ircport    = 6667;
+$ircport    = 16667;
 $ircchannel = '#organicdesign';
 $ircpass    = '******';
+$ircssl     = 1;
 
 # Override default with conf file
 # NOTE: this is included again at the end so that it can replace event functions
