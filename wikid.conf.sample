@@ -20,6 +20,8 @@ $wgDBprefix   = 'foo_';
 # Set if bots are to reside in an IRC channel
 $ircserver    = 'irc.foo.bar'; # defaults to irc.organicdesign.co.nz
 $ircpass      = '******';
+$ircssl       = 1;
+$ircport      = 16667;
 
 # Set if using a namecheap.com domain for dynamic DNS
 $dnsdomain    = 'foo.bar'; # defaults to organicdesign.tv
