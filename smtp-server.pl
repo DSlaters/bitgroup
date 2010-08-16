@@ -28,7 +28,7 @@ use Net::IMAP::Simple::SSL;
 use Net::POP3;
 use Cwd qw(realpath);
 use strict;
-$::ver = '2.6.0 (2010-08-11)';
+$::ver = '2.6.3 (2010-08-16)';
 
 # Ensure CWD is in the dir containing this script
 chdir $1 if realpath( $0 ) =~ m|^(.+)/|;
@@ -225,37 +225,56 @@ sub processMessage {
 			my %extract = ();
 			my %rules   = ();
 			my $match   = 0;
+			my $count   = 0;
 			for my $k ( keys %$::ruleset ) {
 				logAdd( "$t    Ruleset: $k" ) if $::debug;
 				%rules = %{$$::ruleset{$k}};
-				$match = 1;
 				for my $field ( keys %{$rules{rules}} ) {
-					my $pattern = $rules{rules}{$field};
+					my $pattern  = $rules{rules}{$field};
+					my $captures = $pattern =~ tr/)// || 1; # <----- $captures must not be zero
 					logAdd( "$t       Rule: $field => $pattern" ) if $::debug;
-					$match = 0 unless defined $message{$field} and $message{$field} =~ /$pattern/sm;
-					$extract{$field} = [ 0, $1, $2, $3, $4, $5, $6, $7, $8, $9 ];
+					logAdd( "$t          Captures: $captures" ) if $::debug;
+
+					# Apply the rule's pattern and extract all matches if any
+					# - all existing field patterns must match
+					$match = 1;
+					if( defined $message{$field} ) {
+						$extract{$field} = [];
+						my @matches = $message{$field} =~ /$pattern/gms;
+						$match = 0 if $#matches < 0;
+						$count = 0;
+						while( $#matches >=0 ) {
+							$count++;
+							my @row = ();
+							push @row, shift @matches for 1 .. $captures;
+							push @{$extract{$field}}, \@row;
+						}
+					}
+					$match = 0 unless $count;
+
 					logAdd( "$t          Match failed!" ) unless $match or not $::debug;
-					logAdd( "$t          Match!" ) if $match and $::debug;
+					logAdd( "$t          Matches: $count x $captures" ) if $match and $::debug;
 				}
 				last if $match;
 			}
 
-			if( $match ) {
+			# Loop through the number of matches if there are any
+			for my $i ( 1 .. $count ) {
 
 				# Build the output
 				my $out = $rules{format};
-				$out =~ s/\$$_(\d)/$extract{$_}[$1]/eg for keys %extract;
-				logAdd( "$t    Output: $out" ) if $::debug;
+				$out =~ s/\$$_(\d)/$extract{$_}[$i-1][$1-1]/eg for keys %extract;
+				logAdd( "$t    Output($i of $count): $out" ) if $::debug;
 
 				# Write the output
 				my $file = $rules{file};
 				if( $file =~ /\$1/ ) {
 					
 					# Find the next available filename
-					my $i = 1;
+					my $j = 1;
 					do {
 						$file = $rules{file};
-						$file =~ s/\$1/$i++/e;
+						$file =~ s/\$1/$j++/e;
 					} while -e $file;
 							
 					# Write the output to the new file
