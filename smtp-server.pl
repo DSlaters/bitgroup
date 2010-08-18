@@ -24,11 +24,12 @@ use Win32;
 use Win32::Daemon;
 use Net::SMTP::Server;
 use Net::SMTP::Server::Client;
+use Net::IMAP::Simple;
 use Net::IMAP::Simple::SSL;
 use Net::POP3;
 use Cwd qw(realpath);
 use strict;
-$::ver = '2.7.0 (2010-08-18)';
+$::ver = '2.7.1 (2010-08-18)';
 
 # Ensure CWD is in the dir containing this script
 chdir $1 if realpath( $0 ) =~ m|^(.+)/|;
@@ -90,7 +91,7 @@ sub svcStart {
 sub svcRunning {
 	if( SERVICE_RUNNING == Win32::Daemon::State() ) {
 
-		# handle SMTP listener
+		# handle any incoming data on the SMTP socket
 		while( $::port and my $conn = $::server->accept() ) {
 			if( my $client = new Net::SMTP::Server::Client( $conn ) ) {
 
@@ -107,8 +108,16 @@ sub svcRunning {
 		}
 		
 		# Check if time to poll any POP/IMAP sources
+		my $seconds = time();
 		for( keys %$::sources ) {
-			my $source = $$::sources{$_};
+			if( $seconds % $$::sources{$_}{period} == 0 ) {
+				if ( $$::sources{$_}{lastcheck} != $seconds ) {
+					my $thread = threads->new( \&checkEmail, $_ );
+					my $id = $thread->tid();
+					logAdd( "Started thread with ID $id to check \"$_\" email source..." );
+				}
+				$$::sources{$_}{lastcheck} = $seconds;
+			}
 		}
 		
 	}
@@ -190,6 +199,53 @@ sub svcStop {
 
 sub svcGetError {
 	return( Win32::FormatMessage( Win32::Daemon::GetLastError() ) );
+}
+
+
+# Check the passed email source for messages to process
+sub checkEmail {
+	my $srckey = shift;
+	my %args   = %{$$::sources{$srckey}};
+	my $id     = threads->tid();
+	my $t      = "[Thread $id]";
+	my $limit  = 4096;
+	my $maxage = $args{maxage};
+
+	# This thread doesn't need to be rejoined on return
+	threads->detach();
+
+	# Process messages in a POP3 mailbox
+	if ( $args{proto} eq 'POP3' ) {
+		if ( my $server = Net::POP3->new( $args{host} ) ) {
+			logAdd( "$t Connected to $args{proto} server \"$args{host}\"" );
+			if ( $server->login( $args{user}, $args{pass} ) > 0 ) {
+				logAdd( "$t Logged \"$args{user}\" into $args{proto} server \"$args{host}\"" );
+				for ( keys %{ $server->list() } ) {
+					my $content = join "\n", @{ $server->top( $_, $limit ) };
+					processMessage( $content, $t );
+				}
+			} else { emalogAddilLog( "$t Couldn't log \"$args{user}\" into $args{proto} server \"$args{host}\"" ) }
+			$server->quit();
+		} else { logAdd( "$t Couldn't connect to $args{proto} server \"$args{host}\"" ) }
+	}
+
+	# Process messages in an IMAP mailbox
+	elsif ( $args{proto} eq 'IMAP' ) {
+		if ( my $server = Net::IMAP::Simple::SSL->new( $args{host} ) ) {
+			if ( $server->login( $args{user}, $args{pass} ) > 0 ) {
+				logAdd( "$t Logged \"$args{user}\" into IMAP server \"$args{host}\"" );
+				my $i = $server->select( $args{path} or 'Inbox' );
+				while ( $i > 0 ) {
+					my $fh = $server->getfh( $i );
+					sysread $fh, ( my $content ), $limit;
+					close $fh;
+					processMessage( $content, $t );
+					$i--;
+				}
+			} else { logAdd( "$t Couldn't log \"$args{user}\" into $args{proto} server \"$args{host}\"" ) }
+			$server->quit();
+		} else { logAdd( "$t Couldn't connect to $args{proto} server \"$args{host}\"" ) }
+	}
 }
 
 
