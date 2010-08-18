@@ -28,7 +28,7 @@ use Net::IMAP::Simple::SSL;
 use Net::POP3;
 use Cwd qw(realpath);
 use strict;
-$::ver = '2.6.3 (2010-08-16)';
+$::ver = '2.7.0 (2010-08-18)';
 
 # Ensure CWD is in the dir containing this script
 chdir $1 if realpath( $0 ) =~ m|^(.+)/|;
@@ -71,12 +71,17 @@ close STDOUT;
 # Start-service callback: Set up non-blocking SMTP listener
 sub svcStart {
 	logAdd( "Service started successfully" );
-	$::server = new Net::SMTP::Server( '127.0.0.1', $::port )
-		or logAdd( "Unable to start SMTP server on port $::port: $!" ) && die;
-	$::server->{SOCK}->blocking( 0 )
-		or logAdd( "Unable to set socket to non-blocking mode: $!" );
-	$::server->{SOCK}->timeout( 0 );
-	logAdd( "SMTP server listening on port $::port" );
+	
+	if ( $::port ) {
+		$::server = new Net::SMTP::Server( '127.0.0.1', $::port )
+			or logAdd( "Unable to start SMTP server on port $::port: $!" ) && die;
+		$::server->{SOCK}->blocking( 0 )
+			or logAdd( "Unable to set socket to non-blocking mode: $!" );
+		$::server->{SOCK}->timeout( 0 );
+		logAdd( "SMTP server listening on port $::port" );
+	} else {
+		logAdd( "SMTP server disabled, port = 0" );
+	}
 	Win32::Daemon::State( SERVICE_RUNNING );
 }
 
@@ -84,11 +89,13 @@ sub svcStart {
 # Main service processing function
 sub svcRunning {
 	if( SERVICE_RUNNING == Win32::Daemon::State() ) {
-		while( my $conn = $::server->accept() ) {
+
+		# handle SMTP listener
+		while( $::port and my $conn = $::server->accept() ) {
 			if( my $client = new Net::SMTP::Server::Client( $conn ) ) {
 
 				# Start a new message-processing thread
-				my $thread = threads->new( \&processMessage, $client );
+				my $thread = threads->new( \&smtpHandler, $client );
 				my $id = $thread->tid();
 				logAdd( "Started message-processor thread with ID $id" );
 				
@@ -98,6 +105,12 @@ sub svcRunning {
 
 			} else { logAdd( "Unable to handle incoming SMTP connection: $!" ) }
 		}
+		
+		# Check if time to poll any POP/IMAP sources
+		for( keys %$::sources ) {
+			my $source = $$::sources{$_};
+		}
+		
 	}
 }
 
@@ -179,10 +192,9 @@ sub svcGetError {
 	return( Win32::FormatMessage( Win32::Daemon::GetLastError() ) );
 }
 
-# Process a message
-# - match content against rules
-# - if match is positive, format the result and write to file
-sub processMessage {
+
+# Handle incoming data on the SMTP socket
+sub smtpHandler {
 	my $client = shift;
 	my $id     = threads->tid();
 	my $t      = "[Thread $id]";
@@ -196,105 +208,12 @@ sub processMessage {
 		threads->yield();
 	}
 
-	# Process the stream
-	if ( $client->process ) {
-	
-		# Hack to cater for the multiple messages problem
+	# Process the stream (which may have multiple messages in it)
+	if( $client->process ) {
 		my %content  = ( $client->{MSG} =~ /(from:.+?)(?=(from:|$))/sig );
 		my @messages = keys %content;
 		logAdd( "$t Warning: " . ( 1 + $#messages ) . " messages have arrived as one, but have now been separated out" ) if $#messages > 0;
-		for my $content ( @messages ) {
-
-			# Extract useful information from the content
-			my %message = ();
-			$message{content} = $1 if $content =~ /\r?\n\r?\n\s*(.+?)\s*$/s;
-			$message{id}      = $1 if $content =~ /^message-id:\s*(.+?)\s*$/mi;
-			$message{date}    = $1 if $content =~ /^date:\s*(.+?)\s*$/mi;
-			$message{to}      = $1 if $content =~ /^to:\s*(.+?)\s*$/mi;
-			$message{from}    = $1 if $content =~ /^from:\s*(.+?)\s*$/mi;
-			$message{subject} = $1 if $content =~ /^subject:\s*(.+?)\s*$/im;
-
-			if( $::debug ) {
-				logAdd( "$t Message received from $message{from}" );
-				logAdd( "$t    To: $message{to}" );
-				logAdd( "$t    Subject: $message{subject}" );
-				logAdd( "$t    Content: $message{content}" );
-			}
-
-			# Apply the matching rules to the message and keep the captures for building the output
-			my %extract = ();
-			my %rules   = ();
-			my $match   = 0;
-			my $count   = 0;
-			for my $k ( keys %$::ruleset ) {
-				logAdd( "$t    Ruleset: $k" ) if $::debug;
-				%rules = %{$$::ruleset{$k}};
-				for my $field ( keys %{$rules{rules}} ) {
-					my $pattern  = $rules{rules}{$field};
-					my $captures = $pattern =~ tr/)// || 1; # <----- $captures must not be zero
-					logAdd( "$t       Rule: $field => $pattern" ) if $::debug;
-					logAdd( "$t          Captures: $captures" ) if $::debug;
-
-					# Apply the rule's pattern and extract all matches if any
-					# - all existing field patterns must match
-					$match = 1;
-					if( defined $message{$field} ) {
-						$extract{$field} = [];
-						my @matches = $message{$field} =~ /$pattern/gms;
-						$match = 0 if $#matches < 0;
-						$count = 0;
-						while( $#matches >=0 ) {
-							$count++;
-							my @row = ();
-							push @row, shift @matches for 1 .. $captures;
-							push @{$extract{$field}}, \@row;
-						}
-					}
-					$match = 0 unless $count;
-
-					logAdd( "$t          Match failed!" ) unless $match or not $::debug;
-					logAdd( "$t          Matches: $count x $captures" ) if $match and $::debug;
-				}
-				last if $match;
-			}
-
-			# Loop through the number of matches if there are any
-			for my $i ( 1 .. $count ) {
-
-				# Build the output
-				my $out = $rules{format};
-				$out =~ s/\$$_(\d)/$extract{$_}[$i-1][$1-1]/eg for keys %extract;
-				logAdd( "$t    Output($i of $count): $out" ) if $::debug;
-
-				# Write the output
-				my $file = $rules{file};
-				if( $file =~ /\$1/ ) {
-					
-					# Find the next available filename
-					my $j = 1;
-					do {
-						$file = $rules{file};
-						$file =~ s/\$1/$j++/e;
-					} while -e $file;
-							
-					# Write the output to the new file
-					if( open OUTH, '>', $file ) {
-						logAdd( "$t    Created: $file" );
-						print OUTH $out;
-						close OUTH;
-					} else { logAdd( "$t    Can't create \"$file\" for writing!" ) }
-
-				} else {
-
-					# Append the output to the new or existing file
-					if( open OUTH, '>>', $file ) {
-						logAdd( "$t    Appended: $file" );
-						print OUTH $out;
-						close OUTH;
-					} else { logAdd( "$t    Can't open \"$file\" for appending!" ) }
-				}
-			}
-		}
+		processMessage( $_, $t ) for @messages;
 	}
 
 	# Remove this thread's ID from the head of the queue
@@ -302,6 +221,105 @@ sub processMessage {
 	logAdd( "$t Finished." );
 	logAdd( "Queue: " . join( ',', @queue ) ) if $::debug;
 	
+}
+
+
+# Parse content from a single message
+# - match content against rules
+# - if match is positive, format the result and write to file
+sub processMessage {
+	my $content = shift;
+	my $t = shift;
+
+	# Extract useful information from the content
+	my %message = ();
+	$message{content} = $1 if $content =~ /\r?\n\r?\n\s*(.+?)\s*$/s;
+	$message{id}      = $1 if $content =~ /^message-id:\s*(.+?)\s*$/mi;
+	$message{date}    = $1 if $content =~ /^date:\s*(.+?)\s*$/mi;
+	$message{to}      = $1 if $content =~ /^to:\s*(.+?)\s*$/mi;
+	$message{from}    = $1 if $content =~ /^from:\s*(.+?)\s*$/mi;
+	$message{subject} = $1 if $content =~ /^subject:\s*(.+?)\s*$/im;
+
+	if( $::debug ) {
+		logAdd( "$t Message received from $message{from}" );
+		logAdd( "$t    To: $message{to}" );
+		logAdd( "$t    Subject: $message{subject}" );
+		logAdd( "$t    Content: $message{content}" );
+	}
+
+	# Apply the matching rules to the message and keep the captures for building the output
+	my %extract = ();
+	my %rules   = ();
+	my $match   = 0;
+	my $count   = 0;
+	for my $k ( keys %$::ruleset ) {
+		logAdd( "$t    Ruleset: $k" ) if $::debug;
+		%rules = %{$$::ruleset{$k}};
+		for my $field ( keys %{$rules{rules}} ) {
+			my $pattern  = $rules{rules}{$field};
+			my $captures = $pattern =~ tr/)// || 1; # <----- $captures must not be zero
+			logAdd( "$t       Rule: $field => $pattern" ) if $::debug;
+			logAdd( "$t          Captures: $captures" ) if $::debug;
+
+			# Apply the rule's pattern and extract all matches if any
+			# - all existing field patterns must match
+			$match = 1;
+			if( defined $message{$field} ) {
+				$extract{$field} = [];
+				my @matches = $message{$field} =~ /$pattern/gms;
+				$match = 0 if $#matches < 0;
+				$count = 0;
+				while( $#matches >=0 ) {
+					$count++;
+					my @row = ();
+					push @row, shift @matches for 1 .. $captures;
+					push @{$extract{$field}}, \@row;
+				}
+			}
+			$match = 0 unless $count;
+
+			logAdd( "$t          Match failed!" ) unless $match or not $::debug;
+			logAdd( "$t          Matches: $count x $captures" ) if $match and $::debug;
+		}
+		last if $match;
+	}
+
+	# Loop through the number of matches if there are any
+	for my $i ( 1 .. $count ) {
+
+		# Build the output
+		my $out = $rules{format};
+		$out =~ s/\$$_(\d)/$extract{$_}[$i-1][$1-1]/eg for keys %extract;
+		logAdd( "$t    Output($i of $count): $out" ) if $::debug;
+
+		# Write the output
+		my $file = $rules{file};
+		if( $file =~ /\$1/ ) {
+			
+			# Find the next available filename
+			my $j = 1;
+			do {
+				$file = $rules{file};
+				$file =~ s/\$1/$j++/e;
+			} while -e $file;
+					
+			# Write the output to the new file
+			if( open OUTH, '>', $file ) {
+				logAdd( "$t    Created: $file" );
+				print OUTH $out;
+				close OUTH;
+			} else { logAdd( "$t    Can't create \"$file\" for writing!" ) }
+
+		} else {
+
+			# Append the output to the new or existing file
+			if( open OUTH, '>>', $file ) {
+				logAdd( "$t    Appended: $file" );
+				print OUTH $out;
+				close OUTH;
+			} else { logAdd( "$t    Can't open \"$file\" for appending!" ) }
+		}
+	}
 }
 
 
