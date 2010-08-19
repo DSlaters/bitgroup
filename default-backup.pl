@@ -46,14 +46,11 @@ print "\n\nConfig backup: $tgz (".size("$dir/$tgz").")\n";
 push @ftpFiles, "$dir/$tgz";
 
 # Backup and compress wiki/web structure
-$t7z = "$wgDBname-www-$date.t7z";
-$tmp = "$dir/tmp.tar";
-qx( tar -cf $tmp /var/www -X ./backup-exclusions );
-qx( nice -n 19 7za a $dir/$t7z $tmp );
-qx( chmod 644 $dir/$t7z );
-print "FS backup: $t7z (".size($tmp)."/".size("$dir/$t7z").")\n";
-qx( rm -f $tmp );
-push @ftpFiles, "$dir/$t7z";
+$tar = "$dir/$wgDBname-www-$date.t7z";
+qx( tar -cf $tar /var/www -X ./backup-exclusions );
+qx( chmod 644 $tar );
+print "FS backup: $tar (".size($tar).")\n";
+push @ftpFiles, "$tar";
 
 # Transfer the files over FTP
 if( defined $ftpHost ) {
