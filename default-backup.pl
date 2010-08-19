@@ -54,7 +54,7 @@ push @ftpFiles, "$tar";
 
 # Transfer the files over FTP
 if( defined $ftpHost ) {
-	print "Transferring over FTP to $ftpHost...\n"
+	print "Transferring over FTP to $ftpHost...\n";
 	$ftp = Net::FTP->new( $ftpHost ) or die "Cannot connect to $ftpHost: $@";
 	$ftp->login( $ftpUser, $ftpPass ) or die "Cannot login ", $ftp->message;
 	$ftp->binary();
