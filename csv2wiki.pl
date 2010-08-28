@@ -40,6 +40,7 @@ $template = "Record";
 $replace = 0;
 $append = 0;
 $titleformat = "";
+%dups = ();
 
 # Parse the job file
 if ( open JOB, '<', $ARGV[0] ) {
@@ -116,6 +117,10 @@ while ( my $row = <CSV> ) {
 				$text = $append ? "$text\n$tmpl" : "$tmpl\n$text";
 			}
 		}
+
+		# Append (n) if duplicate title
+		$n = ++$dups{$title};
+		$title = "$title ($n)" if $n > 1;
 
 		# Update the article
 		print "Processing row $wptr ($title)\n";
