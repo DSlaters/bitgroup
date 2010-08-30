@@ -25,16 +25,18 @@ use Win32::Daemon;
 use Cwd qw(realpath);
 use strict;
 
-$::ver = '0.0.1 (2010-08-28)';
-$::daemon = 'MTConnect';
-$::description = 'Connect notification server to MT4 robots';
+$ver         = '0.0.1 (2010-08-28)';
+$daemon      = 'MTConnect';
+$description = 'Connect notification server to MT4 robots';
+$period      = 10;
+$lastitem    = 0;
 
 # Ensure CWD is in the dir containing this script
 chdir $1 if realpath( $0 ) =~ m|^(.+)/|;
 
 # Determine log file and config file
 $0 =~ /^(.+)\..+?$/;
-$::log  = "$1.log";
+$log  = "$1.log";
 
 logAdd();
 logAdd( "$::daemon-$::ver" );
@@ -67,6 +69,16 @@ close STDERR;
 close STDOUT;
 
 
+# Output an item to the email log file with timestamp
+sub logAdd {
+	my $entry = shift;
+	open LOGH, '>>', $::log or die "Can't open $::log for writing!";
+	print LOGH localtime() . " : $entry\n";
+	close LOGH;
+	return $entry;
+}
+
+
 # Start-service callback: Set up non-blocking SMTP listener
 sub svcStart {
 	logAdd( "Service started successfully" );
@@ -81,9 +93,9 @@ sub svcStart {
 sub svcRunning {
 	if( SERVICE_RUNNING == Win32::Daemon::State() ) {
 
-		# Check if time to poll any POP/IMAP sources
+		# Check if time to poll the server
 		my $seconds = time();
-		if( $seconds % 10 == 0 ) {
+		if( $seconds % $::period == 0 ) {
 			if ( $::lastcheck != $seconds ) {
 				my $thread = threads->new( \&checkServer );
 				my $id = $thread->tid();
@@ -182,6 +194,14 @@ sub checkServer {
 	# This thread doesn't need to be rejoined on return
 	threads->detach();
 
+
+	# TODO: Check server with ?t=$::lastitem (if its zero, server will return items in last $::maxage)
+
+
+	$::lastitem = getLastItemID;
+
+
+
 	# Find the next available filename
 	my $j = 1;
 	do {
@@ -199,11 +219,3 @@ sub checkServer {
 }
 
 
-# Output an item to the email log file with timestamp
-sub logAdd {
-	my $entry = shift;
-	open LOGH, '>>', $::log or die "Can't open $::log for writing!";
-	print LOGH localtime() . " : $entry\n";
-	close LOGH;
-	return $entry;
-}
