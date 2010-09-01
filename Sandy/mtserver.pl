@@ -34,8 +34,8 @@ $::dir = $1;
 
 # Determine log file and config file
 $0 =~ /^(.+)\..+?$/;
-$::log = "$::dir.log";
-require( "$::dir.conf" );
+$::log = "$1.log";
+require( "$1.conf" );
 logAdd();
 logAdd( "$::daemon-$::ver" );
 
