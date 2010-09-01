@@ -22,6 +22,9 @@ use threads;
 use threads::shared;
 use Win32;
 use Win32::Daemon;
+use HTTP::Request;
+use LWP::UserAgent;
+use Digest::MD5 qw( md5_hex );
 use Cwd qw(realpath);
 use strict;
 
@@ -30,6 +33,7 @@ $daemon      = 'MTConnect';
 $description = 'Connect notification server to MT4 robots';
 $period      = 10;
 $lastitem    = 0;
+$mtserver    = "http://www.organicdesign.co.nz/files/mtweb.php";
 
 # Ensure CWD is in the dir containing this script
 chdir $1 if realpath( $0 ) =~ m|^(.+)/|;
@@ -83,7 +87,14 @@ sub logAdd {
 sub svcStart {
 	logAdd( "Service started successfully" );
 
-	# Startup stuff
+	# Set up a global user agent for making HTTP requests as a browser
+	$::ua = LWP::UserAgent->new(
+		cookie_jar => {},
+		agent      => 'Mozilla/5.0 (Windows; U; Windows NT 5.1; it; rv:1.8.1.14)',
+		from       => 'mtconnect@organicdesign.co.nz',
+		timeout    => 5,
+		max_size   => 100000
+	);
 
 	Win32::Daemon::State( SERVICE_RUNNING );
 }
@@ -195,8 +206,11 @@ sub checkServer {
 	threads->detach();
 
 
-	# TODO: Check server with ?t=$::lastitem (if its zero, server will return items in last $::maxage)
-
+	# Check server with (if lastitem is zero, server will return items in last $::maxage)
+	my $url = "$::mtserver?action=api&key=$::key&last=$::lastitem";
+	my $response = $::ua->get( $url );
+	if ( $response->is_success ) {
+	}
 
 	$::lastitem = getLastItemID;
 
