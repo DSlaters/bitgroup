@@ -64,6 +64,15 @@ switch( $_GET['action'] ) {
 		if( $last = $_GET['last'] ) {
 
 			# Get the items since the last one
+			$tmp = '';
+			$found = false;
+			foreach( explode( "\n", $items ) as $line ) {
+				preg_match( "|^(.+?):(<.+?>):(.+)$|", $line, $m );
+				list( ,$date, $guid, $item ) = $m;
+				if( $found ) $tmp .= "$line\n";
+				if( $guid == $last) $found = true;
+			}
+			if( $found ) $items = $tmp;
 
 		}
 
