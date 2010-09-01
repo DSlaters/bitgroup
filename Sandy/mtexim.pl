@@ -19,10 +19,9 @@
 #
 use strict;
 
-$ver    = '0.0.1'; # 2010-09-01
-
-$log  = '/var/www/tools/Sandy/mtexim.log';
-$out  = '/var/www/tools/Sandy/mtexim.out';
+$::ver    = '0.0.1'; # 2010-09-01
+$::log  = '/var/www/tools/Sandy/mtexim.log';
+$::out  = '/var/www/tools/Sandy/mtexim.out';
 logAdd();
 logAdd( "$::daemon-$::ver" );
 
@@ -61,30 +60,4 @@ sub logAdd {
 	return $entry;
 }
 
-
-# Check the passed email source for messages to process
-sub checkEmail {
-	my $srckey = shift;
-	my %args   = %{$$::sources{$srckey}};
-	my $limit  = 4096;
-	my $maxage = $args{maxage};
-
-	my $server = $args{ssl} ? Net::IMAP::Simple::SSL->new( $args{host} ) : Net::IMAP::Simple->new( $args{host} );
-	if ( $server ) {
-		if ( $server->login( $args{user}, $args{pass} ) > 0 ) {
-			logAdd( "$t Logged \"$args{user}\" into IMAP server \"$args{host}\"" );
-			my $i = $server->select( $args{path} or 'Inbox' );
-			logAdd( "$t $i messages to scan" );
-			while ( $i > 0 ) {
-				if ( my $fh = $server->getfh( $i ) ) {
-					sysread $fh, ( my $content ), $limit;
-					close $fh;
-					$server->delete( $i ) if processMessage( $content, $t );
-				}
-				$i--;
-			}
-		} else { logAdd( "$t Couldn't log \"$args{user}\" into $args{proto} server \"$args{host}\"" ) }
-		$server->quit();
-	} else { logAdd( "$t Couldn't connect to $args{proto} server \"$args{host}\"" ) }
-}
 
