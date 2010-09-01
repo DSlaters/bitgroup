@@ -23,7 +23,7 @@ use Net::IMAP::Simple::SSL;
 use Cwd qw( realpath );
 use strict;
 
-$::ver    = '0.0.8'; # 2010-09-01
+$::ver    = '0.0.9'; # 2010-09-02
 $::daemon = 'mtserver';
 $::out    = '/var/www/tools/Sandy/mtserver.out';
 $::limit  = 4096;
@@ -133,9 +133,9 @@ sub checkMessages {
 	my $server = $args{ssl} ? Net::IMAP::Simple::SSL->new( $args{host} ) : Net::IMAP::Simple->new( $args{host} );
 	if ( $server ) {
 		if ( $server->login( $args{user}, $args{pass} ) > 0 ) {
-			logAdd( "Logged \"$args{user}\" into IMAP server \"$args{host}\"" );
+			logAdd( "Logged \"$args{user}\" into IMAP server \"$args{host}\"" ) if $::debug;
 			my $i = $server->select( $args{path} or 'Inbox' );
-			logAdd( ( $i ? $i : 'No' ) . ' messages to scan' );
+			logAdd( ( $i ? $i : 'No' ) . ' messages to scan' ) if $::debug;
 			while ( $i > 0 ) {
 				if ( my $fh = $server->getfh( $i ) ) {
 					sysread $fh, ( my $content ), $::limit;
@@ -214,9 +214,6 @@ sub processMessage {
 	# Loop through the number of matches if there are any
 	for my $i ( 1 .. $count ) {
 
-		# Chop the output file to maxage
-		chopOutput();
-
 		# Build the output
 		my $out = $rules{format};
 		$out =~ s/\$$_(\d)/$extract{$_}[$i-1][$1-1]/eg for keys %extract;
@@ -235,6 +232,9 @@ sub processMessage {
 
 	}
 
+	# Chop the output file to maxage
+	chopOutput();
+
 	return $match;
 }
 
@@ -245,7 +245,7 @@ sub chopOutput {
 	while( <OUTH> ) {
 		m|^(.+?):(.+?):(.+)$|;
 		my $date = $1;
-		$chopped .= "$_\n" if time() - $date < $::maxage;
+		$chopped .= $_ if time() - $date < $::maxage;
 	}
 	close OUTH;
 	writeFile( $::out, $chopped );
