@@ -224,10 +224,11 @@ sub processMessage {
 		# Append the output to the new or existing file
 		if( open OUTH, '>>', $::out ) {
 			logAdd( "   Appended: $out" );
-			$guid = strftime( '%Y%m%d', localtime );
+			$guid  = strftime( '%Y%m%d', localtime );
 			$guid .= '-';
 			$guid .= chr( rand() < 0.72 ? int( rand( 26 ) + 65 ) : int( rand( 10 ) + 48 ) ) for 1 .. 5;
-			print OUTH "$message{date}:$guid:$out\n";
+			$date  = time();
+			print OUTH "$date:$guid:$out\n";
 			close OUTH;
 		} else { logAdd( "   Can't open \"$out\" for appending!" ) }
 
@@ -238,4 +239,14 @@ sub processMessage {
 
 # Chop the output file to maxage
 sub chopOutput {
+	open OUTH, '<', $::out )
+	my $chopped = '';
+	while( <OUTH> ) {
+		m|^(.+?):(.+?):(.+)$|;
+		if ( time() - $1 < $::maxage ) $chopped .= "$_\n";
+		$::last = $2;
+		$item = $3;
+	}
+	close OUTH;
+	writeFile( $::out, $chopped );
 }

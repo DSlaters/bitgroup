@@ -17,9 +17,6 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 # http://www.gnu.org/copyleft/gpl.html
 #
-use attributes;
-use threads;
-use threads::shared;
 use Win32;
 use Win32::Daemon;
 use HTTP::Request;
@@ -28,7 +25,7 @@ use LWP::UserAgent;
 use Cwd qw(realpath);
 use strict;
 
-$::ver = '0.0.9 (2010-09-01)';
+$::ver = '0.1.0 (2010-09-01)';
 
 # Ensure CWD is in the dir containing this script
 chdir $1 if realpath( $0 ) =~ m|^(.+)/|;
@@ -110,11 +107,7 @@ sub svcRunning {
 		# Check if time to poll the server
 		my $seconds = time();
 		if( $seconds % $::period == 0 ) {
-			if ( $::lastcheck != $seconds ) {
-				my $thread = threads->new( \&checkServer );
-				my $id = $thread->tid();
-				logAdd( "Started thread with ID $id to check server..." );
-			}
+			checkServer() if $::lastcheck != $seconds;
 			$::lastcheck = $seconds;
 		}
 
@@ -202,11 +195,6 @@ sub svcGetError {
 
 # Check the passed email source for messages to process
 sub checkServer {
-	my $id = threads->tid();
-	my $t  = "[Thread $id]";
-
-	# This thread doesn't need to be rejoined on return
-	threads->detach();
 
 	# Check server with (if lastitem is zero, server will return items in last $::maxage)
 	my $url = "$::mtserver?action=api&key=$::key&last=$::last";
@@ -215,16 +203,15 @@ sub checkServer {
 
 		my @items = split /\n/, $response->content;
 		my $n = 1 + $#items;
-		logAdd( "$t    $n item(s) returned from $url" ) if $::debug;
+		logAdd( "$n item(s) returned from $url" ) if $::debug;
 
 		# Loop through the returned items creating a trigger file for each
 		for my $item ( @items ) {
 
 			# Extract the info from the item line
-			$item =~ m|^(.+?):(<.+?>):(.+)$|;
+			$item =~ m|^(.+?):(.+?):(.+)$|;
 			my $date = $1;
 			$::last = $2;
-			logAdd($::last);
 			$item = $3;
 
 			# Find the next available filename
@@ -237,10 +224,10 @@ sub checkServer {
 
 			# Write the output to the new file
 			if( open OUTH, '>', $file ) {
-				logAdd( "$t    Created: $file containing \"$item\"" );
+				logAdd( "Created: $file containing \"$item\"" );
 				print OUTH $item;
 				close OUTH;
-			} else { logAdd( "$t    Can't create \"$file\" for writing!" ) }
+			} else { logAdd( "Can't create \"$file\" for writing!" ) }
 		}
 	}
 }
