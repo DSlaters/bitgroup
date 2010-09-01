@@ -28,7 +28,7 @@ use LWP::UserAgent;
 use Cwd qw(realpath);
 use strict;
 
-$::ver = '0.0.7 (2010-09-01)';
+$::ver = '0.0.9 (2010-09-01)';
 
 # Ensure CWD is in the dir containing this script
 chdir $1 if realpath( $0 ) =~ m|^(.+)/|;
@@ -39,6 +39,7 @@ $::period      = 10;
 $::last        = 0;
 $::mtserver    = 'http://www.organicdesign.co.nz/files/mtweb.php';
 $::output      = "$::dir/trigger\$1.txt";
+$::debug       = 1;
 
 # Determine log file and config file
 $0 =~ /^(.+)\..+?$/;
@@ -214,7 +215,7 @@ sub checkServer {
 
 		my @items = split /\n/, $response->content;
 		my $n = 1 + $#items;
-		logAdd( "$t    $n item(s) returned from server" );
+		logAdd( "$t    $n item(s) returned from $url" ) if $::debug;
 
 		# Loop through the returned items creating a trigger file for each
 		for my $item ( @items ) {
@@ -223,6 +224,7 @@ sub checkServer {
 			$item =~ m|^(.+?):(<.+?>):(.+)$|;
 			my $date = $1;
 			$::last = $2;
+			logAdd($::last);
 			$item = $3;
 
 			# Find the next available filename

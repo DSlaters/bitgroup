@@ -23,7 +23,7 @@ use Net::IMAP::Simple::SSL;
 use Cwd qw( realpath );
 use strict;
 
-$::ver    = '0.0.6'; # 2010-09-01
+$::ver    = '0.0.7'; # 2010-09-01
 $::daemon = 'mtserver';
 $::out    = '/var/www/tools/Sandy/mtserver.out';
 $::limit  = 4096;
@@ -224,7 +224,10 @@ sub processMessage {
 		# Append the output to the new or existing file
 		if( open OUTH, '>>', $::out ) {
 			logAdd( "   Appended: $out" );
-			print OUTH "$message{date}:$message{id}:$out\n";
+			$guid = strftime( '%Y%m%d', localtime );
+			$guid .= '-';
+			$guid .= chr( rand() < 0.72 ? int( rand( 26 ) + 65 ) : int( rand( 10 ) + 48 ) ) for 1 .. 5;
+			print OUTH "$message{date}:$guid:$out\n";
 			close OUTH;
 		} else { logAdd( "   Can't open \"$out\" for appending!" ) }
 
