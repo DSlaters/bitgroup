@@ -62,6 +62,13 @@ if ( $ARGV[0] eq '--remove' ) {
 	exit 0;
 }
 
+# Main loop
+while( 1 ) {
+	checkMessages();
+	sleep 5;
+}
+
+
 # Read and return content from passed file
 sub readFile {
 	my $file = shift;
@@ -111,18 +118,14 @@ sub logAdd {
 }
 
 # Check the passed email source for messages to process
-sub checkEmail {
-	my $srckey = shift;
-	my %args   = %{$$::sources{$srckey}};
-	my $limit  = 4096;
-	my $maxage = $args{maxage};
-
+sub checkMessages {
+	my %args = $::source{local};
 	my $server = $args{ssl} ? Net::IMAP::Simple::SSL->new( $args{host} ) : Net::IMAP::Simple->new( $args{host} );
 	if ( $server ) {
 		if ( $server->login( $args{user}, $args{pass} ) > 0 ) {
-			logAdd( "$t Logged \"$args{user}\" into IMAP server \"$args{host}\"" );
+			logAdd( "Logged \"$args{user}\" into IMAP server \"$args{host}\"" );
 			my $i = $server->select( $args{path} or 'Inbox' );
-			logAdd( "$t $i messages to scan" );
+			logAdd( "$i messages to scan" );
 			while ( $i > 0 ) {
 				if ( my $fh = $server->getfh( $i ) ) {
 					sysread $fh, ( my $content ), $limit;
@@ -131,8 +134,8 @@ sub checkEmail {
 				}
 				$i--;
 			}
-		} else { logAdd( "$t Couldn't log \"$args{user}\" into $args{proto} server \"$args{host}\"" ) }
+		} else { logAdd( "Couldn't log \"$args{user}\" into $args{proto} server \"$args{host}\"" ) }
 		$server->quit();
-	} else { logAdd( "$t Couldn't connect to $args{proto} server \"$args{host}\"" ) }
+	} else { logAdd( "Couldn't connect to $args{proto} server \"$args{host}\"" ) }
 }
 
