@@ -23,7 +23,7 @@ use Net::IMAP::Simple::SSL;
 use Cwd qw( realpath );
 use strict;
 
-$::ver    = '0.0.4'; # 2010-09-01
+$::ver    = '0.0.5'; # 2010-09-01
 $::daemon = 'mtserver';
 $::out    = '/var/www/tools/Sandy/mtserver.out';
 $::limit  = 4096;
@@ -128,7 +128,7 @@ sub logAdd {
 
 # Check the passed email source for messages to process
 sub checkMessages {
-	my %args = %{ $::source{local} };
+	my %args = %{ $::sources{local} };
 	my $server = $args{ssl} ? Net::IMAP::Simple::SSL->new( $args{host} ) : Net::IMAP::Simple->new( $args{host} );
 	if ( $server ) {
 		if ( $server->login( $args{user}, $args{pass} ) > 0 ) {
