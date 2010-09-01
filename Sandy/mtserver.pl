@@ -224,7 +224,7 @@ sub processMessage {
 		# Append the output to the new or existing file
 		if( open OUTH, '>>', $::out ) {
 			logAdd( "   Appended: $out" );
-			$guid  = strftime( '%Y%m%d', localtime );
+			my $guid  = strftime( '%Y%m%d', localtime );
 			$guid .= '-';
 			$guid .= chr( rand() < 0.72 ? int( rand( 26 ) + 65 ) : int( rand( 10 ) + 48 ) ) for 1 .. 5;
 			$date  = time();
@@ -243,9 +243,7 @@ sub chopOutput {
 	my $chopped = '';
 	while( <OUTH> ) {
 		m|^(.+?):(.+?):(.+)$|;
-		if ( time() - $1 < $::maxage ) $chopped .= "$_\n";
-		$::last = $2;
-		$item = $3;
+		$chopped .= "$_\n" if time() - $1 < $::maxage;
 	}
 	close OUTH;
 	writeFile( $::out, $chopped );
