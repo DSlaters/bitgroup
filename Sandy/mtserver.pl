@@ -128,7 +128,7 @@ sub logAdd {
 
 # Check the passed email source for messages to process
 sub checkMessages {
-	my %args = %{ $::sources{local} };
+	my %args = %$::source;
 	my $server = $args{ssl} ? Net::IMAP::Simple::SSL->new( $args{host} ) : Net::IMAP::Simple->new( $args{host} );
 	if ( $server ) {
 		if ( $server->login( $args{user}, $args{pass} ) > 0 ) {
