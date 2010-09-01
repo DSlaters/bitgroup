@@ -239,7 +239,7 @@ sub processMessage {
 
 # Chop the output file to maxage
 sub chopOutput {
-	open OUTH, '<', $::out );
+	open OUTH, '<', $::out;
 	my $chopped = '';
 	while( <OUTH> ) {
 		m|^(.+?):(.+?):(.+)$|;
