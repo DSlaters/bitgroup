@@ -8,7 +8,7 @@
  * Version 1.0 started on 2010-08-30
  */
 
-$version = '1.0.0 (2010-08-30)';
+$version = '1.0.1 (2010-09-02)';
 $maxage  = 900;
 $file    = '/var/www/tools/Sandy/mtserver.out';
 
@@ -67,7 +67,7 @@ switch( $_GET['action'] ) {
 			$tmp = '';
 			$found = false;
 			foreach( explode( "\n", $items ) as $line ) {
-				preg_match( "|^(.+?):(<.+?>):(.+)$|", $line, $m );
+				preg_match( "|^(.+?):(.+?):(.+)$|", $line, $m );
 				list( ,$date, $guid, $item ) = $m;
 				if( $found ) $tmp .= "$line\n";
 				if( $guid == $last) $found = true;
