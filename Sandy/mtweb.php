@@ -10,6 +10,7 @@
 
 $version = '1.0.0 (2010-08-30)';
 $maxage  = 900;
+$file    = '/var/www/tools/Sandy/mtserver.out';
 
 switch( $_GET['action'] ) {
 
@@ -52,30 +53,26 @@ switch( $_GET['action'] ) {
 	case 'api':
 	
 		# Connection from an mtconnect.exe instance
-		$items = '';
-		
+		$items = file_get_contents( $file );
+
 		# - check if key valid and current
 		$key = $_GET['key'];
-		if( !$valid )  die( "Error 1: supplied key is invalid." );
-		if( $expired ) die( "Error 2: supplied key has expired." );
+		#if( !$valid )  die( "Error 1: supplied key is invalid." );
+		#if( $expired ) die( "Error 2: supplied key has expired." );
 
 		# return items since last
 		if( $last = $_GET['last'] ) {
 
 			# Get the items since the last one
 
-		} else {
-
-			# Get the items newer than $maxage
-
 		}
-		
+
 		print $items;
-	
+
 	break;
 
 	default:
-	
+
 		# Home page
 		?><html>
 			<head></head>

@@ -28,19 +28,20 @@ use Digest::MD5 qw( md5_hex );
 use Cwd qw(realpath);
 use strict;
 
-$ver         = '0.0.1 (2010-08-28)';
-$daemon      = 'MTConnect';
-$description = 'Connect notification server to MT4 robots';
-$period      = 10;
-$lastitem    = 0;
-$mtserver    = "http://www.organicdesign.co.nz/files/mtweb.php";
+$::ver         = '0.0.2 (2010-09-01)';
+$::daemon      = 'MTConnect';
+$::description = 'Connect notification server to MT4 robots';
+$::period      = 10;
+$::lastitem    = 0;
+$::mtserver    = 'http://www.organicdesign.co.nz/files/mtweb.php';
+$::output      = './trigger$1.txt';
 
 # Ensure CWD is in the dir containing this script
 chdir $1 if realpath( $0 ) =~ m|^(.+)/|;
 
 # Determine log file and config file
 $0 =~ /^(.+)\..+?$/;
-$log  = "$1.log";
+$::log  = "$1.log";
 
 logAdd();
 logAdd( "$::daemon-$::ver" );
@@ -205,31 +206,36 @@ sub checkServer {
 	# This thread doesn't need to be rejoined on return
 	threads->detach();
 
-
 	# Check server with (if lastitem is zero, server will return items in last $::maxage)
 	my $url = "$::mtserver?action=api&key=$::key&last=$::lastitem";
 	my $response = $::ua->get( $url );
-	if ( $response->is_success ) {
+	if( $response->is_success ) {
+
+		my @items = split /$/, $response->content;
+		my $n = 1 + $#items;
+		logAdd( "$t    $n item(s) returned from server" );
+
+		# Loop through the returned items creating a trigger file for each
+		for my $item ( @items ) {
+
+			# Find the next available filename
+			my $file;
+			my $j = 1;
+			do {
+				$file = $::output;
+				$file =~ s/\$1/$j++/e;
+			} while -e $file;
+
+			# Write the output to the new file
+			if( open OUTH, '>', $file ) {
+				logAdd( "$t    Created: $file containing \"$item\"" );
+				print OUTH $item;
+				close OUTH;
+			} else { logAdd( "$t    Can't create \"$file\" for writing!" ) }
+		}
+
+		#$::lastitem = getLastItemID;
 	}
-
-	$::lastitem = getLastItemID;
-
-
-
-	# Find the next available filename
-	my $j = 1;
-	do {
-		$file = $rules{file};
-		$file =~ s/\$1/$j++/e;
-	} while -e $file;
-
-	# Write the output to the new file
-	if( open OUTH, '>', $file ) {
-		logAdd( "$t    Created: $file" );
-		print OUTH $out;
-		close OUTH;
-	} else { logAdd( "$t    Can't create \"$file\" for writing!" ) }
-
 }
 
 
