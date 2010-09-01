@@ -25,6 +25,7 @@ use strict;
 $::ver    = '0.0.2'; # 2010-09-01
 $::daemon = 'mtserver';
 $::out    = '/var/www/tools/Sandy/mtserver.out';
+$::limit  = 4096;
 
 # Ensure CWD is in the dir containing this script
 chdir $1 if realpath( $0 ) =~ m|^(.+)/|;
@@ -133,7 +134,7 @@ sub checkMessages {
 			logAdd( "$i messages to scan" );
 			while ( $i > 0 ) {
 				if ( my $fh = $server->getfh( $i ) ) {
-					sysread $fh, ( my $content ), $limit;
+					sysread $fh, ( my $content ), $::limit;
 					close $fh;
 					$server->delete( $i ) if processMessage( $content );
 				}
