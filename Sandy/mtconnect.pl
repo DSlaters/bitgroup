@@ -24,11 +24,11 @@ use Win32;
 use Win32::Daemon;
 use HTTP::Request;
 use LWP::UserAgent;
-use Digest::MD5 qw( md5_hex );
+#use Digest::MD5 qw( md5_hex );
 use Cwd qw(realpath);
 use strict;
 
-$::ver         = '0.0.2 (2010-09-01)';
+$::ver         = '0.0.3 (2010-09-01)';
 $::daemon      = 'MTConnect';
 $::description = 'Connect notification server to MT4 robots';
 $::period      = 10;

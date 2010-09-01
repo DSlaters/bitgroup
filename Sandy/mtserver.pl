@@ -38,28 +38,28 @@ logAdd( "$::daemon-$::ver" );
 
 # Run as a daemon (see daemonise.pl article for more details and references regarding perl daemons)
 open STDIN, '/dev/null';
-open STDOUT, ">>$log";
-open STDERR, ">>$log";
+open STDOUT, ">>$::log";
+open STDERR, ">>$::log";
 defined ( my $pid = fork ) or die "Can't fork: $!";
 exit if $pid;
 setsid or die "Can't start a new session: $!";
 umask 0;
-$0 = "$daemon ($ver)";
+$0 = "$::daemon ($::ver)";
 
 # Install the service into init.d and rc2-5.d if --install arg passed
 if ( $ARGV[0] eq '--install' ) {
-	writeFile( my $target = "/etc/init.d/$daemon", "#!/bin/sh\n/usr/bin/perl $dir/$daemon.pl\n" );
-	symlink $target, "/etc/rc$_.d/S99$daemon" for 2..5;
-	symlink "$dir/$daemon.pl", "/usr/bin/$daemon";
-	chmod 0755, "/etc/init.d/$daemon";
-	logAdd( "$daemon added to /etc/init.d and /usr/bin" );
+	writeFile( my $target = "/etc/init.d/$::daemon", "#!/bin/sh\n/usr/bin/perl $::dir/$::daemon.pl\n" );
+	symlink $target, "/etc/rc$_.d/S99$::daemon" for 2..5;
+	symlink "$::dir/$::daemon.pl", "/usr/bin/$::daemon";
+	chmod 0755, "/etc/init.d/$::daemon";
+	logAdd( "$::daemon added to /etc/init.d and /usr/bin" );
 }
 
 # Remove the named service and exit
 if ( $ARGV[0] eq '--remove' ) {
-	unlink "/etc/rc$_.d/S99$daemon" for 2..5;
-	unlink "/etc/init.d/$daemon.sh";
-	logAdd( "$daemon.sh removed from /etc/init.d" );
+	unlink "/etc/rc$_.d/S99$::daemon" for 2..5;
+	unlink "/etc/init.d/$::daemon.sh";
+	logAdd( "$::daemon.sh removed from /etc/init.d" );
 	exit 0;
 }
 
