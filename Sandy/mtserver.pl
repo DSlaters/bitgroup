@@ -227,7 +227,7 @@ sub processMessage {
 			my $guid  = strftime( '%Y%m%d', localtime );
 			$guid .= '-';
 			$guid .= chr( rand() < 0.72 ? int( rand( 26 ) + 65 ) : int( rand( 10 ) + 48 ) ) for 1 .. 5;
-			$date  = time();
+			my $date  = time();
 			print OUTH "$date:$guid:$out\n";
 			close OUTH;
 		} else { logAdd( "   Can't open \"$out\" for appending!" ) }
