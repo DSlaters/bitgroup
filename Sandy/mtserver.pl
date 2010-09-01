@@ -61,7 +61,8 @@ if ( $ARGV[0] eq '--install' ) {
 if ( $ARGV[0] eq '--remove' ) {
 	unlink "/etc/rc$_.d/S99$::daemon" for 2..5;
 	unlink "/etc/init.d/$::daemon.sh";
-	logAdd( "$::daemon.sh removed from /etc/init.d" );
+	unlink "/usr/bin/$::daemon";
+	logAdd( "$::daemon.sh removed from /etc/init.d and /usr/bin" );
 	exit 0;
 }
 
@@ -126,7 +127,7 @@ sub logAdd {
 
 # Check the passed email source for messages to process
 sub checkMessages {
-	my %args = $::source{local};
+	my %args = %{ $::source{local} };
 	my $server = $args{ssl} ? Net::IMAP::Simple::SSL->new( $args{host} ) : Net::IMAP::Simple->new( $args{host} );
 	if ( $server ) {
 		if ( $server->login( $args{user}, $args{pass} ) > 0 ) {
