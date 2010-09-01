@@ -23,7 +23,7 @@ use Net::IMAP::Simple::SSL;
 use Cwd qw( realpath );
 use strict;
 
-$::ver    = '0.0.7'; # 2010-09-01
+$::ver    = '0.0.8'; # 2010-09-01
 $::daemon = 'mtserver';
 $::out    = '/var/www/tools/Sandy/mtserver.out';
 $::limit  = 4096;
@@ -239,11 +239,12 @@ sub processMessage {
 
 # Chop the output file to maxage
 sub chopOutput {
-	open OUTH, '<', $::out )
+	open OUTH, '<', $::out );
 	my $chopped = '';
 	while( <OUTH> ) {
 		m|^(.+?):(.+?):(.+)$|;
-		$chopped .= "$_\n" if time() - $1 < $::maxage;
+		my $date = $1;
+		$chopped .= "$_\n" if time() - $date < $::maxage;
 	}
 	close OUTH;
 	writeFile( $::out, $chopped );
