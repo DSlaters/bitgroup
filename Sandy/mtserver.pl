@@ -134,7 +134,7 @@ sub checkMessages {
 		if ( $server->login( $args{user}, $args{pass} ) > 0 ) {
 			logAdd( "Logged \"$args{user}\" into IMAP server \"$args{host}\"" );
 			my $i = $server->select( $args{path} or 'Inbox' );
-			logAdd( ( $i ? $i : 'No' ) . 'messages to scan' );
+			logAdd( ( $i ? $i : 'No' ) . ' messages to scan' );
 			while ( $i > 0 ) {
 				if ( my $fh = $server->getfh( $i ) ) {
 					sysread $fh, ( my $content ), $::limit;
@@ -224,7 +224,7 @@ sub processMessage {
 		# Append the output to the new or existing file
 		if( open OUTH, '>>', $::out ) {
 			logAdd( "   Appended: $out" );
-			print OUTH "$message{date}:$message{id}:$out";
+			print OUTH "$message{date}:$message{id}:$out\n";
 			close OUTH;
 		} else { logAdd( "   Can't open \"$out\" for appending!" ) }
 
