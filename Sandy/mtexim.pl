@@ -17,50 +17,17 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 # http://www.gnu.org/copyleft/gpl.html
 #
-use POSIX qw( strftime setsid );
-use Net::IMAP::Simple;
-use Net::IMAP::Simple::SSL;
 use strict;
 
-$ver    = '0.0.1'; # 2010-08-30
-$daemon = 'mtserver';
+$ver    = '0.0.1'; # 2010-09-01
 
-# Ensure CWD is in the dir containing this script
-chdir $1 if realpath( $0 ) =~ m|^(.+)/|;
-
-# Determine log file and config file
-$0 =~ /^(.+)\..+?$/;
-$log  = "$1.log";
-require( "$1.conf" );
+$log  = '/var/www/tools/Sandy/mtexim.log';
+$out  = '/var/www/tools/Sandy/mtexim.out';
 logAdd();
 logAdd( "$::daemon-$::ver" );
 
-# Run as a daemon (see daemonise.pl article for more details and references regarding perl daemons)
-open STDIN, '/dev/null';
-open STDOUT, ">>$log";
-open STDERR, ">>$log";
-defined ( my $pid = fork ) or die "Can't fork: $!";
-exit if $pid;
-setsid or die "Can't start a new session: $!";
-umask 0;
-$0 = "$daemon ($ver)";
-
-# Install the service into init.d and rc2-5.d if --install arg passed
-if ( $ARGV[0] eq '--install' ) {
-	writeFile( my $target = "/etc/init.d/$daemon", "#!/bin/sh\n/usr/bin/perl $dir/$daemon.pl\n" );
-	symlink $target, "/etc/rc$_.d/S99$daemon" for 2..5;
-	symlink "$dir/$daemon.pl", "/usr/bin/$daemon";
-	chmod 0755, "/etc/init.d/$daemon";
-	logAdd( "$daemon added to /etc/init.d and /usr/bin" );
-}
-
-# Remove the named service and exit
-if ( $ARGV[0] eq '--remove' ) {
-	unlink "/etc/rc$_.d/S99$daemon" for 2..5;
-	unlink "/etc/init.d/$daemon.sh";
-	logAdd( "$daemon.sh removed from /etc/init.d" );
-	exit 0;
-}
+my $msg = '';
+logAdd( $_ ) while <STDIN>;
 
 # Read and return content from passed file
 sub readFile {
@@ -84,22 +51,6 @@ sub writeFile {
 	}
 }
 
-# Function for spawning a child to execute a function by name
-sub spawn {
-	my $subname = shift;
-	my $subref = eval '\&$subname';
-	$SIG{CHLD} = 'IGNORE';
-	if ( defined( my $pid = fork ) ) {
-		if ( $pid ) { logAdd( "Spawned child ($pid) for \"$subname\"" ) }
-		else {
-			$::subname = $subname;
-			$0 = "$::daemon: $::name ($subname)";
-			&$subref( @_ );
-			exit;
-		}
-	}
-	else { logAdd( "Cannot fork a child for \"$subname\": $!" ) }
-}
 
 # Output an item to the email log file with timestamp
 sub logAdd {
@@ -109,6 +60,7 @@ sub logAdd {
 	close LOGH;
 	return $entry;
 }
+
 
 # Check the passed email source for messages to process
 sub checkEmail {
