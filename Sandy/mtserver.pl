@@ -27,6 +27,7 @@ $::ver    = '0.0.8'; # 2010-09-01
 $::daemon = 'mtserver';
 $::out    = '/var/www/tools/Sandy/mtserver.out';
 $::limit  = 4096;
+$::maxage = 900;
 
 # Ensure CWD is in the dir containing this script
 chdir $1 if realpath( $0 ) =~ m|^(.+)/|;
