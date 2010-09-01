@@ -23,7 +23,7 @@ use Net::IMAP::Simple::SSL;
 use Cwd qw( realpath );
 use strict;
 
-$::ver    = '0.0.3'; # 2010-09-01
+$::ver    = '0.0.4'; # 2010-09-01
 $::daemon = 'mtserver';
 $::out    = '/var/www/tools/Sandy/mtserver.out';
 $::limit  = 4096;
@@ -33,8 +33,9 @@ chdir $1 if realpath( $0 ) =~ m|^(.+)/|;
 
 # Determine log file and config file
 $0 =~ /^(.+)\..+?$/;
-$::log  = "$1.log";
-require( "$1.conf" );
+$::dir = $1;
+$::log = "$::dir.log";
+require( "$::dir.conf" );
 logAdd();
 logAdd( "$::daemon-$::ver" );
 
