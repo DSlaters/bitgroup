@@ -20,9 +20,10 @@
 use POSIX qw( strftime setsid );
 use Net::IMAP::Simple;
 use Net::IMAP::Simple::SSL;
+use Cwd qw( realpath );
 use strict;
 
-$::ver    = '0.0.2'; # 2010-09-01
+$::ver    = '0.0.3'; # 2010-09-01
 $::daemon = 'mtserver';
 $::out    = '/var/www/tools/Sandy/mtserver.out';
 $::limit  = 4096;
