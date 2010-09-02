@@ -17,6 +17,7 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 # http://www.gnu.org/copyleft/gpl.html
 #
+use attributes;
 use Win32;
 use Win32::Daemon;
 use HTTP::Request;
@@ -25,7 +26,7 @@ use LWP::UserAgent;
 use Cwd qw(realpath);
 use strict;
 
-$::ver = '0.1.0 (2010-09-01)';
+$::ver = '0.1.1 (2010-09-02)';
 
 # Ensure CWD is in the dir containing this script
 chdir $1 if realpath( $0 ) =~ m|^(.+)/|;

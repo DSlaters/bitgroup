@@ -23,7 +23,7 @@ use Net::IMAP::Simple::SSL;
 use Cwd qw( realpath );
 use strict;
 
-$::ver    = '0.0.9'; # 2010-09-02
+$::ver    = '1.0.0'; # 2010-09-02
 $::daemon = 'mtserver';
 $::out    = '/var/www/tools/Sandy/mtserver.out';
 $::limit  = 4096;
@@ -166,6 +166,9 @@ sub processMessage {
 	$message{to}      = $1 if $content =~ /^to:\s*(.+?)\s*$/mi;
 	$message{from}    = $1 if $content =~ /^from:\s*(.+?)\s*$/mi;
 	$message{subject} = $1 if $content =~ /^subject:\s*(.+?)\s*$/im;
+
+	# Strip HTML tags from content
+	$message{content} =~ s|<[^<>]+>||g;
 
 	if( $::debug ) {
 		logAdd( "Message received from $message{from}" );
