@@ -251,7 +251,7 @@ sub getLastItem {
 	if ( open FH, '<', "$::prog.lst" ) {
 		$::last = <FH>;
 		close FH;
-		logAdd( "Last I updated to \"$::last\" from $::prog.lst" ) if $::debug;
+		logAdd( "Last ID updated to \"$::last\" from $::prog.lst" ) if $::debug;
 	} else { logAdd( "Nothing read from $::prog.lst" ) if $::debug }
 }
 
