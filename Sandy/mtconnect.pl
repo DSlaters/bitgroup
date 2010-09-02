@@ -26,10 +26,10 @@ use LWP::UserAgent;
 use Cwd qw(realpath);
 use strict;
 
-$::ver = '1.0.1 (2010-09-03)';
+$::ver = '1.0.2 (2010-09-03)';
 
 # Ensure CWD is in the dir containing this script
-chdir $1 if realpath( $0 ) =~ m|^(.+)/|;
+chdir $1 if realpath( $0 ) =~ m|^(.+)[/\\]|;
 $::dir         = $1;
 $::daemon      = 'MTConnect';
 $::description = 'Connect notification server to MT4 robots';
@@ -248,7 +248,7 @@ sub setLastItem {
 
 # Retrieve last item from file
 sub getLastItem {
-	if ( open FH, '<', "$::prog.last" ) {
+	if ( open FH, '<', "$::prog.lst" ) {
 		$::last = <FH>;
 		close FH;
 		logAdd( "Last I updated to \"$::last\" from $::prog.lst" ) if $::debug;
