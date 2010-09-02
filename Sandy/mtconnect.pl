@@ -26,7 +26,7 @@ use LWP::UserAgent;
 use Cwd qw(realpath);
 use strict;
 
-$::ver = '0.1.1 (2010-09-02)';
+$::ver = '1.0.1 (2010-09-03)';
 
 # Ensure CWD is in the dir containing this script
 chdir $1 if realpath( $0 ) =~ m|^(.+)/|;
@@ -41,7 +41,8 @@ $::debug       = 1;
 
 # Determine log file and config file
 $0 =~ /^(.+)\..+?$/;
-$::log  = "$1.log";
+$::prog = $1;
+$::log  = "$::prog.log";
 
 logAdd();
 logAdd( "$::daemon-$::ver" );
@@ -55,8 +56,8 @@ open STDOUT, ">>$::log";
 open STDERR, ">>$::log";
 $| = 1;
 
-# Shared queue of open threads
-our @queue:shared = ();
+# Read the last item ID if any
+getLastIten();
 
 # Register the events which the service responds to
 Win32::Daemon::RegisterCallbacks( {
@@ -212,7 +213,7 @@ sub checkServer {
 			# Extract the info from the item line
 			$item =~ m|^(.+?):(.+?):(.+)$|;
 			my $date = $1;
-			$::last = $2;
+			setLastItem( $2 );
 			$item = $3;
 
 			# Find the next available filename
@@ -225,7 +226,7 @@ sub checkServer {
 
 			# Write the output to the new file
 			if( open OUTH, '>', $file ) {
-				logAdd( "Created: $file containing \"$item\"" );
+				logAdd( "Created: $file containing \"$item\"" ) if $::debug;
 				print OUTH $item;
 				close OUTH;
 			} else { logAdd( "Can't create \"$file\" for writing!" ) }
@@ -233,4 +234,24 @@ sub checkServer {
 	}
 }
 
+
+# Remember last item and write to file
+sub setLastItem {
+	$::last = shift;
+	if ( open FH,'>', "$::prog.lst" ) {
+		print FH $::last;
+		close FH;
+		logAdd( "$::prog.lst updated to \"$::last\"" ) if $::debug;
+	} else { logAdd( "Couldn't write last item ID!") }
+}
+
+
+# Retrieve last item from file
+sub getLastItem {
+	if ( open FH, '<', "$::prog.last" ) {
+		$::last = <FH>;
+		close FH;
+		logAdd( "Last I updated to \"$::last\" from $::prog.lst" ) if $::debug;
+	} else { logAdd( "Nothing read from $::prog.lst" ) if $::debug }
+}
 
