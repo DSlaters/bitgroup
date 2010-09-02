@@ -57,7 +57,7 @@ open STDERR, ">>$::log";
 $| = 1;
 
 # Read the last item ID if any
-getLastIten();
+getLastItem();
 
 # Register the events which the service responds to
 Win32::Daemon::RegisterCallbacks( {
