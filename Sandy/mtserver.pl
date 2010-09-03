@@ -23,11 +23,11 @@ use Net::IMAP::Simple::SSL;
 use Cwd qw( realpath );
 use strict;
 
-$::ver    = '1.0.0'; # 2010-09-02
+$::ver    = '1.0.1'; # 2010-09-03
 $::daemon = 'mtserver';
 $::out    = '/var/www/tools/Sandy/mtserver.out';
 $::limit  = 4096;
-$::maxage = 900;
+$::maxage = 3600 * 12;
 
 # Ensure CWD is in the dir containing this script
 chdir $1 if realpath( $0 ) =~ m|^(.+)/|;
