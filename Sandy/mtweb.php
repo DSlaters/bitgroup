@@ -8,9 +8,9 @@
  * Version 1.0 started on 2010-08-30
  */
 
-$version = '1.0.1 (2010-09-02)';
-$maxage  = 900;
-$file    = '/var/www/tools/Sandy/mtserver.out';
+$version = '1.0.2 (2010-09-07)';
+
+$dir = dirname( __FILE__ );
 
 switch( $_GET['action'] ) {
 
@@ -20,7 +20,7 @@ switch( $_GET['action'] ) {
 		?><html>
 			<head></head>
 			<body>
-				This is the home page...
+				This is the registration page...
 			</body>
 		</html><?php
 
@@ -32,7 +32,7 @@ switch( $_GET['action'] ) {
 		?><html>
 			<head></head>
 			<body>
-				This is the home page...
+				This is the email confirmation page...
 			</body>
 		</html><?php
 
@@ -44,21 +44,20 @@ switch( $_GET['action'] ) {
 		?><html>
 			<head></head>
 			<body>
-				This is the home page...
+				This is the payment page...
 			</body>
 		</html><?php
 	
 	break;
 
 	case 'api':
-	
-		# Connection from an mtconnect.exe instance
-		$items = file_get_contents( $file );
 
-		# - check if key valid and current
+		# Check if key valid and current or is the test key
 		$key = $_GET['key'];
-		#if( !$valid )  die( "Error 1: supplied key is invalid." );
-		#if( $expired ) die( "Error 2: supplied key has expired." );
+		$file = $key == "test" ? "test.log" : "production.log";
+
+		# Connection from an mtconnect.exe instance
+		$items = file_get_contents( "$dir/$file" );
 
 		# return items since last
 		if( $last = $_GET['last'] ) {

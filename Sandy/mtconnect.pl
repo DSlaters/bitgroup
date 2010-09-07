@@ -18,15 +18,15 @@
 # http://www.gnu.org/copyleft/gpl.html
 #
 use attributes;
+use POSIX qw( strftime );
 use Win32;
 use Win32::Daemon;
 use HTTP::Request;
 use LWP::UserAgent;
-#use Digest::MD5 qw( md5_hex );
 use Cwd qw(realpath);
 use strict;
 
-$::ver = '1.0.2 (2010-09-03)';
+$::ver = '1.1.0 (2010-09-07)';
 
 # Ensure CWD is in the dir containing this script
 chdir $1 if realpath( $0 ) =~ m|^(.+)[/\\]|;
@@ -35,6 +35,7 @@ $::daemon      = 'MTConnect';
 $::description = 'Connect notification server to MT4 robots';
 $::period      = 10;
 $::last        = 0;
+$::key         = 0;
 $::mtserver    = 'http://www.organicdesign.co.nz/files/mtweb.php';
 $::output      = "$::dir/trigger\$1.txt";
 $::debug       = 1;
@@ -58,6 +59,9 @@ $| = 1;
 
 # Read the last item ID if any
 getLastItem();
+
+# Read the key if any, or create if none
+initKey();
 
 # Register the events which the service responds to
 Win32::Daemon::RegisterCallbacks( {
@@ -255,3 +259,21 @@ sub getLastItem {
 	} else { logAdd( "Nothing read from $::prog.lst" ) if $::debug }
 }
 
+# Read the key if any, or create if none
+sub initKey {
+	my $file = "$::prog.key";
+	if( -e $file ) {
+		open KH, '<', $file ) {
+		$::key = <KH>;
+		close KH;
+		logAdd( "Key \"$::key\" imported" ) if $::debug;
+	} else {
+		if ( open KH,'>', $file ) {
+			$::key = strftime( '%Y%m%d', localtime );
+			$::key .= chr( rand() < 0.72 ? int( rand( 26 ) + 65 ) : int( rand( 10 ) + 48 ) ) for 1 .. 24;
+			print KH $::key;
+			close KH;
+			logAdd( "No key file found, new key created: \"$::key\"" ) if $::debug;
+		} else { logAdd( "Couldn't create key file!") }
+	}
+}

@@ -23,9 +23,8 @@ use Net::IMAP::Simple::SSL;
 use Cwd qw( realpath );
 use strict;
 
-$::ver    = '1.0.1'; # 2010-09-03
+$::ver    = '1.1.0'; # 2010-09-07
 $::daemon = 'mtserver';
-$::out    = '/var/www/tools/Sandy/mtserver.out';
 $::limit  = 4096;
 $::maxage = 3600 * 12;
 
@@ -129,25 +128,28 @@ sub logAdd {
 
 # Check the passed email source for messages to process
 sub checkMessages {
-	my %args = %$::source;
-	my $server = $args{ssl} ? Net::IMAP::Simple::SSL->new( $args{host} ) : Net::IMAP::Simple->new( $args{host} );
-	if ( $server ) {
-		if ( $server->login( $args{user}, $args{pass} ) > 0 ) {
-			logAdd( "Logged \"$args{user}\" into IMAP server \"$args{host}\"" ) if $::debug;
-			my $i = $server->select( $args{path} or 'Inbox' );
-			logAdd( ( $i ? $i : 'No' ) . ' messages to scan' ) if $::debug;
-			while ( $i > 0 ) {
-				if ( my $fh = $server->getfh( $i ) ) {
-					sysread $fh, ( my $content ), $::limit;
-					close $fh;
-					processMessage( $content );
-					$server->delete( $i );
+	for my $source ( keys %$::sources ) {
+		logAdd( "Processing source \"$source\"..." ) if $::debug;
+		my %args = $$::sources{$source};
+		my $server = $args{ssl} ? Net::IMAP::Simple::SSL->new( $args{host} ) : Net::IMAP::Simple->new( $args{host} );
+		if ( $server ) {
+			if ( $server->login( $args{user}, $args{pass} ) > 0 ) {
+				logAdd( "Logged \"$args{user}\" into IMAP server \"$args{host}\"" ) if $::debug;
+				my $i = $server->select( $args{path} or 'Inbox' );
+				logAdd( ( $i ? $i : 'No' ) . ' messages to scan' ) if $::debug;
+				while ( $i > 0 ) {
+					if ( my $fh = $server->getfh( $i ) ) {
+						sysread $fh, ( my $content ), $::limit;
+						close $fh;
+						processMessage( $source, $content );
+						$server->delete( $i );
+					}
+					$i--;
 				}
-				$i--;
-			}
-		} else { logAdd( "Couldn't log \"$args{user}\" into $args{proto} server \"$args{host}\"" ) }
-		$server->quit();
-	} else { logAdd( "Couldn't connect to $args{proto} server \"$args{host}\"" ) }
+			} else { logAdd( "Couldn't log \"$args{user}\" into $args{proto} server \"$args{host}\"" ) }
+			$server->quit();
+		} else { logAdd( "Couldn't connect to $args{proto} server \"$args{host}\"" ) }
+	}
 }
 
 
@@ -156,6 +158,7 @@ sub checkMessages {
 # - if match is positive, format the result and write to file
 # - return true if any matches
 sub processMessage {
+	my $source  = shift;
 	my $content = shift;
 
 	# Extract useful information from the content
@@ -214,36 +217,21 @@ sub processMessage {
 		last if $match;
 	}
 
-	# Loop through the number of matches if there are any
+	# Format the matches and ensure no duplicates
+	my %outputs = ();
 	for my $i ( 1 .. $count ) {
-
-		# Build the output
+		logAdd( "   Formatting output $i of $count" ) if $::debug;
 		my $out = $rules{format};
 		$out =~ s/\$$_(\d)/$extract{$_}[$i-1][$1-1]/eg for keys %extract;
-		logAdd( "   Output($i of $count): $out" ) if $::debug;
-
-		# Append the output to the new or existing file
-		if( open OUTH, '>>', $::out ) {
-			logAdd( "   Appended: $out" );
-			my $guid  = strftime( '%Y%m%d', localtime );
-			$guid .= '-';
-			$guid .= chr( rand() < 0.72 ? int( rand( 26 ) + 65 ) : int( rand( 10 ) + 48 ) ) for 1 .. 5;
-			my $date  = time();
-			print OUTH "$date:$guid:$out\n";
-			close OUTH;
-		} else { logAdd( "   Can't open \"$out\" for appending!" ) }
-
+		$outputs{$out} = 1;
 	}
+	my @outputs = keys %outputs;
+	my $outcount = $#outputs;
+	logAdd( "   Duplicates removed, items reduced from $count to $outcount" ) if $::debug and $count > $outcount;
 
-	# Chop the output file to maxage
-	chopOutput();
-
-	return $match;
-}
-
-# Chop the output file to maxage
-sub chopOutput {
-	open OUTH, '<', $::out;
+	# Read in the items from the log for this source that are newer than maxage
+	my $file = "$source.log";
+	open OUTH, '<', $file;
 	my $chopped = '';
 	while( <OUTH> ) {
 		m|^(.+?):(.+?):(.+)$|;
@@ -251,5 +239,17 @@ sub chopOutput {
 		$chopped .= $_ if time() - $date < $::maxage;
 	}
 	close OUTH;
-	writeFile( $::out, $chopped );
+
+	# Append the new items to the chopped log content with date and a GUID
+	for my $out ( @outputs ) {
+		logAdd( "   \"$out\" >> \"$file\" " );
+		my $guid  = strftime( '%Y%m%d', localtime );
+		$guid .= '-';
+		$guid .= chr( rand() < 0.72 ? int( rand( 26 ) + 65 ) : int( rand( 10 ) + 48 ) ) for 1 .. 5;
+		my $date  = time();
+		$chopped .= "$date:$guid:$out\n";
+	}
+
+	# Write the updated chopped content back to the log
+	writeFile( $file, $chopped );
 }
