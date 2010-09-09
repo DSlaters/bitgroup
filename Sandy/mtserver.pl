@@ -23,7 +23,7 @@ use Net::IMAP::Simple::SSL;
 use Cwd qw( realpath );
 use strict;
 
-$::ver    = '1.1.1'; # 2010-09-09
+$::ver    = '1.1.2'; # 2010-09-09
 $::daemon = 'mtserver';
 $::limit  = 4096;
 $::maxage = 3600 * 12;
@@ -226,7 +226,7 @@ sub processMessage {
 		$outputs{$out} = 1;
 	}
 	my @outputs = keys %outputs;
-	my $outcount = $#outputs;
+	my $outcount = 1 + $#outputs;
 	logAdd( "   Duplicates removed, items reduced from $count to $outcount" ) if $::debug and $count > $outcount;
 
 	# Read in the items from the log for this source that are newer than maxage
