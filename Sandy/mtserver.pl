@@ -23,7 +23,7 @@ use Net::IMAP::Simple::SSL;
 use Cwd qw( realpath );
 use strict;
 
-$::ver    = '1.1.0'; # 2010-09-07
+$::ver    = '1.1.1'; # 2010-09-09
 $::daemon = 'mtserver';
 $::limit  = 4096;
 $::maxage = 3600 * 12;
@@ -130,7 +130,7 @@ sub logAdd {
 sub checkMessages {
 	for my $source ( keys %$::sources ) {
 		logAdd( "Processing source \"$source\"..." ) if $::debug;
-		my %args = $$::sources{$source};
+		my %args = %{$$::sources{$source}};
 		my $server = $args{ssl} ? Net::IMAP::Simple::SSL->new( $args{host} ) : Net::IMAP::Simple->new( $args{host} );
 		if ( $server ) {
 			if ( $server->login( $args{user}, $args{pass} ) > 0 ) {
