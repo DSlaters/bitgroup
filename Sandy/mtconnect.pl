@@ -21,12 +21,13 @@ use attributes;
 use POSIX qw( strftime );
 use Win32;
 use Win32::Daemon;
+use Win32::Perms;
 use HTTP::Request;
 use LWP::UserAgent;
 use Cwd qw(realpath);
 use strict;
 
-$::ver = '1.1.0 (2010-09-07)';
+$::ver = '1.2.1 (2010-09-12)';
 
 # Ensure CWD is in the dir containing this script
 chdir $1 if realpath( $0 ) =~ m|^(.+)[/\\]|;
@@ -228,11 +229,17 @@ sub checkServer {
 				$file =~ s/\$1/$j++/e;
 			} while -e $file;
 
-			# Write the output to the new file
+			# Write the output to the new file and set to full access perms
 			if( open OUTH, '>', $file ) {
 				logAdd( "Created: $file containing \"$item\"" ) if $::debug;
 				print OUTH $item;
 				close OUTH;
+				
+				# Set full access permissions to the new trigger file
+				if( my $perm = new Win32::Perms( $file, PERM_TYPE_NULL ) ) {
+					$perm->Set();
+				} else { logAdd( "Couldn't create the permissions for the new trigger file \"$file\"!" ) }
+				
 			} else { logAdd( "Can't create \"$file\" for writing!" ) }
 		}
 	}
@@ -263,8 +270,9 @@ sub getLastItem {
 sub initKey {
 	my $file = "$::prog.key";
 	if( -e $file ) {
-		open KH, '<', $file ) {
+		open KH, '<', $file;
 		$::key = <KH>;
+		chomp $::key;
 		close KH;
 		logAdd( "Key \"$::key\" imported" ) if $::debug;
 	} else {
