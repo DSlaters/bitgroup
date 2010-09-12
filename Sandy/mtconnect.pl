@@ -27,7 +27,7 @@ use LWP::UserAgent;
 use Cwd qw(realpath);
 use strict;
 
-$::ver = '1.2.4 (2010-09-12)';
+$::ver = '1.2.5 (2010-09-12)';
 
 # Ensure CWD is in the dir containing this script
 chdir $1 if realpath( $0 ) =~ m|^(.+)[/\\]|;
@@ -130,9 +130,10 @@ sub svcInstall {
 	my $path;
 	my $parameters;
 
-	# Stop existing instance if one running
+	# Stop and remove existing instance if one running
 	logAdd( "Stopping existing instance if any..." );
 	qx( net stop $::daemon );
+	qx( sc delete $::daemon );
 
 	# Parameters when called as a .pl
 	if ( $ext eq "pl" ) {
