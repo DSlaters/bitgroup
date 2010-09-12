@@ -27,7 +27,7 @@ use LWP::UserAgent;
 use Cwd qw(realpath);
 use strict;
 
-$::ver = '1.2.1 (2010-09-12)';
+$::ver = '1.2.4 (2010-09-12)';
 
 # Ensure CWD is in the dir containing this script
 chdir $1 if realpath( $0 ) =~ m|^(.+)[/\\]|;
@@ -44,6 +44,7 @@ $::debug       = 1;
 # Determine log file and config file
 $0 =~ /^(.+)\..+?$/;
 $::prog = $1;
+$::prog =~ s/[-.0-9]+//g;
 $::log  = "$::prog.log";
 
 logAdd();
@@ -129,6 +130,10 @@ sub svcInstall {
 	my $path;
 	my $parameters;
 
+	# Stop existing instance if one running
+	logAdd( "Stopping existing instance if any..." );
+	qx( net stop $::daemon );
+
 	# Parameters when called as a .pl
 	if ( $ext eq "pl" ) {
 		$path = "\"$^X\"";
@@ -157,7 +162,7 @@ sub svcInstall {
 	} else {
 		my $err = svcGetError();
 		logAdd( "Failed to install service! ($err)" );
-		die;
+		#die;
 	}
 	
 	logAdd( "Starting service $::daemon..." );
