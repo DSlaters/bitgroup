@@ -27,7 +27,7 @@ use LWP::UserAgent;
 use Cwd qw(realpath);
 use strict;
 
-$::ver = '1.2.5 (2010-09-12)';
+$::ver = '1.2.9 (2010-09-13)';
 
 # Ensure CWD is in the dir containing this script
 chdir $1 if realpath( $0 ) =~ m|^(.+)[/\\]|;
@@ -65,6 +65,8 @@ getLastItem();
 # Read the key if any, or create if none
 initKey();
 
+$::debug = 1 if $::key eq 'test';
+
 # Register the events which the service responds to
 Win32::Daemon::RegisterCallbacks( {
 	start    => \&svcStart,
@@ -84,10 +86,10 @@ close STDOUT;
 # Output an item to the email log file with timestamp
 sub logAdd {
 	my $entry = shift;
-	open LOGH, '>>', $::log or die "Can't open $::log for writing!";
-	print LOGH localtime() . " : $entry\n";
-	close LOGH;
-	return $entry;
+	if( open LOGH, '>>', $::log ) {
+		print LOGH localtime() . " : $entry\n";
+		close LOGH;
+	}
 }
 
 
@@ -132,7 +134,7 @@ sub svcInstall {
 
 	# Stop and remove existing instance if one running
 	logAdd( "Stopping existing instance if any..." );
-	qx( net stop $::daemon );
+	qx( sc stop $::daemon );
 	qx( sc delete $::daemon );
 
 	# Parameters when called as a .pl
@@ -154,33 +156,28 @@ sub svcInstall {
 		display      => $::daemon,
 		path         => $path,
 		description  => $::description,
-		parameters   => $parameters
+		parameters   => $parameters,
+		error_control => SERVICE_ERROR_NORMAL
 	);
 
 	# Install the service
-	if ( Win32::Daemon::CreateService( \%svcInfo ) ) {
-		logAdd( "Service installed successfully" );
-	} else {
-		my $err = svcGetError();
-		logAdd( "Failed to install service! ($err)" );
-		#die;
-	}
+	Win32::Daemon::CreateService( \%svcInfo );
+	my $msg = svcGetError();
+	$msg =~ s/^\s*(.*?)\s*$/$1/g;
+	logAdd( "Service installation returned: $msg" );
 	
 	logAdd( "Starting service $::daemon..." );
-	qx( net start $::daemon );
+	qx( sc start $::daemon );
 	exit();
 }
 
 
 # Remove the service
 sub svcRemove {
-	if ( Win32::Daemon::DeleteService( "", $::daemon ) ) {
-		logAdd( "Service removed successfully" );
-	} else {
-		my $err = svcGetError();
-		logAdd( "Failed to remove service! ($err)" );
-		die;
-	}
+	Win32::Daemon::DeleteService( "", $::daemon );
+	my $msg = svcGetError();
+	$msg =~ s/^\s*(.*?)\s*$/$1/g;
+	logAdd( "Service removal returned: $msg" );
 	logAdd( "Exiting." );
 	exit;
 }
