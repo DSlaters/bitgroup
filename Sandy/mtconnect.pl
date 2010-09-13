@@ -27,7 +27,7 @@ use LWP::UserAgent;
 use Cwd qw(realpath);
 use strict;
 
-$::ver = '1.2.9 (2010-09-13)';
+$::ver = '1.2.10 (2010-09-13)';
 
 # Ensure CWD is in the dir containing this script
 chdir $1 if realpath( $0 ) =~ m|^(.+)[/\\]|;
@@ -65,7 +65,7 @@ getLastItem();
 # Read the key if any, or create if none
 initKey();
 
-$::debug = 1 if $::key eq 'test';
+$::debug = 0 unless $::key eq 'test';
 
 # Register the events which the service responds to
 Win32::Daemon::RegisterCallbacks( {
