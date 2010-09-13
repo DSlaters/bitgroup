@@ -27,7 +27,7 @@ use LWP::UserAgent;
 use Cwd qw(realpath);
 use strict;
 
-$::ver = '1.2.10 (2010-09-13)';
+$::ver = '1.2.14 (2010-09-13)';
 
 # Ensure CWD is in the dir containing this script
 chdir $1 if realpath( $0 ) =~ m|^(.+)[/\\]|;
@@ -95,7 +95,7 @@ sub logAdd {
 
 # Start-service callback: Set up non-blocking SMTP listener
 sub svcStart {
-	logAdd( "Service started successfully" );
+	logAdd( "$::daemon-$::ver service started successfully" );
 
 	# Set up a global user agent for making HTTP requests as a browser
 	$::ua = LWP::UserAgent->new(
@@ -178,8 +178,7 @@ sub svcRemove {
 	my $msg = svcGetError();
 	$msg =~ s/^\s*(.*?)\s*$/$1/g;
 	logAdd( "Service removal returned: $msg" );
-	logAdd( "Exiting." );
-	exit;
+	logAdd( "Exiting." ) and exit unless shift;
 }
 
 
@@ -213,7 +212,7 @@ sub checkServer {
 
 		my @items = split /\n/, $response->content;
 		my $n = 1 + $#items;
-		logAdd( "$n item(s) returned from $url" ) if $::debug;
+		logAdd( "$n item(s) returned to $::ver from $url" ) if $::debug;
 
 		# Loop through the returned items creating a trigger file for each
 		for my $item ( @items ) {
