@@ -25,7 +25,7 @@ use strict;
 
 $::ver    = '1.1.2'; # 2010-09-09
 $::daemon = 'mtserver';
-$::limit  = 4096;
+$::limit  = 100000;
 $::maxage = 3600 * 12;
 
 # Ensure CWD is in the dir containing this script
