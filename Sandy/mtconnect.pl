@@ -27,7 +27,7 @@ use LWP::UserAgent;
 use Cwd qw(realpath);
 use strict;
 
-$::ver = '1.2.14 (2010-09-13)';
+$::ver = '1.2.17 (2010-09-14)';
 
 # Ensure CWD is in the dir containing this script
 chdir $1 if realpath( $0 ) =~ m|^(.+)[/\\]|;
@@ -44,7 +44,7 @@ $::debug       = 1;
 # Determine log file and config file
 $0 =~ /^(.+)\..+?$/;
 $::prog = $1;
-$::prog =~ s/[-.0-9]+//g;
+$::prog =~ s/-\d+\.\d+\.\d+//g;
 $::log  = "$::prog.log";
 
 logAdd();
@@ -206,7 +206,8 @@ sub svcGetError {
 sub checkServer {
 
 	# Check server with (if lastitem is zero, server will return items in last $::maxage)
-	my $url = "$::mtserver?action=api&key=$::key&last=$::last";
+	$::ver =~ m|^([0-9.]+)|;
+	my $url = "$::mtserver?action=api&ver=$1&key=$::key&last=$::last";
 	my $response = $::ua->get( $url );
 	if( $response->is_success ) {
 
