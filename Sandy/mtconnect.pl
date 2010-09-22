@@ -27,7 +27,7 @@ use LWP::UserAgent;
 use Cwd qw(realpath);
 use strict;
 
-$::ver = '1.2.17 (2010-09-14)';
+$::ver = '1.2.18 (2010-09-22)';
 
 # Ensure CWD is in the dir containing this script
 chdir $1 if realpath( $0 ) =~ m|^(.+)[/\\]|;
@@ -239,9 +239,7 @@ sub checkServer {
 				close OUTH;
 				
 				# Set full access permissions to the new trigger file
-				if( my $perm = new Win32::Perms( $file, PERM_TYPE_NULL ) ) {
-					$perm->Set();
-				} else { logAdd( "Couldn't create the permissions for the new trigger file \"$file\"!" ) }
+				qx( icacls "$file" /grant users:F );
 				
 			} else { logAdd( "Can't create \"$file\" for writing!" ) }
 		}
