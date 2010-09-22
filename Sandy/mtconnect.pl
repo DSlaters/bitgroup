@@ -239,7 +239,7 @@ sub checkServer {
 				close OUTH;
 				
 				# Set full access permissions to the new trigger file
-				if( my $perm = new Win32::Perms() ) {
+				if( my $perm = new Win32::Perms ) {
 					$perm->Allow( 'users', FULL );
 					$perm->Set( $file );
 				} else { logAdd( "Couldn't create the permissions for the new trigger file \"$file\"!" ) }
