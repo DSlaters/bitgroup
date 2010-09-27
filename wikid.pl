@@ -39,6 +39,7 @@ use IO::Socket;
 use IO::Socket::SSL;
 use IO::Select;
 use MIME::Base64;
+use HTML::Entities;
 use Sys::Hostname;
 use DBI;
 use PHP::Serialization qw( serialize unserialize );
@@ -49,7 +50,7 @@ $daemon   = 'wikid';
 $host     = uc( hostname );
 $name     = hostname;
 $port     = 1729;
-$ver      = '3.18.1'; # 2010-08-15
+$ver      = '3.18.2'; # 2010-09-27
 $log      = "$dir/$daemon.log";
 $wkfile   = "$dir/$daemon.work";
 
