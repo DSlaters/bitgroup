@@ -50,7 +50,7 @@ $daemon   = 'wikid';
 $host     = uc( hostname );
 $name     = hostname;
 $port     = 1729;
-$ver      = '3.18.2'; # 2010-09-27
+$ver      = '3.19.1'; # 2010-09-28
 $log      = "$dir/$daemon.log";
 $wkfile   = "$dir/$daemon.work";
 
@@ -1053,6 +1053,14 @@ sub doInfo {
 	for ( keys %:: ) { push @f, $1 if defined &$_ and /^do(\w+)$/ }
 	logIRC( "Known actions: " . join ', ', @f );
 
+}
+
+# Obtain and return IP address
+sub doIP {
+	my $response = $::client->get( 'http://www.organicdesign.co.nz/wiki/info.php' );
+	if( $response->is_success and $response->content =~ /REMOTE_ADDR.+?(\d+\.\d+\.\d+\.\d+)/ ) {
+		logIRC( "My current IP address is $1" );
+	} else { logIRC( "Unable to comply for some reason." ) }
 }
 
 # Restart
