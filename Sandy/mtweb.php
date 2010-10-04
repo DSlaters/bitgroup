@@ -93,8 +93,8 @@ switch( $_GET['action'] ) {
 			<head></head>
 			<body>
 				<ul>
-					<li><a href="$url?action=register">Registration page</a></li>
-					<li><a href="$url?action=payment">Payment page</a></li>
+					<li><a href="<?php print $url;?>?action=register">Registration page</a></li>
+					<li><a href="<?php print $url;?>action=payment">Payment page</a></li>
 				</ul>
 			</body>
 		</html><?php
