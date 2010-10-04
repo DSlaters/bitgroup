@@ -8,9 +8,10 @@
  * Version 1.0 started on 2010-08-30
  */
 
-$version = '1.0.2 (2010-09-07)';
+$version = '1.0.3 (2010-10-04)';
 
 $dir = dirname( __FILE__ );
+$url = 'http://www.organicdesign.co.nz/files/mtweb.php';
 
 switch( $_GET['action'] ) {
 
@@ -44,7 +45,13 @@ switch( $_GET['action'] ) {
 		?><html>
 			<head></head>
 			<body>
-				This is the payment page...
+				<form action="https://www.paypal.com/cgi-bin/webscr" method="post">
+					<input type="hidden" name="cmd" value="_xclick">
+					<input type="hidden" name="business" value="TWPVHY2Q8UC8W" />
+					<input type="hidden" name="item_name" value="Donation">
+					<input type="hidden" name="currency_code" value="NZD">
+					$<input style="width:35px" type="text" name="amount" value="10.00" />&nbsp;<input type="submit" value="Checkout" />
+				</form>
 			</body>
 		</html><?php
 	
@@ -85,7 +92,10 @@ switch( $_GET['action'] ) {
 		?><html>
 			<head></head>
 			<body>
-				This is the home page...
+				<ul>
+					<li><a href="$url?action=register">Registration page</a></li>
+					<li><a href="$url?action=payment">Payment page</a></li>
+				</ul>
 			</body>
 		</html><?php
 }
