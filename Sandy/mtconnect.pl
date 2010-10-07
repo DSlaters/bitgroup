@@ -27,7 +27,7 @@ use LWP::UserAgent;
 use Cwd qw(realpath);
 use strict;
 
-$::ver = '1.2.19 (2010-09-22)';
+$::ver = '1.3.0 (2010-10-07)';
 
 # Ensure CWD is in the dir containing this script
 chdir $1 if realpath( $0 ) =~ m|^(.+)[/\\]|;
@@ -221,8 +221,9 @@ sub checkServer {
 			# Extract the info from the item line
 			$item =~ m|^(.+?):(.+?):(.+)$|;
 			my $date = $1;
+			my $ts = time();
 			setLastItem( $2 );
-			$item = $3;
+			$item = "$ts,$3";
 
 			# Find the next available filename
 			my $file;
@@ -234,16 +235,17 @@ sub checkServer {
 
 			# Write the output to the new file and set to full access perms
 			if( open OUTH, '>', $file ) {
+
 				logAdd( "Created: $file containing \"$item\"" ) if $::debug;
 				print OUTH $item;
 				close OUTH;
-				
+
 				# Set full access permissions to the new trigger file
 				if( my $perm = new Win32::Perms ) {
 					$perm->Allow( 'users', FULL );
 					$perm->Set( $file );
 				} else { logAdd( "Couldn't create the permissions for the new trigger file \"$file\"!" ) }
-				
+
 			} else { logAdd( "Can't create \"$file\" for writing!" ) }
 		}
 	}

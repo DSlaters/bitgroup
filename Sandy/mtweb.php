@@ -8,7 +8,7 @@
  * Version 1.0 started on 2010-08-30
  */
 
-$version = '1.0.3 (2010-10-04)';
+$version = '1.0.4 (2010-10-07)';
 
 $dir = dirname( __FILE__ );
 $url = 'http://www.organicdesign.co.nz/files/mtweb.php';
@@ -63,7 +63,7 @@ switch( $_GET['action'] ) {
 		$key = $_GET['key'];
 		$file = $key == "test" ? "test.log" : "production.log";
 
-		# Connection from an mtconnect.exe instance
+		# Read items from the test or production log
 		$items = file_get_contents( "$dir/$file" );
 
 		# return items since last
