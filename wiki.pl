@@ -28,7 +28,7 @@
 #   - get namespaces
 #   - get messages used in patterns (and make methods use messages in their regexp's so lang-independent)
 
-$::wikipl_version = '1.14.15'; # 2010-06-19
+$::wikipl_version = '1.14.16'; # 2010-10-21
 
 use HTTP::Request;
 use LWP::UserAgent;
@@ -206,7 +206,7 @@ sub wikiFirstEdit {
 # Retrieve the raw content of a page
 sub wikiRawPage {
 	my( $wiki, $title, $expand, $oldid ) = @_;
-	$oldid = "&oldid=$oldid" if $oldid;
+	$oldid = $oldid ? "&oldid=$oldid" : "";
 	$title = encodeTitle( $title );
 	my $response = $::client->get( "$wiki?title=$title&action=raw$oldid" . ( $expand ? '&templates=expand' : '' ) );
 	return $response->content if $response->is_success;
