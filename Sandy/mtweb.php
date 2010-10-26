@@ -8,28 +8,90 @@
  * Version 1.0 started on 2010-08-30
  */
 
-$version = '1.0.4 (2010-10-07)';
+$version = '1.1.0 (2010-10-26)';
 
 $dir = dirname( __FILE__ );
 $url = 'http://www.organicdesign.co.nz/files/mtweb.php';
 
-switch( $_GET['action'] ) {
+$recipients = array( 'nad@localhost' );
 
+$link = false;
+$database = 'sandy';
+$table = 'registrations';
+
+$action = array_key_exists( 'action', $_GET ) ? $_GET['action'] : false;
+$key = array_key_exists( 'key', $_GET ) ? $_GET['key'] : false;
+
+switch( $action ) {
+
+	# Registration page
 	case 'register':
-	
-		# Registration page
-		?><html>
-			<head></head>
-			<body>
-				This is the registration page...
-			</body>
-		</html><?php
+
+		# If form posted, create the registration entry
+		if( array_key_exists( 'newkey', $_POST ) ) {
+			dbRegister( $_POST );
+			emailRegistration( $_POST );
+		}
+
+		# Otherwise render the registration form
+		else {
+			?><html>
+				<head></head>
+				<body>
+					This is the registration page...
+					<form action="<?php print $url; ?>?action=register" method="POST">
+						<table>
+
+							<tr>
+								<td>Registration key:</td>
+								<td>
+									<input name="newkey" value="<?php print $key; ?>" /><br />
+								</td>
+							</tr>
+
+							<tr>
+								<td>Email address:</td>
+								<td>
+									<input name="email" /><br />
+								</td>
+							</tr>
+
+							<tr>
+								<td>Full name:</td>
+								<td>
+									<input name="name" value="<?php print $key; ?>" /><br />
+								</td>
+							</tr>
+
+							<tr>
+								<td>Currency:</td>
+								<td>
+									<select name="currency">
+										<option>NZD</option>
+										<option>USD</option>
+										<option>EUR</option>
+										<option>JPY</option>
+										<option>CHF</option>
+									</select>
+								</td>
+							</tr>
+
+							<tr>
+								<td></td>
+								<td><input type="submit" value="Register" /></td>
+							</tr>
+
+						</table>
+					</form>
+				</body>
+			</html><?php
+		}
 
 	break;
 
+	# Email confirmation
 	case 'comfirm':
-	
-		# Email confirmation
+
 		?><html>
 			<head></head>
 			<body>
@@ -39,9 +101,9 @@ switch( $_GET['action'] ) {
 
 	break;
 
+	# Payment page
 	case 'payment':
-	
-		# Payment page
+
 		?><html>
 			<head></head>
 			<body>
@@ -57,10 +119,10 @@ switch( $_GET['action'] ) {
 	
 	break;
 
+	# Called by the mtconnect.exe instances
 	case 'api':
 
 		# Check if key valid and current or is the test key
-		$key = $_GET['key'];
 		$file = $key == "test" ? "test.log" : "production.log";
 
 		# Read items from the test or production log
@@ -98,6 +160,49 @@ switch( $_GET['action'] ) {
 				</ul>
 			</body>
 		</html><?php
+}
+
+# Close the database if a connection was opened
+if( $link ) mysql_close( $link );
+
+# Connect to the DB and create the table if it doesn't exist
+function dbConnect( $database, $table ) {
+	global $link;
+
+	# Read the DB access and bot name info from wikid.conf
+	foreach( file( '/var/www/tools/wikid.conf' ) as $line ) {
+		if ( preg_match( "|^\s*\\\$(wgDB.+?)\s*=\s*['\"](.+?)[\"']|m", $line, $m ) ) $$m[1] = $m[2];
+	}
+
+	# Connect to the server and select the database
+	$link = mysql_connect( 'localhost', $wgDBuser, $wgDBpassword );
+	mysql_select_db( $database, $link );
+
+	# Create the table if it doesn't exist
+	if( $res = mysql_query( "SELECT 1 FROM $table LIMIT 1", $link ) ) {
+		mysql_free_result( $res );
+	} else {
+		$sql = "CREATE TABLE $table (key VARCHAR(32), email VARCHAR(64), name VARCHAR(64), currency VARCHAR(3), status VARCHAR(16), PRIMARY KEY (key));";
+		$res = $db->query( $sql, $link );
+		mysql_free_result( $res );
+	}
+
+	return $link;
+}
+
+# Create a registration entry in the DB from a posted form
+function dbRegister( $args ) {
+	global $database, $table;
+	$link = dbConnect( $database, $table );
+}
+
+# Email info about a registration to recipient list
+function emailRegistration( $args ) {
+	global $recipients;
+	
+	# Create message
+	
+	# Send message
 }
 
 ?>
