@@ -50,7 +50,7 @@ $daemon   = 'wikid';
 $host     = uc( hostname );
 $name     = hostname;
 $port     = 1729;
-$ver      = '3.19.1'; # 2010-09-28
+$ver      = '3.19.2'; # 2010-10-28
 $log      = "$dir/$daemon.log";
 $wkfile   = "$dir/$daemon.work";
 
@@ -1285,19 +1285,21 @@ sub workStartJob {
 
 	if ( defined &$main ) {
 
-		# Add the new job to the work hash
-		$$::job{id}        = $id;
-		$$::job{type}      = $type;
-		$$::job{wiki}      = $::script ? $::script : $::wiki;
-		$$::job{user}      = $::wikiuser;
-		$$::job{start}     = time();
-		$$::job{finish}    = 0;
-		$$::job{progress}  = 0;
-		$$::job{revisions} = 0;
-		$$::job{length}    = 0;
-		$$::job{paused}    = 0;
-		$$::job{status}    = '';
-		$$::job{errors}    = '';
+		# Create and populate a new work hash
+		$::job = {
+			id        => $id,
+			type      => $type,
+			wiki      => $::script ? $::script : $::wiki,
+			user      => $::wikiuser,
+			start     => time(),
+			finish    => 0,
+			progress  => 0,
+			revisions => 0,
+			length    => 0,
+			paused    => 0,
+			status    => '',
+			errors    => ''
+		};
 		push @::work, $::job;
 
 		# Execute the init if defined
