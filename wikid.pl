@@ -50,7 +50,7 @@ $daemon   = 'wikid';
 $host     = uc( hostname );
 $name     = hostname;
 $port     = 1729;
-$ver      = '3.19.2'; # 2010-10-28
+$ver      = '3.19.3'; # 2010-10-28
 $log      = "$dir/$daemon.log";
 $wkfile   = "$dir/$daemon.work";
 
@@ -671,8 +671,8 @@ sub onRpcDoAction {
 }
 
 sub onStartJob {
-	%$::job = %{$$::data{args}};
-	workStartJob( $$::job{type}, -e $$::job{id} ? $$::job{id} : undef );
+	my %job = %{$$::data{args}};
+	workStartJob( $job{type}, -e $job{id} ? $job{id} : undef );
 }
 
 sub onStopJob {
@@ -1286,7 +1286,7 @@ sub workStartJob {
 	if ( defined &$main ) {
 
 		# Create and populate a new work hash
-		$::job = {
+		push @::work, $::job = {
 			id        => $id,
 			type      => $type,
 			wiki      => $::script ? $::script : $::wiki,
@@ -1300,7 +1300,6 @@ sub workStartJob {
 			status    => '',
 			errors    => ''
 		};
-		push @::work, $::job;
 
 		# Execute the init if defined
 		&$init if defined &$init;
