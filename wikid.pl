@@ -50,7 +50,7 @@ $daemon   = 'wikid';
 $host     = uc( hostname );
 $name     = hostname;
 $port     = 1729;
-$ver      = '3.19.3'; # 2010-10-28
+$ver      = '3.19.4'; # 2010-10-28
 $log      = "$dir/$daemon.log";
 $wkfile   = "$dir/$daemon.work";
 
@@ -1331,6 +1331,7 @@ sub workStopJob {
 
 	# Append final job info to log
 	$entry  = "[$id]\n";
+	$entry .= "   Wiki      : " . $$::job{wiki}      . "\n";
 	$entry .= "   Type      : " . $$::job{type}      . "\n";
 	$entry .= "   User      : " . $$::job{user}      . "\n";
 	$entry .= "   Start     : " . $$::job{start}     . "\n";
