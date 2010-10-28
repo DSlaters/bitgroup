@@ -671,7 +671,8 @@ sub onRpcDoAction {
 }
 
 sub onStartJob {
-	my %job = %{$$::data{args}};
+	%job = %{$$::data{args}};
+	$::job = \%job;
 	workStartJob( $job{type}, -e $job{id} ? $job{id} : undef );
 }
 
@@ -1285,21 +1286,20 @@ sub workStartJob {
 
 	if ( defined &$main ) {
 
-		# Create and populate a new work hash
-		push @::work, $::job = {
-			id        => $id,
-			type      => $type,
-			wiki      => $::script ? $::script : $::wiki,
-			user      => $::wikiuser,
-			start     => time(),
-			finish    => 0,
-			progress  => 0,
-			revisions => 0,
-			length    => 0,
-			paused    => 0,
-			status    => '',
-			errors    => ''
-		};
+		# Add the new job to the work hash
+		$$::job{id}        = $id;
+		$$::job{type}      = $type;
+		$$::job{wiki}      = $::script ? $::script : $::wiki;
+		$$::job{user}      = $::wikiuser;
+		$$::job{start}     = time();
+		$$::job{finish}    = 0;
+		$$::job{progress}  = 0;
+		$$::job{revisions} = 0;
+		$$::job{length}    = 0;
+		$$::job{paused}    = 0;
+		$$::job{status}    = '';
+		$$::job{errors}    = '';
+		push @::work, $::job;
 
 		# Execute the init if defined
 		&$init if defined &$init;
