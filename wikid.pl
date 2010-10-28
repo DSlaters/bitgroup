@@ -671,7 +671,7 @@ sub onRpcDoAction {
 }
 
 sub onStartJob {
-	%job = %{$$::data{args}};
+	my %job = %{$$::data{args}};
 	$::job = \%job;
 	workStartJob( $job{type}, -e $job{id} ? $job{id} : undef );
 }
