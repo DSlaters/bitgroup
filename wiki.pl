@@ -28,7 +28,7 @@
 #   - get namespaces
 #   - get messages used in patterns (and make methods use messages in their regexp's so lang-independent)
 
-$::wikipl_version = '1.14.16'; # 2010-10-21
+$::wikipl_version = '1.14.17'; # 2010-11-16
 
 use HTTP::Request;
 use LWP::UserAgent;
@@ -151,7 +151,7 @@ sub wikiEdit {
 	while ( $retries-- ) {
 
 		# Request the page for editing and extract the edit-token
-		my $response = $::client->get( "$wiki?title=$utitle&action=edit&useskin=standard" );
+		my $response = $::client->get( "$wiki?title=$utitle&action=edit&useskin=standard&nora=1" );
 		if ( $response->is_success and (
 				$response->content =~ m|<input type=['"]hidden["'] value=['"](.+?)["'] name=['"]wpEditToken["'] />|
 		)) {
