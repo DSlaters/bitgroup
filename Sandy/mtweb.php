@@ -8,7 +8,7 @@
  * Version 1.0 started on 2010-08-30
  */
 
-$version = '1.1.0 (2010-10-26)';
+$version = '1.1.1 (2010-11-21)';
 
 $dir = dirname( __FILE__ );
 $url = 'http://www.organicdesign.co.nz/files/mtweb.php';
@@ -182,8 +182,8 @@ function dbConnect( $database, $table ) {
 	if( $res = mysql_query( "SELECT 1 FROM $table LIMIT 1", $link ) ) {
 		mysql_free_result( $res );
 	} else {
-		$sql = "CREATE TABLE $table (key VARCHAR(32), email VARCHAR(64), name VARCHAR(64), currency VARCHAR(3), status VARCHAR(16), PRIMARY KEY (key));";
-		$res = $db->query( $sql, $link );
+		$sql = "CREATE TABLE $table (id VARCHAR(32), email VARCHAR(64), name VARCHAR(64), currency VARCHAR(3), status VARCHAR(16), PRIMARY KEY (id));";
+		$res = mysql_query( $sql, $link );
 		mysql_free_result( $res );
 	}
 
