@@ -8,7 +8,7 @@
  * Version 1.0 started on 2010-08-30
  */
 
-$version = '1.1.1 (2010-11-21)';
+$version = '1.1.2 (2010-11-24)';
 
 $dir = dirname( __FILE__ );
 $url = 'http://www.organicdesign.co.nz/files/mtweb.php';
@@ -107,12 +107,19 @@ switch( $action ) {
 		?><html>
 			<head></head>
 			<body>
-				<form action="https://www.paypal.com/cgi-bin/webscr" method="post">
-					<input type="hidden" name="cmd" value="_xclick">
+				Click the "checkout" button to set up the subscription for <?php print "$amount $currency"; ?> per month...
+				<form name="_xclick" action="https://www.paypal.com/cgi-bin/webscr" method="post">
+					<input type="hidden" name="cmd" value="_xclick-subscriptions">
 					<input type="hidden" name="business" value="TWPVHY2Q8UC8W" />
-					<input type="hidden" name="item_name" value="Donation">
-					<input type="hidden" name="currency_code" value="NZD">
-					$<input style="width:35px" type="text" name="amount" value="10.00" />&nbsp;<input type="submit" value="Checkout" />
+					<input type="hidden" name="no_shipping" value="1">
+					<input type="hidden" name="item_name" value="MTAlert subscription">
+					<input type="hidden" name="currency_code" value="<?php print $currency; ?>">
+					<input type="hidden" name="a3" value="<?php print $amount; ?>">
+					<input type="hidden" name="p3" value="1">
+					<input type="hidden" name="t3" value="M">
+					<input type="hidden" name="src" value="1">
+					<input type="hidden" name="sra" value="1">
+					<input type="submit" value="Checkout" />
 				</form>
 			</body>
 		</html><?php
