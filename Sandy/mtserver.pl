@@ -245,7 +245,7 @@ sub processMessage {
 
 	# Read in the items from the log for this source that are newer than maxage
 	my $file = "$source.log";
-	$chopped = readFile( $file );
+	my $chopped = readFile( $file );
 
 	# Append the new items to the chopped log content with date and a GUID
 	for my $out ( @outputs ) {
