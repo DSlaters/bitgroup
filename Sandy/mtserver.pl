@@ -23,7 +23,7 @@ use Net::IMAP::Simple::SSL;
 use Cwd qw( realpath );
 use strict;
 
-$::ver    = '1.1.2'; # 2010-09-09
+$::ver    = '1.1.3'; # 2010-12-09
 $::daemon = 'mtserver';
 $::limit  = 100000;
 $::maxage = 3600 * 12;
@@ -70,7 +70,7 @@ if ( $ARGV[0] eq '--remove' ) {
 # Main loop
 while( 1 ) {
 	checkMessages();
-	sleep 5;
+	sleep 15;
 }
 
 
@@ -130,6 +130,19 @@ sub logAdd {
 sub checkMessages {
 	for my $source ( keys %$::sources ) {
 		logAdd( "Processing source \"$source\"..." ) if $::debug;
+
+		# Chop the log to only items that are newer than maxage
+		my $file = "$source.log";
+		open OUTH, '<', $file;
+		my $chopped = '';
+		while( <OUTH> ) {
+			m|^(.+?):(.+?):(.+)$|;
+			my $date = $1;
+			$chopped .= $_ if time() - $date < $::maxage;
+		}
+		writeFile( $file, $chopped );
+
+		# Process any messages in this IMAP source
 		my %args = %{$$::sources{$source}};
 		my $server = $args{ssl} ? Net::IMAP::Simple::SSL->new( $args{host} ) : Net::IMAP::Simple->new( $args{host} );
 		if ( $server ) {
@@ -149,7 +162,8 @@ sub checkMessages {
 			} else { logAdd( "Couldn't log \"$args{user}\" into $args{proto} server \"$args{host}\"" ) }
 			$server->quit();
 		} else { logAdd( "Couldn't connect to $args{proto} server \"$args{host}\"" ) }
-	}
+
+	close OUTH;	}
 }
 
 
@@ -231,14 +245,7 @@ sub processMessage {
 
 	# Read in the items from the log for this source that are newer than maxage
 	my $file = "$source.log";
-	open OUTH, '<', $file;
-	my $chopped = '';
-	while( <OUTH> ) {
-		m|^(.+?):(.+?):(.+)$|;
-		my $date = $1;
-		$chopped .= $_ if time() - $date < $::maxage;
-	}
-	close OUTH;
+	$chopped = readFile( $file );
 
 	# Append the new items to the chopped log content with date and a GUID
 	for my $out ( @outputs ) {
