@@ -89,7 +89,12 @@ if( --add ) {
 
 	if( $type =~ /mediawiki/i ) {
 		# add /var/www/instances subdir wiki symlink to codebase and files dir
+		die "Instance directory \"$id\" already exists!" if -e "/var/www/instances/$id";
+		
+		
 		# add symlink to /var/www/domains pointing to /var/www/instances
+		qx( ln -s /var/www/instances/$id /var/www/domains/$domain );
+		
 		# add a LocalSettings.php to /var/www/instances
 	}
 

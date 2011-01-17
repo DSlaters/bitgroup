@@ -1,15 +1,23 @@
+NameVirtualHost *:80
 <VirtualHost *:80>
 
 	Include /var/www/tools/common.vhost
 
-        RewriteCond %{HTTP_HOST} ^packages\.
-        RewriteRule (.*) /packages$1 [L]
+	# MAPPING SUBDOMAIN TO FILESYSTEM PATH
+	RewriteCond %{HTTP_HOST} ^(packages|html|wordpress|joomla)\.organicdesign\.co\.nz
+	RewriteRule (.*) /%1$1 [L]
 
-        RewriteCond %{HTTP_HOST} ^svn\.
-        RewriteRule (.*) /websvn$1 [L]
+	# SUBVERSION REPO
+	RewriteCond %{HTTP_HOST} ^svn\.
+	RewriteRule (.*) /websvn$1 [L]
 
-        RewriteCond %{HTTP_HOST} ^crm\.organicdesign\.co\.nz
-        RewriteRule (.*) /crm$1 [L]
+	# DRUPAL CLEAN-URL EXAMPLE
+	# (don't forget to delete the .htaccess in the drupal codebase)
+	RewriteCond %{HTTP_HOST} www\.example\.com
+	RewriteCond %{REQUEST_URI} \.
+	RewriteRule (.*) /example-drupal$1 [L,QSA]
+	RewriteCond %{HTTP_HOST} www\.example\.com
+	RewriteRule (.*) /example-drupal/index.php?q=$1 [L,QSA]
 
 	Include /var/www/tools/wiki.vhost
 
