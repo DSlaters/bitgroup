@@ -50,7 +50,7 @@ $daemon   = 'wikid';
 $host     = uc( hostname );
 $name     = hostname;
 $port     = 1729;
-$ver      = '3.19.4'; # 2010-10-28
+$ver      = '3.19.5'; # 2011-02-09
 $log      = "$dir/$daemon.log";
 $wkfile   = "$dir/$daemon.work";
 
@@ -607,7 +607,7 @@ sub onFileChanged {
 	my $newsize = shift;
 	my $text    = '';
 	my $msg     = '';
-	my @userfilter = ( $::netuser, 'root', 'nobody', 'fit' );
+	my @userfilter = ( $::netuser, 'root', 'nobody', 'fit', 'munin' );
 
 	# Read in difference
 	if ( $newsize > $oldsize and open FH, '<', $file ) {
