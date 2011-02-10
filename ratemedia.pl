@@ -22,7 +22,6 @@
 use HTTP::Request;
 use LWP::UserAgent;
 
-# Set up a global client for making HTTP requests as a browser
 $ua = LWP::UserAgent->new(
 	cookie_jar => {},
 	agent      => 'Mozilla/5.0 (Windows; U; Windows NT 5.1; it; rv:1.8.1.14)',
@@ -31,38 +30,29 @@ $ua = LWP::UserAgent->new(
 	max_size   => 100000
 );
 
-#for( glob "*.??*" ) {
-for( 'Fifty.Deadmen.Walking.avi' ) {
-	$rating = rate( $_ );
-}
-
-sub rate {
-	$name = shift;
-	print "Looking up \"$name\":\n";
-	$name =~ s/(720p|1080p|dvdrip|dvd)//gi;
-	$name =~ s/\.\w+$//g;
-	$name =~ s/[-_. ]+/+/g;
-	$name =~ s/[+]$//;
-	$name =~ s/[.~!()\[\]{}]+//g;
-	( $title, $year ) = $name =~ m|(.+?)\+*(\d\d\d\d).+$| ? ( $1, $2 ) : ( $name, '' );
+for( grep !/^IMDB/, glob "*" ) {
+	print "\nChecking file \"$_\"\n";
+	$file = $_;
+	$ext = $1 if s/(\.\w+)$//g;
+	s/(720p|1080p|x264|dvdrip|dvd|xvid|bluray).+//gi;
+	s/[-_. \$]+/+/g;
+	s/[+]$//;
+	s/^[+]//;
+	s/[.~!()\[\]{}]+//g;
+	( $title, $year ) = m|(.+?)\+*(\d\d\d\d).*$| ? ( lc $1, $2 ) : ( lc $_, '\\d\\d\\d\\d' );
+	print "\tQuery:  $title\n";
 	$res = $ua->get( "http://www.imdb.com/find?s=all&q=$title" );
 	if( $res->is_success ) {
-		$link = undef;
-		if( $year ) {
-			$link = $1 if $res->content =~ m|<a href="(.+?)"[^>]+>(.+?)</a> \($year\)|i;
-			print "\tTitle: $2 ($year)\n";
-		} else {
-			$link = $1 if $res->content =~ m|<a href="(.+?)"[^>]+>(.+?)</a> \((\d\d\d\d)\)|i;
-			print "\tTitle:  $2 ($3)\n";
-		}
-		if( $link ) {
-			$res = $ua->get( "http://www.imdb.com$link" );
-			if( $res->is_success ) {
-				( $votes, $rating ) = ( $1, $2 ) if $res->content =~ m|([0-9,]+) imdb users have given an average vote of ([0-9.]+)/10|i;
-				print "\tRating: $rating (from $votes votes)\n" if $rating;
-			}
-		} else { print "\tnot found!\n" }
-	}
-	print "\n";
-	return $rating;
+		$res->content =~ m|<a href="(/title/[^"]+)"[^>]+>([^<]+)</a> \(($year)\)|i
+			? $res = $ua->get( "http://www.imdb.com$1" )
+			: $res->content =~ m|<title(>)(.+?) \(($year)\)|i;
+		$title = "$2 ($3)";
+		$title =~ s/&#x([0-9a-f]+);/chr(hex($1))/ige;
+		print "\tTitle:  $title\n";
+		if( $res->is_success and $res->content =~ m|([0-9,]+) imdb users have given an average vote of ([0-9.]+)/10|i ) {
+			print "\tRating: $2 (from $1 votes)\n";
+			print "\tRename: IMDB $2 - $title$ext\n";
+		} else { print "\tERROR: Rating not found.\n" }
+	} else { print "\tERROR: Movie not found!\n" }
 }
+
