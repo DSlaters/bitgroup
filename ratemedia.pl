@@ -34,7 +34,7 @@ for( grep !/^IMDB/, glob "*" ) {
 	print "\nChecking file \"$_\"\n";
 	$file = $_;
 	$ext = $1 if s/(\.\w+)$//g;
-	s/(720p|1080p|x264|dvdrip|dvd|xvid|bluray).+//gi;
+	s/(720p|1080p|x264|dvdrip|dvd|xvid|blu-?ray).+//gi;
 	s/[-_. \$]+/+/g;
 	s/[+]$//;
 	s/^[+]//;
