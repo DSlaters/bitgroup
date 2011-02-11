@@ -46,7 +46,7 @@ for( grep !/^IMDB/, glob "*" ) {
 		$res->content =~ m|<a href="(/title/[^"]+)"[^>]+>([^<]+)</a> \(($year)\)|i
 			? $res = $ua->get( "http://www.imdb.com$1" )
 			: $res->content =~ m|<title(>)(.+?) \(($year)\)|i;
-		$title = "$2 ($3)";
+		$title = "$2 [$3]";
 		$title =~ s/&#x([0-9a-f]+);/chr(hex($1))/ige;
 		print "\tTitle:  $title\n";
 		if( $res->is_success and $res->content =~ m|([0-9,]+) imdb users have given an average vote of ([0-9.]+)/10|i ) {
