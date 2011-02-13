@@ -33,7 +33,7 @@ $ua = LWP::UserAgent->new(
 for( grep !/^IMDB/, glob "*" ) {
 	print "\nChecking file \"$_\"\n";
 	$file = $_;
-	$ext = $1 if s/(\.\w+)$//g;
+	$ext = s/(\.\w+)$//g ? $1 : '';
 	s/(720p|1080p|x264|dvdrip|dvd|xvid|blu-?ray).+//gi;
 	s/[-_. \$]+/+/g;
 	s/[+]$//;
@@ -50,8 +50,10 @@ for( grep !/^IMDB/, glob "*" ) {
 		$title =~ s/&#x([0-9a-f]+);/chr(hex($1))/ige;
 		print "\tTitle:  $title\n";
 		if( $res->is_success and $res->content =~ m|([0-9,]+) imdb users have given an average vote of ([0-9.]+)/10|i ) {
+			$new = "IMDB $2 - $title$ext";
 			print "\tRating: $2 (from $1 votes)\n";
-			print "\tRename: IMDB $2 - $title$ext\n";
+			print "Rename to \"$new\" (y/n)?";
+			rename $file, $new if <> =~ /y/i;
 		} else { print "\tERROR: Rating not found.\n" }
 	} else { print "\tERROR: Movie not found!\n" }
 }
