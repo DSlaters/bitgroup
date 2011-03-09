@@ -50,7 +50,7 @@ $daemon   = 'wikid';
 $host     = uc( hostname );
 $name     = hostname;
 $port     = 1729;
-$ver      = '3.19.5'; # 2011-02-09
+$ver      = '3.19.6'; # 2011-03-10
 $log      = "$dir/$daemon.log";
 $wkfile   = "$dir/$daemon.work";
 
@@ -1082,8 +1082,8 @@ sub doStop {
 	logAdd( "Closing handles..." );
 	serverDisconnect $_ for keys %$::streams;
 	logAdd( "Stopping listeners..." );
-	$::server->shutdown(2);
-	$::ircsock->shutdown(2);
+	$::server->shutdown(2) if $::server;
+	$::ircsock->shutdown(2) if $::ircsock;
 	exit 0;
 }
 
