@@ -28,7 +28,7 @@
 #   - get namespaces
 #   - get messages used in patterns (and make methods use messages in their regexp's so lang-independent)
 
-$::wikipl_version = '1.15.1'; # 2011-04-28
+$::wikipl_version = '1.15.2'; # 2011-04-28
 
 use HTTP::Request;
 use LWP::UserAgent;
@@ -257,12 +257,34 @@ sub wikiGetNamespaceAliases {
 		my @wgNamespaceIds = $1 =~ /(".+?":\s*[-0-9]+)/g;
 		my %tmp = ();
 		foreach( @wgNamespaceIds ) {
-			/"(.+?)":\s*([-0-9]+)/;
-			defined $tmp{$2} ? ( $aliases{$2} = $1 ) : ( $tmp{$2} = 1 );
+			/"(.*?)":\s*([-0-9]+)/;
+			my $n = $2;
+			my $text = ucfirst $1;
+			$text =~ s/_/ /g;
+			defined $tmp{$n} ? ( $aliases{$n} = $text ) : ( $tmp{$n} = 1 );
 		}
 	}
 	return %aliases;
 }
+
+# return a hash (name => number) of all the 
+sub wikiGetNamespacesAndAliases {
+	my $wiki = shift;
+	my %ns = ();
+	my $response = $::client->get( "$wiki?useskin=standard" );
+	if( $response->content =~ /wgNamespaceIds\s*=\s*\{(.+?)\}/s ) {
+		my @wgNamespaceIds = $1 =~ /(".+?":\s*[-0-9]+)/g;
+		foreach( @wgNamespaceIds ) {
+			/"(.*?)":\s*([-0-9]+)/;
+			$n = $2;
+			$text = ucfirst $1;
+			$text =~ s/_/ /g;
+			$ns{$text} = $n;
+		}
+	}
+	return %ns;
+}
+
 
 # Returns hash (anchor => href) list elements in article content
 sub wikiGetList {
