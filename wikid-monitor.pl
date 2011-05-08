@@ -31,7 +31,7 @@ if( qx( ps ax | grep wiki[d] ) ) {
 } else {
 
 	$subject = "$name has stopped running!";
-	$msg = "The wiki daemon ($name) running on $domain has stopped! following is the last ten lines of the log\n\n"
+	$msg = "The wiki daemon ($name) running on $domain has stopped! following is the last ten lines of the log\n\n";
 	$msg .= qx( tail -n 10 /var/www/tools/wikif.log );
 	open FH,'>', "/var/www/tools/wikid-monitor.msg";
 	print FH $msg;
