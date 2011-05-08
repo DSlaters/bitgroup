@@ -24,7 +24,7 @@
 #
 require( '/var/www/tools/wikid.conf' );
 
-if( qx( ps ax | grep wikid[.]pl ) ) {
+if( qx( ps ax | grep wikid | grep -v grep ) ) {
 
 	qx( rm -f /var/www/tools/wikid.stopped );
 
