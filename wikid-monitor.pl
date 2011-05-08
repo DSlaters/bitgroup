@@ -31,15 +31,14 @@ if( qx( ps ax | grep wiki[d] ) ) {
 
 } else {
 
+	$subject = "$name has stopped running!";
 	$msg = "The wiki daemon ($name) running on $domain has stopped! following is the last ten lines of the log\n\n"
 	$msg .= qx( tail -n 10 /var/www/tools/wikif.log );
-
-	sendmail(
-		From    => "$name <" . ( lc $name ) . "@$domain>",
-		To      => "aran@organicdesign.co.nz",
-		Subject => "$name has stopped running!",
-		Message => $msg,
-	);
-
+	open FH,'>', "/var/www/tools/wikid-monitor.msg";
+	print FH $msg;
+	close FH;
+	qx( mail -s $subject aran@organicdesign.co.nz < /var/www/tools/wikid-monitor.msg );
+	qx( rm /var/www/tools/wikid-monitor.msg );
 	qx( echo 1 > /var/www/tools/wikid.stopped );
+
 }
