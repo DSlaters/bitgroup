@@ -29,7 +29,7 @@ $errfile = "$wikid.err";
 
 if( $ps = qx( ps ax | grep wikid.pl | grep -v grep ) ) {
 
-	if( $ps =~ /^(/d+)/ ) {
+	if( $ps =~ /^(\d+)/ ) {
 		open FH,'>', $pidfile;
 		print FH $1;
 		close FH;
