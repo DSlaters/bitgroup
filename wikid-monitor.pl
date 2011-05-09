@@ -27,7 +27,7 @@ require( "$wikid.conf" );
 $stopfile = "$wikid.stopped";
 $msgfile = "$wikid-monitor.msg";
 
-if( qx( ps ax | grep wikid | grep -v grep ) ) {
+if( qx( ps ax | grep wikid.pl | grep -v grep ) ) {
 
 	qx( rm -f $stopfile );
 
