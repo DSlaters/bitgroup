@@ -24,25 +24,29 @@
 #
 $wikid = "/var/www/tools/wikid";
 require( "$wikid.conf" );
-$stopfile = "$wikid.stopped";
-$msgfile = "$wikid-monitor.msg";
+$pidfile = "$wikid.pid";
+$errfile = "$wikid.err";
 
-if( qx( ps ax | grep wikid.pl | grep -v grep ) ) {
+if( $ps = qx( ps ax | grep wikid.pl | grep -v grep ) ) {
 
-	qx( rm -f $stopfile );
+	if( $ps =~ /^(/d+)/ ) {
+		open FH,'>', $pidfile;
+		print FH $1;
+		close FH;
+	}
 
 } else {
 
-	unless( -e $stopfile ) {
+	if( -e $pidfile ) {
 		$subject = "$name has stopped running!";
-		$msg = "The wiki daemon ($name) running on $domain has stopped! following is the last ten lines of the log\n\n";
-		$msg .= qx( tail -n 10 $wikid.log );
-		open FH,'>', $msgfile;
-		print FH $msg;
+		$err = "The wiki daemon ($name) running on $domain has stopped! following is the last ten lines of the log\n\n";
+		$err .= qx( tail -n 10 $wikid.log );
+		open FH,'>', $errfile;
+		print FH $err;
 		close FH;
-		qx( mail -s $subject aran@organicdesign.co.nz < $msgfile );
-		qx( rm -f $stopfile );
-		qx( echo 1 > $stopfile );
+		qx( mail -s $subject aran@organicdesign.co.nz < $errfile );
+		qx( rm -f $errfile );
+		qx( rm -f $pidfile );
 	}
 
 }
