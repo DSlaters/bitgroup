@@ -22,22 +22,27 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 # http://www.gnu.org/copyleft/gpl.html
 #
-require( '/var/www/tools/wikid.conf' );
+$wikidf = "/var/www/tools/wikid";
+require( "$wikid.conf" );
+$stopfile = "$wikid.stopped";
+$msgfile = "$wikid-monitor.msg";
 
 if( qx( ps ax | grep wikid | grep -v grep ) ) {
 
-	qx( rm -f /var/www/tools/wikid.stopped );
+	qx( rm -f $stopfile );
 
 } else {
 
-	$subject = "$name has stopped running!";
-	$msg = "The wiki daemon ($name) running on $domain has stopped! following is the last ten lines of the log\n\n";
-	$msg .= qx( tail -n 10 /var/www/tools/wikif.log );
-	open FH,'>', "/var/www/tools/wikid-monitor.msg";
-	print FH $msg;
-	close FH;
-	qx( mail -s $subject aran@organicdesign.co.nz < /var/www/tools/wikid-monitor.msg );
-	qx( rm /var/www/tools/wikid-monitor.msg );
-	qx( echo 1 > /var/www/tools/wikid.stopped );
+	unless( -e $stopfile ) {
+		$subject = "$name has stopped running!";
+		$msg = "The wiki daemon ($name) running on $domain has stopped! following is the last ten lines of the log\n\n";
+		$msg .= qx( tail -n 10 $wikid.log );
+		open FH,'>', $msgfile;
+		print FH $msg;
+		close FH;
+		qx( mail -s $subject aran@organicdesign.co.nz < $msgfile );
+		qx( rm -f $stopfile );
+		qx( echo 1 > $stopfile );
+	}
 
 }
