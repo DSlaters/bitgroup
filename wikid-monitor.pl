@@ -44,7 +44,7 @@ if( $ps = qx( ps ax | grep "wikid ($name)" | grep -v grep ) ) {
 		open FH,'>', $errfile;
 		print FH $err;
 		close FH;
-		qx( mail -s $subject aran@organicdesign.co.nz < $errfile );
+		qx( mail -s $subject aran\@organicdesign.co.nz < $errfile );
 		qx( rm -f $errfile );
 		qx( rm -f $pidfile );
 	}
