@@ -22,7 +22,7 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 # http://www.gnu.org/copyleft/gpl.html
 #
-$wikidf = "/var/www/tools/wikid";
+$wikid = "/var/www/tools/wikid";
 require( "$wikid.conf" );
 $stopfile = "$wikid.stopped";
 $msgfile = "$wikid-monitor.msg";
