@@ -27,7 +27,7 @@ require( "$wikid.conf" );
 $pidfile = "$wikid.pid";
 $errfile = "$wikid.err";
 
-if( $ps = qx( ps ax | grep wikid.pl | grep -v grep ) ) {
+if( $ps = qx( ps ax | grep "wikid ($name)" | grep -v grep ) ) {
 
 	if( $ps =~ /^(\d+)/ ) {
 		open FH,'>', $pidfile;
