@@ -39,12 +39,12 @@ if( $ps = qx( ps ax | grep "wikid ($name)" | grep -v grep ) ) {
 
 	if( -e $pidfile ) {
 		$subject = "$name has stopped running!";
-		$err = "The wiki daemon ($name) running on $domain has stopped! following is the last ten lines of the log\n\n";
+		$err = "The wiki daemon ($name) running on $domain has stopped! following is the last ten lines of the log:\n\n";
 		$err .= qx( tail -n 10 $wikid.log );
 		open FH,'>', $errfile;
 		print FH $err;
 		close FH;
-		qx( mail -s $subject aran\@organicdesign.co.nz < $errfile );
+		qx( mail -s "$subject" aran\@organicdesign.co.nz < $errfile );
 		qx( rm -f $errfile );
 		qx( rm -f $pidfile );
 	}
