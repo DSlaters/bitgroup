@@ -4,6 +4,8 @@
 #
 # Author: http://www.organicdesign.co.nz/nad
 #
+use HTTP::Request;
+use LWP::UserAgent;
 
 # Set defaults
 $domain = "debtcompliance.com";
@@ -16,9 +18,6 @@ close LS;
 
 # Extract a list of wikis from it
 @wikis = ( $ls =~ /^\s*\$wgShortName\s*=\s*"(.+?)";\s*$/gm );
-
-# Read the content of the source article
-$text = wikiRawPage( $srcwiki, $title );
 
 # Set up a global client for making HTTP requests as a browser
 $ua = LWP::UserAgent->new(
