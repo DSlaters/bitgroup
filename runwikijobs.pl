@@ -29,6 +29,10 @@ $ua = LWP::UserAgent->new(
 );
 
 # Loop through all wikis requesting the main page of each
-$ua->get( "https://$_.$domain/wiki/index.php?title=Special:Userlogin" ) for @wikis;
+for $wiki ( @wikis ) {
+	$url = "https://$_.$domain/wiki/index.php?title=Special:Userlogin";
+	print "$url\n";
+	$ua->get( $url );
+}
 
 0;
