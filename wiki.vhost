@@ -2,6 +2,9 @@ RewriteCond %{REQUEST_URI} ^/$
 RewriteCond %{HTTP_HOST} ^(www\.|wiki\.)?(.+)$
 RewriteRule ^ /%2/wiki/index.php/Main_Page [L]
 
+RewriteCond %{REQUEST_URI} ^/files/thumb/./../.*\&
+RewriteRule ^(.*?)\&(.*)$ $1\%26$2
+
 RewriteCond %{REQUEST_URI} ^/files/thumb/./../.+?/[0-9]+px-
 RewriteCond %{HTTP_HOST} ^(www\.|wiki\.)?(.+)$
 RewriteRule ^.+/(.+?)/([0-9]+)px- /%2/wiki/thumb.php?w=$2&f=$1 [L]
