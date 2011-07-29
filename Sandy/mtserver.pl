@@ -23,7 +23,7 @@ use Net::IMAP::Simple::SSL;
 use Cwd qw( realpath );
 use strict;
 
-$::ver    = '1.1.3'; # 2010-12-09
+$::ver    = '1.1.4'; # 2011-07-29
 $::daemon = 'mtserver';
 $::limit  = 100000;
 $::maxage = 3600 * 12;
@@ -129,7 +129,7 @@ sub logAdd {
 # Check the passed email source for messages to process
 sub checkMessages {
 	for my $source ( keys %$::sources ) {
-		logAdd( "Processing source \"$source\"..." ) if $::debug;
+		#logAdd( "Processing source \"$source\"..." ) if $::debug;
 
 		# Chop the log to only items that are newer than maxage
 		my $file = "$source.log";
@@ -147,9 +147,9 @@ sub checkMessages {
 		my $server = $args{ssl} ? Net::IMAP::Simple::SSL->new( $args{host} ) : Net::IMAP::Simple->new( $args{host} );
 		if ( $server ) {
 			if ( $server->login( $args{user}, $args{pass} ) > 0 ) {
-				logAdd( "Logged \"$args{user}\" into IMAP server \"$args{host}\"" ) if $::debug;
+				#logAdd( "Logged \"$args{user}\" into IMAP server \"$args{host}\"" ) if $::debug;
 				my $i = $server->select( $args{path} or 'Inbox' );
-				logAdd( ( $i ? $i : 'No' ) . ' messages to scan' ) if $::debug;
+				#logAdd( ( $i ? $i : 'No' ) . ' messages to scan' ) if $::debug;
 				while ( $i > 0 ) {
 					if ( my $fh = $server->getfh( $i ) ) {
 						sysread $fh, ( my $content ), $::limit;
@@ -188,8 +188,8 @@ sub processMessage {
 	$message{content} =~ s|<[^<>]+>||g;
 
 	if( $::debug ) {
-		logAdd( "Message received from $message{from}" );
-		logAdd( "   To: $message{to}" );
+		logAdd( "Message received from $message{from} (Source: \"$source\")" );
+		logAdd( "   To:      $message{to}" );
 		logAdd( "   Subject: $message{subject}" );
 		logAdd( "   Content: $message{content}" );
 	}
