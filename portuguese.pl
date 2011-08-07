@@ -3,6 +3,9 @@ use Tk;
 use Tk::DialogBox;
 use Encode qw(encode decode);
 
+# Time to wait before displaying lesson
+$t = int( 60 + rand( 600 ) );
+
 # Run from crontab every minute
 # e.g. */1 * * * * root /var/www/tools/portuguese.pl
 
@@ -12,11 +15,11 @@ push @lessons, $_ for grep /^.+/, <FH>;
 close FH;
 
 # Exit if already running
-exit if qx( ps aux | grep portuguese-running | grep -v grep );
-$0 = "portuguese-running";
+exit 0 if qx( ps aux | grep portuguese-running | grep -v grep );
+$0 = "portuguese-running ($t seconds)";
 
 # Wait for a random time
-sleep( 60 + rand( 600 ) );
+sleep( $t );
 
 # Pick a lesson from the list
 $n = int( rand( 0.5 + $#lessons / 2 ) ) * 2;
@@ -25,17 +28,18 @@ $n = int( rand( 0.5 + $#lessons / 2 ) ) * 2;
 $d = MainWindow->new;
 $d->withdraw();
 
+# Display the question dialog
 $d->messageBox(
 	-title   => "Question",
 	-message => decode( "UTF-8", $lessons[$n + $q] ),
-	-buttons => [ "Ok" ],
-	-display => ":1"
+	-buttons => [ "Ok" ]
 );
 
+# Display the answre dialog
 $d->messageBox(
 	-title   => "Answer",
 	-message => decode( "UTF-8", $lessons[$n + $a] ),
-	-buttons => [ "Ok" ],
-	-display => ":1"
+	-buttons => [ "Ok" ]
 );
 
+exit 0;
