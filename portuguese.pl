@@ -11,7 +11,6 @@ $t = int( 60 + rand( 600 ) );
 
 # Exit if already running
 exit 0 if qx( ps aux | grep portuguese-running | grep -v grep );
-$0 = "portuguese-running ($t seconds)";
 
 # Read the list from the file
 open FH, '<', "$0.txt";
@@ -19,6 +18,7 @@ push @lessons, $_ for grep /^.+/, <FH>;
 close FH;
 
 # Wait for a random time
+$0 = "portuguese-running ($t seconds)";
 sleep( $t );
 
 # Pick a lesson from the list
