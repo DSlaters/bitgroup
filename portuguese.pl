@@ -9,14 +9,14 @@ $t = int( 60 + rand( 600 ) );
 # Run from crontab every minute
 # e.g. */1 * * * * root /var/www/tools/portuguese.pl
 
+# Exit if already running
+exit 0 if qx( ps aux | grep portuguese-running | grep -v grep );
+$0 = "portuguese-running ($t seconds)";
+
 # Read the list from the file
 open FH, '<', "$0.txt";
 push @lessons, $_ for grep /^.+/, <FH>;
 close FH;
-
-# Exit if already running
-exit 0 if qx( ps aux | grep portuguese-running | grep -v grep );
-$0 = "portuguese-running ($t seconds)";
 
 # Wait for a random time
 sleep( $t );
