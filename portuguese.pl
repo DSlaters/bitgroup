@@ -49,6 +49,7 @@ $mw = MainWindow->new;
 $mw->withdraw();
 
 # Load image if any and make it 150px wide
+( $q, $a ) = ( 0, 1 );
 if( $img = $lessons[$n+2] ) {
 	$file = "$lessons/Pictures/$img";
 	($w, $k) = imgsize( $file );
@@ -56,7 +57,6 @@ if( $img = $lessons[$n+2] ) {
 	$image = $mw->Photo( -file => $file );
 	$resized = $mw->Photo( 'resized' );
 	$resized->copy( $image, -subsample => $k, $k );
-	( $q, $a ) = ( 0, 1 );
 } else { ( $q, $a ) = ( 1, 0 ) if rand() < 0.5 }
 
 
