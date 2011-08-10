@@ -43,7 +43,7 @@ $n = int( rand( 0.5 + $#lessons / 3 ) ) * 3;
 $mw = MainWindow->new;
 $mw->withdraw();
 
-# Load image if any
+# Load image if any and make it 150px wide
 if( $img = $lessons[$n+2] ) {
 	$file = "$lessons/Pictures/$img";
 	($w, $k) = dim( image_info( $file ) );
