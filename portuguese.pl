@@ -43,13 +43,13 @@ sleep( $t );
 
 # Pick a lesson from the list
 $n = int( rand( 0.5 + $#lessons / 3 ) ) * 3;
+( $q, $a ) = ( 0, 1 );
 
 # Set up tk main window
 $mw = MainWindow->new;
 $mw->withdraw();
 
 # Load image if any and make it 150px wide
-( $q, $a ) = ( 0, 1 );
 if( $img = $lessons[$n+2] ) {
 	$file = "$lessons/Pictures/$img";
 	($w, $k) = imgsize( $file );
