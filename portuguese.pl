@@ -51,8 +51,8 @@ if( $img = $lessons[$n+2] ) {
 	$image = $mw->Photo( -file => $file );
 	$resized = $mw->Photo( 'resized' );
 	$resized->copy( $image, -subsample => $k, $k );
-	( $q, $a ) = ( 1, 0 );
-} else { ( $q, $a ) = rand() < 0.5 ? ( 0, 1 ) : ( 1, 0 ) }
+	( $q, $a ) = ( 0, 1 );
+} else { ( $q, $a ) = ( 1, 0 ) if rand() < 0.5 }
 
 
 # Display the question dialog
