@@ -1,10 +1,15 @@
 #!/usr/bin/perl -w
-use Tk;
-use Tk::DialogBox;
-use Tk::widgets qw/JPEG PNG/; # perl-tk
-use Image::Info qw(image_info dim);   # libimage-info-perl
 use Encode qw(encode decode);
 
+# apt-get perl-tk
+use Tk;
+use Tk::DialogBox;
+use Tk::widgets qw/JPEG PNG/;
+
+# apt-get libimage-size
+use Image::Size;
+
+# Location of sentences.txt and the Pictures directory
 $lessons = "/home/nad/Contacts/Beth/Lessons";
 
 # Time to wait before displaying lesson
@@ -46,7 +51,7 @@ $mw->withdraw();
 # Load image if any and make it 150px wide
 if( $img = $lessons[$n+2] ) {
 	$file = "$lessons/Pictures/$img";
-	($w, $k) = dim( image_info( $file ) );
+	($w, $k) = imgsize( $file );
 	$k = $w / 150;
 	$image = $mw->Photo( -file => $file );
 	$resized = $mw->Photo( 'resized' );
