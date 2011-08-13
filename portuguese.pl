@@ -37,20 +37,31 @@ for( <FH> ) {
 }
 close FH;
 
+# The number of lessons
+$n = ( 1 + $#lessons ) / 3;
+
 # Wait for a random time
 $0 = "portuguese-running ($t seconds)";
 sleep( $t );
 
 # Pick a lesson from the list
-$n = int( rand( 0.5 + $#lessons / 3 ) ) * 3;
-( $q, $a ) = ( 0, 1 );
+# - select with a biased propability distribution
+# - the first lesson has probability 1/n, the last p/n
+@biased = ();
+$p = 10;
+for $i ( 1 .. $n ) {
+	$m = int( 1.5 + ( $p - 1 ) * $i / $n );
+	push @biased, $i while $m--;
+}
+$lesson = 3 * $biased[ int( rand( 0.5 + $#biased ) ) ];
 
 # Set up tk main window
 $mw = MainWindow->new;
 $mw->withdraw();
 
 # Load image if any and make it 150px wide
-if( $img = $lessons[$n+2] ) {
+( $q, $a ) = ( 0, 1 );
+if( $img = $lessons[$lesson + 2] ) {
 	$file = "$lessons/Pictures/$img";
 	($w, $k) = imgsize( $file );
 	$k = $w / 150;
@@ -63,7 +74,7 @@ if( $img = $lessons[$n+2] ) {
 # Display the question dialog
 %args = (
 	-title   => "Question",
-	-message => decode( "UTF-8", $lessons[$n + $q] ),
+	-message => decode( "UTF-8", $lessons[$lesson + $q] ),
 	-buttons => [ "Ok" ]
 );
 $args{-image} = $resized if defined $resized;
@@ -72,7 +83,7 @@ $mw->messageBox( %args );
 # Display the answre dialog
 $mw->messageBox(
 	-title   => "Answer",
-	-message => decode( "UTF-8", $lessons[$n + $a] ),
+	-message => decode( "UTF-8", $lessons[$lesson + $a] ),
 	-buttons => [ "Ok" ]
 );
 
