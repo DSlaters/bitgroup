@@ -46,7 +46,7 @@ sleep( $t );
 
 # Pick a lesson from the list
 # - select with a biased propability distribution
-# - the first lesson has probability 1/n, the last p/n
+# - the last lesson has $p times more chance of occurring than the first
 @biased = ();
 $p = 10;
 for $i ( 1 .. $n ) {
