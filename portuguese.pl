@@ -23,7 +23,11 @@ $t = int( 60 + rand( 540 ) );
 $0 = "portuguese-running ($t seconds)";
 sleep( $t );
 
-# Read the list from the file
+# Read the lessons in from the sentences.txt file containing lessons each of format:
+# - one line for english sentence,
+# - next for portuguese sentence,
+# - an optional line for image filename
+# - an empty line to separate from the next lesson
 open FH, '<', "$lessons/sentences.txt";
 $i = 0;
 @lessons = ();
