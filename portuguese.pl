@@ -1,25 +1,27 @@
 #!/usr/bin/perl -w
+#
+# Brings up random portuguese lessons in dialog boxes randomly
+#
+# Should be run from crontab every minute, e.g. with the following crontab entry
+# */1 * * * * root /var/www/tools/portuguese.pl
+#
+# Requires Debian packages perl-tk, libimage-size-perl
 use Encode qw(encode decode);
-
-# apt-get perl-tk
 use Tk;
 use Tk::DialogBox;
 use Tk::widgets qw/JPEG PNG/;
-
-# apt-get libimage-size
 use Image::Size;
 
 # Location of sentences.txt and the Pictures directory
 $lessons = "/home/nad/Contacts/Beth/Lessons";
 
-# Time to wait before displaying lesson
-$t = int( 60 + rand( 600 ) );
-
-# Run from crontab every minute
-# e.g. */1 * * * * root /var/www/tools/portuguese.pl
-
-# Exit if already running
+# Exit if an instance is already already running
 exit 0 if qx( ps aux | grep portuguese-running | grep -v grep );
+
+# Mark process as running and wait for 1 to 10 minutes
+$t = int( 60 + rand( 540 ) );
+$0 = "portuguese-running ($t seconds)";
+sleep( $t );
 
 # Read the list from the file
 open FH, '<', "$lessons/sentences.txt";
@@ -40,19 +42,16 @@ close FH;
 # The number of lessons
 $n = ( 1 + $#lessons ) / 3;
 
-# Wait for a random time
-$0 = "portuguese-running ($t seconds)";
-sleep( $t );
-
-# Pick a lesson from the list
-# - select with a biased propability distribution
-# - the last lesson has $p times more chance of occurring than the first
+# Create a biased probability distribution of the lessons
+# (the last lesson has $p times more chance of occurring than the first)
 @biased = ();
 $p = 10;
 for $i ( 1 .. $n ) {
 	$m = int( 1.5 + ( $p - 1 ) * $i / $n );
 	push @biased, $i while $m--;
 }
+
+# Pick a random lesson from the probability-biased list
 $lesson = 3 * $biased[ int( rand( 0.5 + $#biased ) ) ];
 
 # Set up tk main window
