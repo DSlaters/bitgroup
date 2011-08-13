@@ -70,8 +70,7 @@ if( $img = $lessons[$lesson + 2] ) {
 	$resized->copy( $image, -subsample => $k, $k );
 } else { ( $q, $a ) = ( 1, 0 ) if rand() < 0.5 }
 
-
-# Display the question dialog
+# Display the question dialog and wait for OK
 %args = (
 	-title   => "Question",
 	-message => decode( "UTF-8", $lessons[$lesson + $q] ),
@@ -80,7 +79,7 @@ if( $img = $lessons[$lesson + 2] ) {
 $args{-image} = $resized if defined $resized;
 $mw->messageBox( %args );
 
-# Display the answre dialog
+# Display the answre dialog and wait for OK
 $mw->messageBox(
 	-title   => "Answer",
 	-message => decode( "UTF-8", $lessons[$lesson + $a] ),
