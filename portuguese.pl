@@ -3,7 +3,7 @@
 # Brings up random portuguese lessons in dialog boxes randomly
 #
 # Should be run from crontab every minute, e.g. with the following crontab entry
-# */1 * * * * root /var/www/tools/portuguese.pl
+# */1 * * * * user env DISPLAY=:0.0 /var/www/tools/portuguese.pl
 #
 # Requires Debian packages perl-tk, libimage-size-perl
 use Encode qw(encode decode);

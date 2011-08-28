@@ -1,6 +1,6 @@
 RewriteCond %{REQUEST_URI} ^/$
 RewriteCond %{HTTP_HOST} ^(www\.|wiki\.)?(.+)$
-RewriteRule ^ /%2/wiki/index.php/Main_Page [L]
+RewriteRule .* /%2/wiki/index.php?title=Main_Page&redirect=no [L]
 
 RewriteCond %{REQUEST_URI} ^/files/thumb/./../.*\&
 RewriteRule ^(.*?)\&(.*)$ $1\%26$2
