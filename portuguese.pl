@@ -5,12 +5,13 @@
 # Should be run from crontab every minute, e.g. with the following crontab entry
 # */1 * * * * user env DISPLAY=:0.0 /var/www/tools/portuguese.pl
 #
-# Requires Debian packages perl-tk, libimage-size-perl
+# Requires Debian packages perl-tk, libimage-size-perl, libmath-random-perl
 use Encode qw(encode decode);
 use Tk;
 use Tk::DialogBox;
 use Tk::widgets qw/JPEG PNG/;
 use Image::Size;
+use Math::Random;
 
 # Location of sentences.txt and the Pictures directory
 $lessons = "/home/nad/Contacts/Beth/Lessons";
@@ -19,7 +20,7 @@ $lessons = "/home/nad/Contacts/Beth/Lessons";
 exit 0 if qx( ps aux | grep portuguese-running | grep -v grep );
 
 # Mark process as running and wait for 1 to 10 minutes
-$t = int( 60 + rand( 540 ) );
+$t = int( 60 + random_uniform() * 540 ) );
 $0 = "portuguese-running ($t seconds)";
 sleep( $t );
 
@@ -56,7 +57,7 @@ for $i ( 1 .. $n ) {
 }
 
 # Pick a random lesson from the probability-biased list
-$lesson = 3 * $biased[ int( rand( 0.5 + $#biased ) ) ];
+$lesson = 3 * $biased[ int( random_uniform() * ( 0.5 + $#biased ) ) ];
 
 # Set up tk main window
 $mw = MainWindow->new;
@@ -71,7 +72,7 @@ if( $img = $lessons[$lesson + 2] ) {
 	$image = $mw->Photo( -file => $file );
 	$resized = $mw->Photo( 'resized' );
 	$resized->copy( $image, -subsample => $k, $k );
-} else { ( $q, $a ) = ( 1, 0 ) if rand() < 0.5 }
+} else { ( $q, $a ) = ( 1, 0 ) if random_uniform() < 0.5 }
 
 # Display the question dialog and wait for OK
 %args = (
@@ -90,3 +91,4 @@ $mw->messageBox(
 );
 
 exit 0;
+
