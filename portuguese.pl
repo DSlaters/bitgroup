@@ -20,7 +20,7 @@ $lessons = "/home/nad/Contacts/Beth/Lessons";
 exit 0 if qx( ps aux | grep portuguese-running | grep -v grep );
 
 # Mark process as running and wait for 1 to 10 minutes
-$t = int( 60 + random_uniform() * 540 ) );
+$t = int( 60 + random_uniform() * 540 );
 $0 = "portuguese-running ($t seconds)";
 sleep( $t );
 
