@@ -44,20 +44,9 @@ for( <FH> ) {
 }
 close FH;
 
-# The number of lessons
-$n = ( 1 + $#lessons ) / 3;
-
-# Create a biased probability distribution of the lessons
-# (the last lesson has $p times more chance of occurring than the first)
-@biased = ();
-$p = 10;
-for $i ( 1 .. $n ) {
-	$m = int( 1.5 + ( $p - 1 ) * $i / $n );
-	push @biased, $i while $m--;
-}
-
 # Pick a random lesson from the probability-biased list
-$lesson = 3 * $biased[ int( random_uniform() * ( 0.5 + $#biased ) ) ];
+$n = ( 1 + $#lessons ) / 3;
+$lesson = 3 * int( 0.5 + $n * ( 1 - random_uniform() * random_uniform() ) );
 
 # Set up tk main window
 $mw = MainWindow->new;
@@ -91,4 +80,5 @@ $mw->messageBox(
 );
 
 exit 0;
+
 
