@@ -153,7 +153,6 @@ sub wikiEdit {
 
 		# Request the page for editing and extract the edit-token
 		my $response = $::client->get( "$wiki?title=$utitle&action=edit&useskin=standard&nora=1" );
-print $response->content;
 		if ( $response->is_success and (
 				$response->content =~ m|<input type=['"]hidden["'] value=['"](.+?)["'] name=['"]wpEditToken["'] />|
 		)) {
