@@ -28,7 +28,7 @@
 #   - get namespaces
 #   - get messages used in patterns (and make methods use messages in their regexp's so lang-independent)
 
-$::wikipl_version = '1.15.2'; # 2011-04-28
+$::wikipl_version = '1.15.3'; # 2011-08-31
 
 use HTTP::Request;
 use LWP::UserAgent;
@@ -105,7 +105,7 @@ sub logHash {
 # todo: check if logged in first
 sub wikiLogin {
 	my ( $wiki, $user, $pass, $domain ) = @_;
-	my $url = "$wiki?title=Special:Userlogin&useskin=standard";
+	my $url = "$wiki?title=Special:UserLogin&useskin=standard";
 	my $success = 0;
 	my $retries = 1;
 	while ( $retries-- ) {
@@ -133,7 +133,7 @@ sub wikiLogin {
 # Logout of a MediaWiki
 sub wikiLogout {
 	my $wiki = shift;
-	my $success = $::client->get( "$wiki?title=Special:Userlogout&useskin=standard" )->is_success;
+	my $success = $::client->get( "$wiki?title=Special:UserLogout&useskin=standard" )->is_success;
 	logAdd $success
 		? "Successfully logged out of $wiki."
 		: "WARNING: couldn't log out of $wiki!";
@@ -153,6 +153,7 @@ sub wikiEdit {
 
 		# Request the page for editing and extract the edit-token
 		my $response = $::client->get( "$wiki?title=$utitle&action=edit&useskin=standard&nora=1" );
+print $response->content;
 		if ( $response->is_success and (
 				$response->content =~ m|<input type=['"]hidden["'] value=['"](.+?)["'] name=['"]wpEditToken["'] />|
 		)) {
