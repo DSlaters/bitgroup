@@ -27,7 +27,7 @@ require( '/var/www/tools/wikid.conf' );
 require( '/var/www/tools/wiki.pl' );
 
 # Extract sysop user and pass if supplied
-if ( $ARGV[0] =~ /--sysop\s*=\s*(.+):(.+)/ ) {
+if ( $ARGV[0] =~ /--sysop\s*=\s*(.+?):(.+?)/ ) {
 	$sysopUser = $1;
 	$sysopPass = $2;
 	shift @ARGV;
@@ -85,9 +85,11 @@ sysread FH, $sql, -s $template;
 close FH;
 
 # Update the sysop user and password if supplied
+# TODO: fix this it doesn't work anymore
 if ( defined $sysopUser and defined $sysopPass ) {
 	$md5 = md5_hex( '1-' . md5_hex( $sysopPass ) );
-	$sql =~ s/^(\s*INSERT\s+INTO\s+`\W+?_user`\s+VALUES\s+\(\s*1,\s*)'.+?'(.+?:B:1:)[a-z0-9]{32}'/$1'$sysopUser'$2$md5'/m;
+	$sql =~ s/^(\s*INSERT\s+INTO\s+`\W+?_user`\s+VALUES\s*\(\s*1,\s*)'.+?'(.+?:B:1:)[a-z0-9]{32}'/$1'$sysopUser'$2$md5'/m;
+	$sql =~ s/^(\s*INSERT\s+INTO\s+`\W+?_user`\s+VALUES\s*\(\s*1,\s*)'.+?','',':B:[a-z0-9]+:[a-z0-9]{32}'/$1'$sysopUser','',':B:1:$md5'/m;
 }
 
 # Find the prefix (if not already set) being used in the template and prepare for use in replacement regexp
@@ -118,4 +120,5 @@ for ( @ARGV ) {
 	qx( mysql -u $wgDBuser --password='$wgDBpassword' $db < $tmp );
 	print "Wiki \"$db.$pre\" created successfully.\n";
 }
+
 
