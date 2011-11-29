@@ -28,7 +28,7 @@
 #   - get namespaces
 #   - get messages used in patterns (and make methods use messages in their regexp's so lang-independent)
 
-$::wikipl_version = '1.15.3'; # 2011-08-31
+$::wikipl_version = '1.15.4'; # 2011-11-29
 
 use HTTP::Request;
 use LWP::UserAgent;
@@ -86,7 +86,7 @@ sub encodeTitle {
 
 sub logAdd {
 	my $entry = shift;
-	if ( $::log ) {
+	if( $::log ) {
 		open LOGH, '>>', $::log or die "Can't open $::log for writing!";
 		print LOGH localtime() . " : $entry\n";
 		close LOGH;
@@ -111,19 +111,19 @@ sub wikiLogin {
 	while ( $retries-- ) {
 		my $html = '';
 		my $response = $::client->get( $url );
-		if ( $response->is_success ) {
+		if( $response->is_success ) {
 			my $token = $response->content =~ /name=['"]wpLoginToken["']\s*value=['"](.+?)["']/ ? $1 : '';
 			my %form = ( wpName => $user, wpPassword => $pass, wpLoginToken => $token, wpDomain => $domain, wpLoginattempt => 'Log in', wpRemember => '1' );
 			my $response = $::client->post( "$url&action=submitlogin&type=login", \%form );
 			$html = $response->content;
 			$success = $response->is_redirect || ( $response->is_success && $html =~ /You are now logged in/ );
 		}
-		if ( $success ) {
+		if( $success ) {
 			logAdd "$user successfully logged in to $wiki.";
 			$retries = 0;
 		}
 		else {
-			if ( $html =~ /<div class="errorbox">\s*(<h2>.+?<\/h2>\s*)?(.+?)\s*<\/div>/is ) { logAdd "ERROR: $2" }
+			if( $html =~ /<div class="errorbox">\s*(<h2>.+?<\/h2>\s*)?(.+?)\s*<\/div>/is ) { logAdd "ERROR: $2" }
 			else { logAdd "ERROR: couldn't log $user in to $wiki!" }
 		}
 	}
@@ -153,7 +153,7 @@ sub wikiEdit {
 
 		# Request the page for editing and extract the edit-token
 		my $response = $::client->get( "$wiki?title=$utitle&action=edit&useskin=standard&nora=1" );
-		if ( $response->is_success and (
+		if( $response->is_success and (
 				$response->content =~ m|<input type=['"]hidden["'] value=['"](.+?)["'] name=['"]wpEditToken["'] />|
 		)) {
 
@@ -167,14 +167,14 @@ sub wikiEdit {
 
 			# Post the form
 			$response = $::client->post( "$wiki?title=$utitle&action=submit&useskin=standard", \%form );
-			if ( $response->content =~ /<!-- start content -->Someone else has changed this page/ ) {
+			if( $response->content =~ /<!-- start content -->Someone else has changed this page/ ) {
 				$err = 'EDIT CONFLICT';
 				$retries = 0;
 			} else { $success = !$response->is_error }
 
 		} else { $err = $response->is_success ? 'MATCH FAILED' : 'RQST FAILED' }
 
-		if ( $success ) { $retries = 0; logAdd "\"$title\" updated." }
+		if( $success ) { $retries = 0; logAdd "\"$title\" updated." }
 		else { logAdd "$err: Couldn't edit \"$title\" on $wiki!\n" }
 	}
 	return $success;
@@ -226,7 +226,7 @@ sub wikiStructuredPage {
 		# todo: extract lists, links, templates from content
 
 		# if heading, add a node and put content, lists, links in it, else put under root
-		if ( $1 ) {
+		if( $1 ) {
 			print "$1\n----\n";
 		}
 	}
@@ -312,13 +312,13 @@ sub wikiDelete {
 	while ( $retries-- ) {
 		my $html = '';
 		my $response = $::client->get( $url );
-		if ( $response->is_success && $response->content =~ m/<input name=['"]wpEditToken["'].*? value=['"](.*?)["'].*?<\/form>/s ) {
+		if( $response->is_success && $response->content =~ m/<input name=['"]wpEditToken["'].*? value=['"](.*?)["'].*?<\/form>/s ) {
 			my %form = ( wpEditToken => $1, wpReason => $reason );
 			$response = $::client->post( $url, \%form );
 			$html = $response->content;
 			$success = $response->is_success && $html =~ /Action complete/;
 		}
-		if ( $success ) {
+		if( $success ) {
 			logAdd "$user successfully deleted $title.";
 			$retries = 0;
 		}
@@ -339,13 +339,13 @@ sub wikiRestore {
 	while ( $retries-- ) {
 		my $html = '';
 		my $response = $::client->get( "$url&target=$title" );
-		if ( $response->is_success && $response->content =~ m/<input name=['"]wpEditToken["'].*? value=['"](.*?)["'].*?<\/form>/s ) {
+		if( $response->is_success && $response->content =~ m/<input name=['"]wpEditToken["'].*? value=['"](.*?)["'].*?<\/form>/s ) {
 			my %form = ( wpComment => $reason, target => $title, wpEditToken => $1, restore=>"Restore" );
 			my @timestamps = $response->content =~ m/<input .*?['"](ts\d*?)["'].*?/g;
 
 			# Restore specified $revision
-			if ( $revision ) {
-				if ( $#timestamps < ( $revision - 1 ) ) {
+			if( $revision ) {
+				if( $#timestamps < ( $revision - 1 ) ) {
 					$revision = $#timestamps;
 					logAdd("Warning: \$revision specifed does not exist");
 				}
@@ -356,7 +356,7 @@ sub wikiRestore {
 			$html     = $response->content;
 			$success  = $response->is_success && $html =~ /has been restored/;
 		}
-		if ( $success ) {
+		if( $success ) {
 			logAdd "$user successfully restored $title.";
 			$retries = 0;
 		}
@@ -387,7 +387,7 @@ sub wikiUploadFile {
 	);
 
 	# Check whether the source file is local or an URL
-	if ( $sourcefile =~ /^(ftp|http)s?(:\/\/.+)$/ ) {
+	if( $sourcefile =~ /^(ftp|http)s?(:\/\/.+)$/ ) {
 		$sourcefile = $1 . $2;
 		$form{wpSourceType} = $::client->get( $url )->content =~ /name=['"]wpSourceType["'].+?value=["']web['"]/i ? 'web' : 'url';
 		$form{wpUploadFileURL} = $sourcefile;
@@ -400,7 +400,7 @@ sub wikiUploadFile {
 	my $response = $::client->post( $url, \%form, Content_Type => 'multipart/form-data' );
 
 	# If the response is another form with a session-key post again
-	if ( $response->content =~ /name=['"]wpSessionKey["'].+?value=["'](.+?)["']/ ) {
+	if( $response->content =~ /name=['"]wpSessionKey["'].+?value=["'](.+?)["']/ ) {
 		$form{wpSessionKey}         = $1;
 		$form{wpIgnoreWarning}      = 'true';
 		$form{wpDestFileWarningAck} = 1,
@@ -411,7 +411,7 @@ sub wikiUploadFile {
 	}
 
 	# Or if it's a form with an edit token, post that
-	elsif ( $response->content =~ /value=["'](.+?)["'][^>]+?name=['"]wpEditToken["'].+?/ ) {
+	elsif( $response->content =~ /value=["'](.+?)["'][^>]+?name=['"]wpEditToken["'].+?/ ) {
 		$form{'wpEditToken'}         = $1;
 		$form{'wpIgnoreWarning'}      = 'true';
 		$form{'wpDestFileWarningAck'} = 1,
@@ -437,17 +437,17 @@ sub wikiDeleteFile {
 	my $retries = 1;
 	while ( $retries-- ) {
 		my $response = $::client->get( $url );
-			if ( $response->is_success &&
+			if( $response->is_success &&
 				$response->content =~ m/Permission error.+?The action you have requested is limited to users in the group/s ) {
 				logAdd( "Error: $user does not have the permissions to delete $imagename" );
 				return $success;
 			}
-			if ( $response->is_success &&
+			if( $response->is_success &&
 				$response->content =~ m/Internal error.+?Could not delete the page or file specified/s ) {
 				logAdd( "Error: Could not delete $imagename - already deleted?" );
 				return $success;
 			}
-			if ( $response->is_success &&
+			if( $response->is_success &&
 				$response->content =~ m/Delete $imagename.+?<input.+?name=['"]wpEditToken["'].+?value=['"](.*?)["'].+?Reason for deletion:/is ) {
 				%form = (
 					wpEditToken            => $1,
@@ -484,7 +484,7 @@ sub wikiGetFileUrl {
 # - if no destination filename is specified, the image name is used
 sub wikiDownloadFile {
 	my ( $wiki, $src, $dst ) = @_;
-	if ( my $url = wikiGetFileURL( $wiki, $src ) ) {
+	if( my $url = wikiGetFileURL( $wiki, $src ) ) {
 		logAdd( "Downloading \"$src\" from \"$url\"" );
 		my $file = $1 if $url =~ m|^.+/(.+?)$|;
 		open FH, '>', $file;
@@ -506,7 +506,7 @@ sub wikiDownloadFiles {
 
 	mkdir $dir;
 	for my $url ( @files ) {
-		if ( my $file = $url =~ /.+\/(.+?)$/ ? $1 : 0 ) {
+		if( my $file = $url =~ /.+\/(.+?)$/ ? $1 : 0 ) {
 			logAdd( "Dwonloading \"$file\"" );
 			open FH, '>', "$dir/$file";
 			binmode FH;
@@ -533,7 +533,7 @@ sub wikiProtect {
 	) = @_;
 	$title = encodeTitle( $title );
 
-	if ( not $restrictions ) { $restrictions = { "edit" => "", "move" => "" } }
+	if( not $restrictions ) { $restrictions = { "edit" => "", "move" => "" } }
 
 	# A list of defaults which could be used in usage logAdd reporting
 	#	my $defaults = {
@@ -548,12 +548,12 @@ sub wikiProtect {
 	my $retries = 1;
 	while ( $retries-- ) {
 		my $response = $::client->get( $url );
-			if ( $response->is_success and
+			if( $response->is_success and
 				$response->content =~ m/Confirm protection.+?The action you have requested is limited to users in the group/s ) {
 				logAdd( "$user does not have permission to protect $title" );
 				return $success;
 			}
-		if ( $response->is_success and
+		if( $response->is_success and
 			$response->content =~ m/Confirm protection.+?You may view and change the protection level here for the page/s ) {
 			# Same problem, post on line 392 doesn't return content
 			$success = $response->is_success && $response->content =~ m/<input.+?name=['"]wpEditToken["'].+?value=['"](.*?)["']/s;
@@ -566,7 +566,7 @@ sub wikiProtect {
 
 			$form{"mwProtect-level-$_"} = $restrictions->{$_} for keys %{$restrictions};
 			# Allowing for cascade option
-			if ( $cascade && $restrictions->{'edit'} == "sysop" ) { $form{"mwProtect-cascade"} = 1 }
+			if( $cascade && $restrictions->{'edit'} == "sysop" ) { $form{"mwProtect-cascade"} = 1 }
 			$response = $::client->post($url, \%form);
 			logAdd( "Setting protect article permissions" );
 			logHash( \%form );
@@ -613,18 +613,18 @@ sub wikiUpdateTemplate {
 	my$templateParams;
 	my $newparams;
 	foreach ( @articleBraces ) {
-		if ( $_->{'NAME'} eq $template ) {
+		if( $_->{'NAME'} eq $template ) {
 			push @matches, $_;
 		}
 	}
 
-	if ( scalar( @matches ) < 1 ) { return $success }     # no braces of matching name
-	elsif ( scalar( @matches ) == 1 ) {
+	if( scalar( @matches ) < 1 ) { return $success }     # no braces of matching name
+	elsif( scalar( @matches ) == 1 ) {
 		$templateParams = substr( $wtext, $matches->[0]->{'OFFSET'}, $matches->[0]->{'LENGTH'} );
 		push @brace, $matches[0];
 	}   												  # single match
 	else{ 												  # ambiguous
-		if ( ref( $params ) !="HASH" || scalar( %$params ) < 1 ) { # no params
+		if( ref( $params ) !="HASH" || scalar( %$params ) < 1 ) { # no params
 			return $success;
 		}
 		# Check $ambig is in instances of $template
@@ -633,12 +633,12 @@ sub wikiUpdateTemplate {
 			for ( @matches ) {
 
 				$templateParams = substr( $wtext, $_->{'OFFSET'}, $_->{'LENGTH'} );
-				if ( $templateParams =~ m/$ambkey\s*=\s*$ambvalue/g ) {
+				if( $templateParams =~ m/$ambkey\s*=\s*$ambvalue/g ) {
 					push @brace, $_;
 				}
 			}
 
-			if ( scalar @brace > 1 ) { # None found
+			if( scalar @brace > 1 ) { # None found
 				logAdd( "Aborting ambiguous parameter match found" );
 				return $success;
 			} else {
@@ -648,7 +648,7 @@ sub wikiUpdateTemplate {
 				my $sep = ( $isparser ? "" : "|" );
 				foreach( keys %$params ) {
 					$newparams .= "${sep}$_=$params->{$_}";
-					if ( $isparser ) {
+					if( $isparser ) {
 						$sep = "|";
 						$isparser = 0;
 					}
@@ -687,12 +687,12 @@ sub wikiMove {
 		# <input type="hidden" value="095485e50db577baa80c407d0e032e43+\" name="wpEditToken"/>
 		#### Interesting 'value' and 'name' can be reversed, and single or double quoted
 
-		if ( $response->is_success && $response->content =~ m/<h1 class="firstHeading">Permissions Errors<\/h1>/ ) {
+		if( $response->is_success && $response->content =~ m/<h1 class="firstHeading">Permissions Errors<\/h1>/ ) {
 			logAdd( "User $user does not have permissions to move $oldname" );
 			return 0;
 		}
 
-		if ( $response->is_success && $response->content =~ m/<h1 class="firstHeading">Move page<\/h1>/ ) {
+		if( $response->is_success && $response->content =~ m/<h1 class="firstHeading">Move page<\/h1>/ ) {
 			$success = $response->is_success;
 			$response->content =~ m/<input.+?name=['"]wpEditToken["'].+?value=['"](.*?)["']/s;
 			%form = (
@@ -717,8 +717,8 @@ sub wikiExamineBraces {
 	my $depth   = 0;
 	while ( $content =~ m/\G.*?(\{\{\s*([#a-z0-9_]+:?)|\}\})/sig ) {
 		my $offset = pos( $content ) - length( $2 ) - 2;
-		if ( $1 eq '}}' ) {
-			if ( $depth > 0 ) {
+		if( $1 eq '}}' ) {
+			if( $depth > 0 ) {
 				$brace = $braces[$depths[$depth - 1]];
 				$$brace{LENGTH} = $offset - $$brace{OFFSET} + 2;
 				$$brace{DEPTH}  = $depth--;
@@ -737,7 +737,7 @@ sub wikiExamineBraces {
 sub wikiGuid {
 	my $date = shift;
 	my $guid;
-	if ( $date ) {
+	if( $date ) {
 		$guid = '01' if $date =~ /jan/i;
 		$guid = '02' if $date =~ /feb/i;
 		$guid = '03' if $date =~ /mar/i;
@@ -787,10 +787,10 @@ sub wikiUpdateAccount {
 	my @row = ();
 
 	# DB connection supplied, update directly
-	if ( defined $db ) {
+	if( defined $db ) {
 
 		# If prefs were supplied, update or create the row
-		if ( defined %prefs ) {
+		if( %prefs ) {
 
 			# Build the prefs into a format compatible with SET
 			my @values = ();
@@ -807,7 +807,7 @@ sub wikiUpdateAccount {
 			$query->finish;
 
 			# Update the values in the existing row if the id was found
-			if ( defined $id ) {
+			if( defined $id ) {
 				my $query = $db->prepare( 'UPDATE ' . $::dbpre . 'user SET ' . $values . 'WHERE user_id=' . $id );
 				$query->execute();
 				$query->finish;
@@ -853,7 +853,7 @@ sub wikiParse {
 	my $html = '';
 	my $marker = '<p class="wikiParseMarker"></p>';
 	my $response = $::client->get( "$wiki?title=Sandbox&action=edit&useskin=standard" );
-	if ( $response->is_success and (
+	if( $response->is_success and (
 		$response->content =~ m|<input type=['"]hidden["'] value=['"](.+?)["'] name=['"]wpEditToken["'] />|
 	)) {
 
@@ -890,7 +890,7 @@ sub wikiGetPreferences {
 	$query->finish;
 
 	# If the user has a corresponding Person record, grab that too
-	if ( $prefs{user_real_name} ) {
+	if( $prefs{user_real_name} ) {
 
 		# Get the text of the Person record from the DB
 		my $name = $prefs{user_real_name};
@@ -939,7 +939,7 @@ sub wikiPropertyChanges {
 
 	# Get the second to last revision if there is one
 	my $response = $::client->request( HTTP::Request->new( GET => "$wiki?title=$title&action=history&limit=1&useskin=standard" ) );
-	if ( $response->is_success and $response->content =~ m|<a.+?\?title=.+?&(amp;)?diff=\d+&(amp;)?oldid=(\d+)| ) {
+	if( $response->is_success and $response->content =~ m|<a.+?\?title=.+?&(amp;)?diff=\d+&(amp;)?oldid=(\d+)| ) {
 
 		# Get the text of the last two revisions
 		my $text1 = wikiRawPage( $wiki, $title, 0, $3 );
@@ -970,7 +970,7 @@ sub wikiPropertyChanges {
 		my %args = ();
 		for my $k ( keys %args2 ) {
 			my $v = $args2{$k};
-			if ( exists $args1{$k} ) {
+			if( exists $args1{$k} ) {
 				$args{$k} = $v if $args1{$k} ne $v;
 			} else {
 				$args{$k} = $v;
