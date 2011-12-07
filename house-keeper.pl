@@ -17,17 +17,17 @@
 #
 
 # Get free space on main drive
-$df = qx( df -h /dev/sda1 );
-$df =~ /\d+.+?\d+.+?(\d+)/;
+$df = qx( df -h /dev/sda3 );
+$df =~ /\d.+?\d+.+?\d+.+?([0-9.]+)/;
 $free = $1;
 
 # If less that 5GB free, delete oldest backups
 if( $free < 5 ) {
 
 	my $errfile = '/tmp/delbak.msg';
-	my $subject = "Low space warning...";
+	my $subject = "Low space notification...";
 	open FH,'>', $errfile;
-	print FH "There is only " . $1 . "G of free space available on the OD server!";
+	print FH "There is only " . $1 . "G of free space available on the OD server.";
 	close FH;
 	qx( mail -s "$subject" aran\@organicdesign.co.nz jack\@jack.co.nz < $errfile );
 	qx( rm -f $errfile );
