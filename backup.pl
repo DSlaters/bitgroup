@@ -1,13 +1,8 @@
 #!/usr/bin/perl
+# Organic Design server daily backup job called from crontab
 use POSIX qw(strftime setsid);
 require "/var/www/tools/wikid.conf";
 require "/var/www/tools/wiki.pl";
-
-# TODO - add individual config files
-# /etc/apache2/conf/sites-available/default
-# /etc/exim4/virtual.users
-# /etc/exim4/virtual.domains
-# /etc/passwd?
 
 $dir  = '/backup';
 $date = strftime( '%Y-%m-%d', localtime );
@@ -137,5 +132,10 @@ $_ = `sa-learn --dump magic`;
 comment m/\s([1-9]+\d*).+?am[\x00-\x1f]+.+?([1-9]+\d*).+?am[\x00-\x1f]+.+?([1-9]+\d*).+?ns$/m
 	? "$1 spams and $2 hams have been processed with $3 tokens"
 	: "ERROR";
+
+# And add a comment about free space on the server
+$df = qx( df -h /dev/sda3 );
+$df =~ /\d.+?\d+.+?\d+.+?([0-9.]+)/;
+comment "Note: there is only " . $1 . "G of free space available." if $1 < 25;
 
 
