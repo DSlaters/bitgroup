@@ -147,12 +147,14 @@ sub calculateCrowdrating {
 		$wt = $w1 + $w2 + $w3 + $w4 + $w5;
 		print "\n\tWieghted average: $wa\n\tTotal reviews: $wt\n";
 
-	}
+	} else { $wa = $wt = 0 }
 
 	$::books++;
 	$::valids++ if $::valid;
 	$::invalids++ unless $::valid;
 	$::cookies->clear;
+
+	return( $wa, $wt );
 }
 
 # If any of the results are a problem, don't update the rating
