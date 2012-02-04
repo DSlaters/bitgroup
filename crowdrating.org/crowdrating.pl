@@ -143,8 +143,8 @@ sub calculateCrowdrating {
 	if( $::valid ) {
 
 		# Calculate weighted average
-		$wa = int( 0.5 + 100 * ( $w1 * $x1 + $w2 * $x2 + $w3 * $x3 + $w4 * $x4 + $w5 * $x5 ) / ( $w1 + $w2 + $w3 + $w4 + $w5 ) ) / 100;
 		$wt = $w1 + $w2 + $w3 + $w4 + $w5;
+		$wa = $wt ? int( 0.5 + 100 * ( $w1 * $x1 + $w2 * $x2 + $w3 * $x3 + $w4 * $x4 + $w5 * $x5 ) / $wt ) / 100 : 0;
 		print "\n\tWieghted average: $wa\n\tTotal reviews: $wt\n";
 
 	} else { $wa = $wt = 0 }
