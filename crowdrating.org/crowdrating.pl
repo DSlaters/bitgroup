@@ -17,7 +17,7 @@
 #
 $::books = 0;
 $::valids = 0;
-$::invalids =0;
+$::invalids = 0;
 $::errors = 0;
 $::tmp = '/var/www/wikis/od/files/temp';
 $::tmpurl = 'http://www.organicdesign.co.nz/files/temp';

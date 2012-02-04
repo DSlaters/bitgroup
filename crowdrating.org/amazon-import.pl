@@ -39,38 +39,30 @@ for ( 3, 2675 ) {
 
 	print "Category: $_\n";
 
-	# Get first page of bestsellers in this category
-	$res = $ua->get( "http://www.amazon.com/gp/bestsellers/books/$_" );
-	if( $res->is_success ) {
+	# Get cat page
+	if( $link = getCategoryPage( $_ ) ) {
 
-		# Get book info from first page
-		#extractLinks( $res->content );
-		
-		# Get book info from subsequent pages listed at bottom of first page
-		@pages = $res->content =~ m|href="(.+?)">\d+-\d+</a>|g;
-		$page = 1;
-		for( @pages ) {
-			print "Page $page\n";
-			$res = $ua->get( $_ );
-			extractLinks( $res->content ) if $res->is_success;
-			$page++;
-		}
+		# http://www.amazon.com/Management-Leadership-Business-Investing-Books/b/ref=dp_brlad_entry?ie=UTF8&node=2675
+
+		# Get books from page:
+		# <div id="srNum_0" class="number">1.</div>
+		#   <div class="image">
+		#   <a href="http://www.amazon.com/7-Habits-Highly-Effective-People/dp/0671315285/ref=sr_1_1?s=books&ie=UTF8&qid=1328298298&sr=1-1">
+
+		# convert ISBN to EAN
+		# http://www.librarything.com/isbncheck.php?isbn=0385517823
+		# (use amazon if library thing doesn't have the API)
+
+		# Use EAN to get crowdrating
+
+		# Store the data
+
+		# Get next cat page
+		# href="/s/ref=sr_pg_2?rh=n%3A283155%2Cn%3A%211000%2Cn%3A3%2Cn%3A2675&page=2&ie=UTF8&qid=1328299928">Next »<
 
 	}
 }
 
-# Extract the book links from passed HTML and get ISBN and rating for each book
-sub extractLinks {
-	$html = shift;
-	@links = $html =~ m|<div class="zg_itemInfo".+?href="(/.+?)"|sg;
-	for( @links ) {
-		( $isbn, $rating, $reviews ) = getBookInfo( "http://www.amazon.com$_" );
-		if( $isbn ) {
-			print "$isbn ($rating / $reviews)\n";
-			addBook( $isbn ) if $rating > 3.5 and $reviews > 5;
-		}
-	}
-}
 
 # Get the ISBN, rating and number of reviews from the passed book URL
 sub getBookInfo {
@@ -82,6 +74,39 @@ sub getBookInfo {
 		$reviews = $1 if $res->content =~ m|>([0-9,]+) customer reviews?<|;
 		return( $isbn, $rating, $reviews );
 	}
+}
+
+# Return the link for a category page given a category number
+sub getCategoryPage {
+	my $cat = shift;
+	my $link = 0;
+
+	# Get link for first book in bestsellers list for this cat
+	my $book = 0;
+	for( 1 .. 5 ) {
+		$res = $::ua->get( "http://www.amazon.com/gp/bestsellers/books/$cat" );
+		$book = $1 if $res->is_success and $res->content =~ m|<span class="zg_rankNumber">1.</span>.+?href="\s*(.+?)\s*">|s;
+		last if $book;
+	}
+
+	# Extract the link for our category from the book page
+	if( $book ) {
+
+		# Get the category link from the section in the book page
+		for( 1 .. 5 ) {
+			$res = $::ua->get( $book );
+			if( $res->is_success and $res->content =~ m|<h2>Look for Similar Items by Category</h2>.+?<ul>\s*(.+?)\s*</ul>|s ) {
+				$link = $1 if $1 =~ m|href="([^"]+node=$cat)"|;
+				$link =~ s|&amp;|&|g;
+				last if $link;
+			}
+		}
+	}
+
+print $link;
+exit;
+
+	return $link;
 }
 
 # Create the book in the wiki if it doesn't already exist
