@@ -49,10 +49,12 @@ sub calculateCrowdrating {
 				$isbn =~ s/-//;
 				$x1 = $1 if $res->content =~ m|>([0-9.]+) out of \d+ stars<|;
 				$w1 = $1 if $res->content =~ m|>(\d+) customer reviews?<|;
-				print "\n\tAmazon:\n\t\tRating:  $x1\n\t\tReviews: $w1\n" if $w1 > 0;
 			} else { $src1b .= "Response: " . $res->status_line }
 		}
-		last if $w1 > 0;
+		if( $w1 > 0 ) {
+			print "\n\tAmazon:\n\t\tRating:  $x1\n\t\tReviews: $w1\n";
+			last;
+		}
 		sleep( 5 );
 	}
 
@@ -74,10 +76,12 @@ sub calculateCrowdrating {
 					$src2b = $res->content;
 					$w2 = $1 + $2 + $3 + $4 + $5;
 					$x2 = int( 0.5 + 10 * ( 5 * $1 + 4 * $2 + 3 * $3 + 2 * $4 + $5 ) / $w2 ) / 10;
-					print "\n\tGoogle Books:\n\t\tRating:  $x2\n\t\tReviews: $w2\n";
 				}
 			}
-			last if $w2 > 0;
+			if( $w2 > 0 ) {
+				print "\n\tGoogle Books:\n\t\tRating:  $x2\n\t\tReviews: $w2\n";
+				last;
+			}
 			sleep( 5 );
 		}
 	}
@@ -93,9 +97,11 @@ sub calculateCrowdrating {
 			$src3 = $res->content;
 			$x3 = $1;
 			$w3 = $2;
-			print "\n\tBarnes & Noble:\n\t\tRating:  $x3\n\t\tReviews: $w3\n";
 		}
-		last if $w3 > 0;
+		if( $w3 > 0 ) {
+			print "\n\tBarnes & Noble:\n\t\tRating:  $x3\n\t\tReviews: $w3\n";
+			last;
+		}
 		sleep( 5 );
 	}
 
@@ -109,7 +115,7 @@ sub calculateCrowdrating {
 	if( $res->is_success and $res->content =~ m|,"reviews":"?([0-9]+)"?,"rating":"?([0-9.]+)"?,| ) {
 		$w4 = $1;
 		$x4 = $2 / 2;
-		print "\n\tLibraryThing:\n\t\tRating:  $x4\n\t\tReviews: $w4\n";
+		print "\n\tLibraryThing:\n\t\tRating:  $x4\n\t\tReviews: $w4\n" if $w4 > 0;
 	}
 
 	# GoodReads
@@ -124,10 +130,12 @@ sub calculateCrowdrating {
 			$x5 = $1;
 			if( $res->content =~ m|>(\d+) ratings<| ) {
 				$w5 = $1;
-				print "\n\tGoodReads:\n\t\tRating:  $x5\n\t\tReviews: $w5\n";
 			}
 		}
-		last if $w5 > 0;
+		if( $w5 > 0 ) {
+			print "\n\tGoodReads:\n\t\tRating:  $x5\n\t\tReviews: $w5\n";
+			last;
+		}
 		sleep( 5 );
 	}
 

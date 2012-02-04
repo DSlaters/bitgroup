@@ -35,6 +35,7 @@ $::ua = LWP::UserAgent->new(
 );
 
 # Loop through the categories we want to import from
+my $start = $ARGV[0];
 for my $cat ( 2675 ) {
 
 	print "Category: $cat\n";
@@ -60,23 +61,23 @@ for my $cat ( 2675 ) {
 					my $n = $isbns[$i];
 					my $isbn = $isbns[$i+1];
 					my $title = $isbns[$i+2];
-					print "\t$n" . ". $isbn \"$title\"\n";
+					print "\t$n ($start)" . ". $isbn \"$title\"\n";
 
 					# convert ISBN-10 to ISBN-13
-					if( my $isbn = isbn10to13( $isbn ) ) {
+					if( $n >= $start and my $isbn = isbn10to13( $isbn ) ) {
 
 						# Use EAN to get crowdrating
 						my( $average, $reviews ) = calculateCrowdrating( $isbn, $title );
 
 						# Store the data if valid
 						if( $reviews ) {
-							qx( echo "$cat, $n, $isbn, $average, $reviews, \\"$title\\"" >> /var/www/tools/crowdrating.org/amazon-import.log );
+							qx( echo "$cat\t$n\t$isbn\t$average\t$reviews\t$title" >> /var/www/tools/crowdrating.org/amazon-import.log );
 						}
 
 					}
 				}
 				print "\n\n";
-			}
+			} else { sendError( "Failed on catpage: $catlink" ) }
 
 			# Get next cat page
 			$catlink = $catpage =~ m|href="([^"]+)">Next »<| ? "http://www.amazon.com$1" : 0;
@@ -103,8 +104,9 @@ sub getCategoryPage {
 
 	# Get link for first book in bestsellers list for this cat
 	my $book = 0;
-	for( 1 .. 10 ) {
-		$res = $::ua->get( "http://www.amazon.com/gp/bestsellers/books/$cat" );
+	my $link = "http://www.amazon.com/gp/bestsellers/books/$cat";
+	for( 1 .. 20 ) {
+		$res = $::ua->get( $link );
 		$book = $1 if $res->is_success and $res->content =~ m|<span class="zg_rankNumber">1.</span>.+?href="\s*(.+?)\s*">|s;
 		last if $book;
 	}
@@ -113,14 +115,14 @@ sub getCategoryPage {
 	if( $book ) {
 
 		# Get the category link from the section in the book page
-		for( 1 .. 10 ) {
+		for( 1 .. 20 ) {
 			$res = $::ua->get( $book );
 			if( $res->is_success and $res->content =~ m|<h2>Look for Similar Items by Category</h2>.+?<ul>\s*(.+?)\s*</ul>|s ) {
 				$link = $1 if $1 =~ m|href="([^"]+node=$cat)"|;
 				last if $link;
-			}
+			} else { sendError( "Failed extracting category from bestsellers list: $book" ) }
 		}
-	}
+	} else { sendError( "Failed on bestsellers list: $link" ) }
 
 	$link =~ s|&amp;|&|g;
 	return 'http://www.amazon.com' . $link;
@@ -143,4 +145,5 @@ sub isbn10to13 {
 
 # Dummy send error - this is only used when updating wiki crowd-ratings
 sub sendError{
+	print "$error\n";
 }
