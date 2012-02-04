@@ -35,34 +35,54 @@ $::ua = LWP::UserAgent->new(
 );
 
 # Loop through the categories we want to import from
-for ( 3, 2675 ) {
+for my $cat ( 2675 ) {
 
-	print "Category: $_\n";
+	print "Category: $cat\n";
 
 	# Get cat page
-	if( $link = getCategoryPage( $_ ) ) {
+	if( my $catlink = getCategoryPage( $cat ) ) {
 
-		# http://www.amazon.com/Management-Leadership-Business-Investing-Books/b/ref=dp_brlad_entry?ie=UTF8&node=2675
+		do {
 
-		# Get books from page:
-		# <div id="srNum_0" class="number">1.</div>
-		#   <div class="image">
-		#   <a href="http://www.amazon.com/7-Habits-Highly-Effective-People/dp/0671315285/ref=sr_1_1?s=books&ie=UTF8&qid=1328298298&sr=1-1">
+			# Get the catlinks page content
+			my $page = 0;
+			my $catpage = 0;
+			for( 1 .. 10 ) {
+				$res = $::ua->get( $catlink );
+				$catpage = $res->content if $res->is_success and $res->content =~ m|<div id="srNum_\d+" class="number">\d+\.</div>|s;
+				last if $catpage;
+			}
 
-		# convert ISBN to EAN
-		# http://www.librarything.com/isbncheck.php?isbn=0385517823
-		# (use amazon if library thing doesn't have the API)
+			# Get ISBN-10's from cat page (note that cats with too many books are a different format):
+			if( $catpage ) {
+				my @isbns = $catpage =~ m|<div id="srNum_\d+" class="number">(\d+)\.</div>.+?class="title" href="[^"]+/dp/([^"/]+?)/[^"]+">([^<]+)|sg;
+				for( my $i = 0; $i < $#isbns; $i+=3 ) {
+					my $n = $isbns[$i];
+					my $isbn = $isbns[$i+1];
+					my $title = $isbns[$i+2];
+					print "\t$n" . ". $isbn \"$title\"\n";
 
-		# Use EAN to get crowdrating
+					# convert ISBN-10 to ISBN-13
+					if( my $isbn = isbn10to13( $isbn ) ) {
 
-		# Store the data
+						# Use EAN to get crowdrating
+						my( $average, $reviews ) = calculateCrowdrating( $isbn, $title );
 
-		# Get next cat page
-		# href="/s/ref=sr_pg_2?rh=n%3A283155%2Cn%3A%211000%2Cn%3A3%2Cn%3A2675&page=2&ie=UTF8&qid=1328299928">Next »<
+						# Store the data if valid
+						if( $reviews ) {
+							qx( echo "$cat, $n, $isbn, $average, $reviews, \\"$title\\"" >> /var/www/tools/crowdrating.org/amazon-import.log );
+						}
 
+					}
+				}
+				print "\n\n";
+			}
+
+			# Get next cat page
+			$catlink = $catpage =~ m|href="([^"]+)">Next »<| ? "http://www.amazon.com$1" : 0;
+		} while( $catlink );
 	}
 }
-
 
 # Get the ISBN, rating and number of reviews from the passed book URL
 sub getBookInfo {
@@ -83,7 +103,7 @@ sub getCategoryPage {
 
 	# Get link for first book in bestsellers list for this cat
 	my $book = 0;
-	for( 1 .. 5 ) {
+	for( 1 .. 10 ) {
 		$res = $::ua->get( "http://www.amazon.com/gp/bestsellers/books/$cat" );
 		$book = $1 if $res->is_success and $res->content =~ m|<span class="zg_rankNumber">1.</span>.+?href="\s*(.+?)\s*">|s;
 		last if $book;
@@ -93,25 +113,32 @@ sub getCategoryPage {
 	if( $book ) {
 
 		# Get the category link from the section in the book page
-		for( 1 .. 5 ) {
+		for( 1 .. 10 ) {
 			$res = $::ua->get( $book );
 			if( $res->is_success and $res->content =~ m|<h2>Look for Similar Items by Category</h2>.+?<ul>\s*(.+?)\s*</ul>|s ) {
 				$link = $1 if $1 =~ m|href="([^"]+node=$cat)"|;
-				$link =~ s|&amp;|&|g;
 				last if $link;
 			}
 		}
 	}
 
-print $link;
-exit;
-
-	return $link;
+	$link =~ s|&amp;|&|g;
+	return 'http://www.amazon.com' . $link;
 }
 
 # Create the book in the wiki if it doesn't already exist
 sub addBook {
 	$isbn = shift;
+}
+
+# Use LibraryThing API to convert ISBN-10 to ISBN-13
+# TODO: use amazon if library thing doesn't have the API
+sub isbn10to13 {
+	my $isbn = shift;
+	$res = $::ua->get( "http://www.librarything.com/isbncheck.php?isbn=$isbn" );
+	$isbn = 0;
+	$isbn = $1 if $res->is_success and $res->content =~ m|<isbn13>(.+?)</isbn13>|;
+	return $isbn;
 }
 
 # Dummy send error - this is only used when updating wiki crowd-ratings

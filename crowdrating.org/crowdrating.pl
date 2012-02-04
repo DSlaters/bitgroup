@@ -49,7 +49,7 @@ sub calculateCrowdrating {
 				$isbn =~ s/-//;
 				$x1 = $1 if $res->content =~ m|>([0-9.]+) out of \d+ stars<|;
 				$w1 = $1 if $res->content =~ m|>(\d+) customer reviews?<|;
-				print "\n\tAmazon:\n\t\tRating:  $x1\n\t\tReviews: $w1\n";
+				print "\n\tAmazon:\n\t\tRating:  $x1\n\t\tReviews: $w1\n" if $w1 > 0;
 			} else { $src1b .= "Response: " . $res->status_line }
 		}
 		last if $w1 > 0;
