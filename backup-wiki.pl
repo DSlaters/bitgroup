@@ -46,5 +46,5 @@ qx( rm $sql $tar );
 # If SCP info was supplied, send the backup off site and remove local files
 if( $scp ) {
 	qx( scp $tar.7z $scp );
-	qx( rm $tar );
+	qx( rm $tar.7z );
 }
