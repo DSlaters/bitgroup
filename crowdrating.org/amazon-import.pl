@@ -26,6 +26,8 @@ use HTTP::Cookies;
 use LWP::UserAgent;
 use URI::Escape;
 require "crowdrating.pl";
+require "/var/www/tools/wiki.pl";
+require "/var/www/tools/wikid.conf";
 
 $::cookies = HTTP::Cookies->new();
 $::ua = LWP::UserAgent->new(
@@ -34,26 +36,41 @@ $::ua = LWP::UserAgent->new(
 	timeout    => 30,
 );
 
-# Import data - each is an initial URL to start scanning at, and a number of pages to scan from that point
-my $data = [
-	{
-		'name'  => 'Human resources',
-		'url'   => 'http://www.amazon.com/s/ref=sr_nr_n_10?rh=n%3A283155%2Cn%3A!1000%2Cn%3A3%2Ck%3A%22human+resource%22%2Cn%3A2675%2Cn%3A2682&bbn=2675&sort=reviewrank_authority&keywords=%22human+resource%22&unfiltered=1&ie=UTF8&qid=1328391255&rnid=2675#/ref=sr_pg_3?rh=n%3A283155%2Cn%3A!1000%2Cn%3A3%2Ck%3A%22human+resource%22%2Cn%3A2675%2Cn%3A2682&page=100&bbn=2675&sort=reviewrank_authority&keywords=%22human+resource%22&unfiltered=1&ie=UTF8&qid=1328391261',
-		'pages' => 5
-	},
-	{
-		'name'  => 'Meditation',
-		'url'   => 'http://www.amazon.com/s/ref=sr_nr_n_2?rh=n%3A283155%2Ck%3Ameditation%2Cn%3A!1000%2Cn%3A3%2Cn%3A2675&bbn=3&sort=relevanceexprank&keywords=meditation&unfiltered=1&ie=UTF8&qid=1328391695&rnid=3#/ref=sr_pg_5?rh=n%3A283155%2Ck%3Ameditation%2Cn%3A!1000%2Cn%3A3%2Cn%3A2675&page=1&bbn=3&sort=reviewrank_authority&keywords=meditation&unfiltered=1&ie=UTF8&qid=1328391976',
-		'pages' => 5
-	}
-];
+# Log in to the crowdrating.org wiki
+$::wiki = 'http://www.crowdrating.org/wiki/index.php';
+wikiLogin( $::wiki, 'Server', $wikipass );
+
+# Obtain the import items from the crowdrating.org wiki
+my @rules = ();
+if( $import_rules = wikiRawPage( $::wiki, 'import_rules' ) ) {
+	@rules = $import_rules =~ /\{\{Import\s*(.+?)\s*\}\}/sg;
+} else { die( 'Could not extract import rules from import_rules article' ) }
+
+# Format the rules into a hash for the import routine
+my $data = [];
+for( @rules ) {
+	my $id      = $1 if /^\s*\|\s*id\s*=\s*(.+?)\s*$/m;
+	my $url     = $1 if /^\s*\|\s*url\s*=\s*(.+?)\s*$/m;
+	my $pages   = $1 if /^\s*\|\s*pages\s*=\s*(.+?)\s*$/m;
+	my $import  = $1 if /^\s*\|\s*import\s*=\s*(.+?)\s*$/m;
+	my $reviews = $1 if /^\s*\|\s*reviews\s*=\s*(.+?)\s*$/m;
+	push @$data, {
+		id => $id,
+		url => $url,
+		pages => $pages,
+		import => $import,
+		reviews => $reviews
+	};
+}
 
 # Loop through the search results for each data item
 for my $search ( @$data ) {
 
-	my $search_name  = $$search{name};
-	my $search_url   = $$search{url};
-	my $search_pages = $$search{pages};
+	my $search_name    = $$search{id};
+	my $search_url     = $$search{url};
+	my $search_pages   = $$search{pages};
+	my $search_import  = $$search{import};
+	my $search_reviews = $$search{reviews};
 
 	print "Search item: $search_name\n";
 
