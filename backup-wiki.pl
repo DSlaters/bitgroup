@@ -37,7 +37,7 @@ qx( tar -cf $tar $wiki/images/? );
 
 # Dump the database and add it to the tar and comrpess it
 $sql = "/tmp/$wgDBname.sql";
-qx( mysqldump -u $wgDBuser --password='$wgDBpass' -A > $sql );
+qx( mysqldump -u $wgDBuser --password='$wgDBpass' --default-character-set=latin1 -A > $sql );
 qx( tar -r -f $tar $sql );
 qx( 7za a $tar.7z $tar );
 qx( rm $sql $tar );
