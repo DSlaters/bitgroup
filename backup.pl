@@ -24,7 +24,7 @@ sub comment {
 if (1) {
 	$s7z = "all-$date.sql.7z";
 	$sql = "$dir/all.sql";
-	qx( mysqldump -u $wgDBuser --password='$wgDBpassword' -A >$sql );
+	qx( mysqldump -u $wgDBuser --password='$wgDBpassword' --default-character-set=latin1 -A >$sql );
 	qx( 7za a $dir/$s7z $sql );
 	qx( chmod 644 $dir/$s7z );
 	comment "DB backup: $s7z (".size($sql)."/".size("$dir/$s7z").")";
@@ -137,6 +137,6 @@ comment m/\s([1-9]+\d*).+?am[\x00-\x1f]+.+?([1-9]+\d*).+?am[\x00-\x1f]+.+?([1-9]
 $df = qx( df /dev/sda3 );
 $df =~ /\d.+?\d+.+?\d+.+?(\d+)/;
 $size = int($1/104857.6+0.5)/10;
-comment "Note: there is only $size\G of free space available." if $size < 25;
+comment "There is $size\G of free space available.";
 
 
