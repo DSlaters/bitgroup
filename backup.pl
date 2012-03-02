@@ -11,6 +11,7 @@ $date = strftime( '%Y-%m-%d', localtime );
 $wiki = "https://organicdesign.co.nz/wiki/index.php";
 wikiLogin( $::wiki, $wikiuser, $wikipass );
 
+
 # Return size of passed file in MB
 sub size { return (int([stat shift]->[7]/104857.6+0.5)/10).'MB'; }
 
@@ -20,48 +21,27 @@ sub comment {
 	wikiAppend($::wiki, 'Server log', "\n*$comment", $comment);
 }
 
+# Backup passed users Maildir
+sub backupMail {
+	$name = shift;
+	$lcname = lc $name;
+	$tar = "$dir/tmp.tar";
+	$t7z = "$lcname-server-$date.t7z";
+	qx( tar -cf $tar /home/$lcname/Maildir );
+	qx( 7za a $dir/$t7z $tar );
+	qx( chmod 644 $dir/$t7z );
+	qx( rm $tar );
+	comment "$name's backup: $t7z (".size($tar)."/".size("$dir/$t7z").")";
+}
+
+
 # Backup and compress databases
-if (1) {
-	$s7z = "all-$date.sql.7z";
-	$sql = "$dir/all.sql";
-	qx( mysqldump -u $wgDBuser --password='$wgDBpassword' --default-character-set=latin1 -A >$sql );
-	qx( 7za a $dir/$s7z $sql );
-	qx( chmod 644 $dir/$s7z );
-	comment "DB backup: $s7z (".size($sql)."/".size("$dir/$s7z").")";
-}
-
-# Backup config files & svn repos
-if (1) {
-	$conf = join( ' ',
-		"/var/www/tools/wikid.conf",
-		"/var/www/tools/backup.pl",
-        	"/etc/apache2/sites-available",
-		"/etc/exim4",
-		"/etc/bind9",
-		"/var/cache/bind",
-		"/etc/ssh/sshd_config",
-		"/etc/samba/smb.conf",
-		"/etc/crontab",
-		"/etc/network/interfaces"
-	);
-	qx( tar -czf $dir/config-$date.tgz $conf );
-	qx( svnadmin dump /svn/extensions > $dir/extensions-$date.svn );
-	qx( svnadmin dump /svn/tools > $dir/tools-$date.svn );
-}
-
-# Users's DB backup
-if (1) {
-	qx( rm /home/aap/aap-*.sql.7z );
-	$s7z = "/home/aap/aap-$date.sql.7z";
-	$sql = "$dir/aap.sql";
-	qx( mysqldump -u $wgDBuser --password='$wgDBpassword' aap >$sql );
-	qx( 7za a $s7z $sql );
-	qx( chown aap:aap $s7z );
-
-}
-
-# Tmp file to use for tar's before compressed
-$tar = "$dir/tmp.tar";
+$s7z = "all-$date.sql.7z";
+$sql = "$dir/all.sql";
+qx( mysqldump -u $wgDBuser --password='$wgDBpassword' --default-character-set=latin1 -A >$sql );
+qx( 7za a $dir/$s7z $sql );
+qx( chmod 644 $dir/$s7z );
+comment "DB backup: $s7z (".size($sql)."/".size("$dir/$s7z").")";
 
 # Backup and compress wiki/web structure
 if ($date =~ /[0-9]+-[0-9]+-(01|09|16|24)/) {
@@ -72,6 +52,14 @@ if ($date =~ /[0-9]+-[0-9]+-(01|09|16|24)/) {
 	comment "FS backup: $t7z (".size($tar)."/".size("$dir/$t7z").")";
 }
 
+# Backup users Maildirs
+backupMail('Nad')     if $date =~ /[0-9]+-[0-9]+-(07|14|21|28)/;
+backupMail('Beth')    if $date =~ /[0-9]+-[0-9]+-(08|15|22|01)/;
+backupMail('Milan')   if $date =~ /[0-9]+-[0-9]+-(09|16|23|02)/;
+backupMail('Zenia')   if $date =~ /[0-9]+-[0-9]+-(10|17|24|03)/;
+backupMail('Zenovia') if $date =~ /[0-9]+-[0-9]+-(11|18|25|04)/;
+backupMail('Jack')    if $date =~ /[0-9]+-[0-9]+-(12|19|26|05)/;
+
 # Backup and compress aap files structure
 if ($date =~ /[0-9]+-[0-9]+-(02|10|17|25)/) {
 	$t7z = "/home/aap/aap-files-$date.t7z";
@@ -81,51 +69,29 @@ if ($date =~ /[0-9]+-[0-9]+-(02|10|17|25)/) {
 	qx( chown aap:aap $t7z );
 	comment "aap files backup: $t7z (".size($tar)."/".size($t7z).")";
 }
+qx( rm /home/aap/aap-*.sql.7z );
+$s7z = "/home/aap/aap-$date.sql.7z";
+$sql = "$dir/aap.sql";
+qx( mysqldump -u $wgDBuser --password='$wgDBpassword' aap >$sql );
+qx( 7za a $s7z $sql );
+qx( chown aap:aap $s7z );
 
-# Backup and compress Nad's files
-if ($date =~ /[0-9]+-[0-9]+-(07|14|21|28)/) {
-	$t7z = "nad-server-$date.t7z";
-	qx( tar -cf $tar /home/nad/Maildir );
-	qx( 7za a $dir/$t7z $tar );
-	qx( chmod 644 $dir/$t7z );
-	comment "Nad's backup: $t7z (".size($tar)."/".size("$dir/$t7z").")";
-}
-
-# Backup and compress Milan's files
-if ($date =~ /[0-9]+-[0-9]+-(08|15|22|29)/) {
-	$t7z = "milan-server-$date.t7z";
-	qx( tar -cf $tar /home/milan/Maildir );
-	qx( 7za a $dir/$t7z $tar );
-	qx( chmod 644 $dir/$t7z );
-	comment "Milan's backup: $t7z (".size($tar)."/".size("$dir/$t7z").")";
-}
-
-# Backup and compress Zenia's files
-if ($date =~ /[0-9]+-[0-9]+-(06|13|20|27)/) {
-	$t7z = "zenia-server-$date.t7z";
-	qx( tar -cf $tar /home/zenia/Maildir );
-	qx( 7za a $dir/$t7z $tar );
-	qx( chmod 644 $dir/$t7z );
-	comment "Zenia's backup: $t7z (".size($tar)."/".size("$dir/$t7z").")";
-}
-
-# Backup and compress Zenovia's files
-if ($date =~ /[0-9]+-[0-9]+-(04|11|18|25)/) {
-	$t7z = "zenovia-server-$date.t7z";
-	qx( tar -cf $tar /home/zenovia/Maildir );
-	qx( 7za a $dir/$t7z $tar );
-	qx( chmod 644 $dir/$t7z );
-	comment "Zenovia's backup: $t7z (".size($tar)."/".size("$dir/$t7z").")";
-}
-
-# Backup and compress Jack's files
-if ($date =~ /[0-9]+-[0-9]+-(04|11|18|25)/) {
-	$t7z = "jack-server-$date.t7z";
-	qx( tar -cf $tar /home/jack/Maildir );
-	qx( 7za a $dir/$t7z $tar );
-	qx( chmod 644 $dir/$t7z );
-	comment "Jack's backup: $t7z (".size($tar)."/".size("$dir/$t7z").")";
-}
+# Backup config files & svn repos
+$conf = join( ' ',
+	"/var/www/tools/wikid.conf",
+	"/var/www/tools/backup.pl",
+       	"/etc/apache2/sites-available",
+	"/etc/exim4",
+	"/etc/bind9",
+	"/var/cache/bind",
+	"/etc/ssh/sshd_config",
+	"/etc/samba/smb.conf",
+	"/etc/crontab",
+	"/etc/network/interfaces"
+);
+qx( tar -czf $dir/config-$date.tgz $conf );
+qx( svnadmin dump /svn/extensions > $dir/extensions-$date.svn );
+qx( svnadmin dump /svn/tools > $dir/tools-$date.svn );
 
 # Add a comment about number of spams and hams
 $_ = `sa-learn --dump magic`;
