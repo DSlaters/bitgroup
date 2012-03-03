@@ -19,7 +19,7 @@ use HTTP::Request;
 use HTTP::Cookies;
 use LWP::UserAgent;
 use URI::Escape;
-require "crowdrating.pl";
+require "/var/www/tools/crowdrating.org/crowdrating.pl";
 
 $wiki = "http://$ARGV[0]/wiki/index.php";
 $::startTime = localtime();

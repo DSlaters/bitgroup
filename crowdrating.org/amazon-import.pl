@@ -131,6 +131,9 @@ sub getISBN {
 # Create the book in the wiki if it doesn't already exist
 sub addBook {
 	$isbn = shift;
+
+	# TODO: extract search phrases from URL and import with the book
+
 }
 
 # Dummy send error - this is only used when updating wiki crowd-ratings
