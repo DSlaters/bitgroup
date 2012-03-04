@@ -15,3 +15,9 @@ RewriteRule (.*) /%2$1 [L]
 
 RewriteCond %{HTTP_HOST} ^(www\.|wiki\.)?(.+)$
 RewriteRule (.*) /%2/wiki/index.php$1 [L]
+
+<Directory />
+    AllowOverride None
+    Order Deny,Allow
+    Options All -Indexes
+</Directory>
