@@ -30,8 +30,8 @@ sub backupMail {
 	qx( tar -cf $tar /home/$lcname/Maildir );
 	qx( 7za a $dir/$t7z $tar );
 	qx( chmod 644 $dir/$t7z );
+	comment "$name\'s backup: $t7z (".size($tar)."/".size("$dir/$t7z").")";
 	qx( rm $tar );
-	comment "$name's backup: $t7z (".size($tar)."/".size("$dir/$t7z").")";
 }
 
 
