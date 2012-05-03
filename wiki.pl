@@ -19,7 +19,7 @@
 #
 # - Source:  http://www.organicdesign.co.nz/wiki.pl
 # - Started: 2008-03-16
-# - Tested versions: 1.6.10, 1.8.4, 1.9.3, 1.10.2, 1.11.0, 1.12.rc1, 1.13.2, 1.14.0, 1.15.1, 1.16.0, 1.17alpha
+# - Tested versions: 1.6.10, 1.8.4, 1.9.3, 1.10.2, 1.11.0, 1.12.rc1, 1.13.2, 1.14.0, 1.15.1, 1.16.0, 1.17alpha, 1.18.0
 #
 # NOTES REGARDING CHANGING TO PERL PACKAGE AND ADDING API SUPPORT
 # - constructor:

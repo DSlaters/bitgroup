@@ -5,6 +5,7 @@ require "/var/www/tools/wikid.conf";
 require "/var/www/tools/wiki.pl";
 
 $dir  = '/backup';
+$tar = "$dir/tmp.tar";
 $date = strftime( '%Y-%m-%d', localtime );
 
 # Wiki settings
@@ -25,7 +26,6 @@ sub comment {
 sub backupMail {
 	$name = shift;
 	$lcname = lc $name;
-	$tar = "$dir/tmp.tar";
 	$t7z = "$lcname-server-$date.t7z";
 	qx( tar -cf $tar /home/$lcname/Maildir );
 	qx( 7za a $dir/$t7z $tar );
