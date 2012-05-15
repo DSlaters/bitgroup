@@ -16,17 +16,17 @@ wikiLogin( $::wiki, $wikiuser, $wikipass );
 # Return size of passed file in MB
 sub size { return (int([stat shift]->[7]/104857.6+0.5)/10).'MB'; }
 
-# Post a comment to the wiki's server-log article
+# Post a comment to the wiki's server-log article (overwrites since it has history anyway)
 sub comment {
-	$comment = shift;
-	wikiAppend($::wiki, 'Server log', "\n*$comment", $comment);
+	my $comment = shift;
+	wikiEdit( $::wiki, 'Server log', $comment, $comment );
 }
 
 # Backup passed users Maildir
 sub backupMail {
-	$name = shift;
-	$lcname = lc $name;
-	$t7z = "$lcname-server-$date.t7z";
+	my $name = shift;
+	my $lcname = lc $name;
+	my $t7z = "$lcname-server-$date.t7z";
 	qx( tar -cf $tar /home/$lcname/Maildir );
 	qx( 7za a $dir/$t7z $tar );
 	qx( chmod 644 $dir/$t7z );
