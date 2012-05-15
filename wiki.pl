@@ -160,10 +160,10 @@ sub wikiEdit {
 			# Got token etc, construct a form to post
 			my %form = ( wpEditToken => $1, wpTextbox1 => $content, wpSummary => $comment, wpSave => 'Save page' );
 			$form{wpMinoredit}   = 1  if $minor;
-			$form{wpSection}     = $1 if $response->content =~ m|<input type='hidden["'] value=['"](.*?)["'] name=['"]wpSection["'] />|;
-			$form{wpStarttime}   = $1 if $response->content =~ m|<input type='hidden["'] value=['"](.*?)["'] name=['"]wpStarttime["'] />|;
-			$form{wpEdittime}    = $1 if $response->content =~ m|<input type='hidden["'] value=['"](.*?)["'] name=['"]wpEdittime["'] />|;
-			$form{wpAutoSummary} = $1 if $response->content =~ m|<input name="wpAutoSummary["'] type="hidden["'] value=['"](.*?)["'] />|;
+			$form{wpSection}     = $1 if $response->content =~ m|<input type=['"]hidden["'] value=['"](.*?)["'] name=['"]wpSection["'] />|;
+			$form{wpStarttime}   = $1 if $response->content =~ m|<input type=['"]hidden["'] value=['"](.*?)["'] name=['"]wpStarttime["'] />|;
+			$form{wpEdittime}    = $1 if $response->content =~ m|<input type=['"]hidden["'] value=['"](.*?)["'] name=['"]wpEdittime["'] />|;
+			$form{wpAutoSummary} = $1 if $response->content =~ m|<input name=['"]wpAutoSummary["'] type=['"]hidden["'] value=['"](.*?)["'] />|;
 
 			# Post the form
 			$response = $::client->post( "$wiki?title=$utitle&action=submit&useskin=standard", \%form );
