@@ -19,7 +19,7 @@ sub size { return (int([stat shift]->[7]/104857.6+0.5)/10).'MB'; }
 # Post a comment to the wiki's server-log article (overwrites since it has history anyway)
 sub comment {
 	my $comment = shift;
-	wikiEdit( $::wiki, 'Server log', $comment, $comment );
+	wikiEdit( $::wiki, 'Server log', "$comment\n[[Category:Excluded from RecentActivity]]", $comment );
 }
 
 # Backup passed users Maildir
