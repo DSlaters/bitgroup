@@ -84,7 +84,7 @@ sub sendError {
 	print FH "Errors encountered so far: $::errors\n";
 	close FH;
 
-	qx( mail -s "$subject" aran\@organicdesign.co.nz < $errfile );
+	qx( mail -s "$subject" aran\@organicdesign.co.nz < $errfile ) unless $::valid;
 	qx( rm -f $errfile );
 
 	print "\t\t\tRating result invalid, book not updated.\n\t\t\t\t$subject\n\t\t\t\t$err\n\n";
