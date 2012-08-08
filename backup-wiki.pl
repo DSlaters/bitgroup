@@ -31,7 +31,7 @@ while( <LOCALSETTINGS> ) {
 	$wgDBpass = $1 if /\$wgDBpassword\s*=\s*['"](.+?)["']/;
 }
 
-# Create a tar of the image hash structure (no tmp, thumbs etc)
+# Create a tar of the image hash structure (no tmp, thumbs etc - just the single character hash directories)
 $tar = "/tmp/$wgDBname-$date.tar";
 qx( tar -cf $tar $wiki/images/? );
 
@@ -40,6 +40,7 @@ $sql = "/tmp/$wgDBname.sql";
 qx( mysqldump -u $wgDBuser --password='$wgDBpass' --default-character-set=latin1 -A > $sql );
 qx( tar -r -f $tar $sql );
 qx( 7za a $tar.7z $tar );
+qx( chmod 600 $tar.7z );
 qx( rm $sql $tar );
 
 
