@@ -32,7 +32,7 @@ while( <LOCALSETTINGS> ) {
 }
 
 # Create a tar of the image hash structure (no tmp, thumbs etc - just the single character hash directories)
-$tar = "/tmp/$wgDBname-$date.tar";
+$tar = "/backup/$wgDBname-$date.tar";
 qx( tar -cf $tar $wiki/images/? );
 
 # Dump the database and add it to the tar and comrpess it
