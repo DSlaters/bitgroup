@@ -29,7 +29,7 @@ sub backupMail {
 	my $t7z = "$lcname-server-$date.t7z";
 	qx( tar -cf $tar /home/$lcname/Maildir );
 	qx( 7za a $dir/$t7z $tar );
-	qx( chmod 644 $dir/$t7z );
+	qx( chmod 600 $dir/$t7z );
 	comment "$name\'s backup: $t7z (".size($tar)."/".size("$dir/$t7z").")";
 	qx( rm $tar );
 }
@@ -40,15 +40,19 @@ $s7z = "all-$date.sql.7z";
 $sql = "$dir/all.sql";
 qx( mysqldump -u $wgDBuser --password='$wgDBpassword' --default-character-set=latin1 -A >$sql );
 qx( 7za a $dir/$s7z $sql );
-qx( chmod 644 $dir/$s7z );
+qx( chmod 600 $dir/$s7z );
 comment "DB backup: $s7z (".size($sql)."/".size("$dir/$s7z").")";
+
+# Backup Znazza database
+$sql = "/var/www/domains/znazza/images/znazza-backup.sql";
+qx( mysqldump -u $wgDBuser --password='$wgDBpassword' --default-character-set=latin1 znazza >$sql );
 
 # Backup and compress wiki/web structure
 if ($date =~ /[0-9]+-[0-9]+-(01|09|16|24)/) {
 	$t7z = "www-$date.t7z";
 	qx( tar -cf $tar /var/www -X /var/www/tools/backup-exclusions );
 	qx( 7za a $dir/$t7z $tar );
-	qx( chmod 644 $dir/$t7z );
+	qx( chmod 600 $dir/$t7z );
 	comment "FS backup: $t7z (".size($tar)."/".size("$dir/$t7z").")";
 }
 
@@ -65,7 +69,7 @@ if ($date =~ /[0-9]+-[0-9]+-(02|10|17|25)/) {
 	$t7z = "/home/aap/aap-files-$date.t7z";
 	qx( tar -cf $tar /var/www/wikis/aap );
 	qx( 7za a $t7z $tar );
-	qx( chmod 644 $t7z );
+	qx( chmod 600 $t7z );
 	qx( chown aap:aap $t7z );
 	comment "aap files backup: $t7z (".size($tar)."/".size($t7z).")";
 }
@@ -92,6 +96,7 @@ $conf = join( ' ',
 qx( tar -czf $dir/config-$date.tgz $conf );
 qx( svnadmin dump /svn/extensions > $dir/extensions-$date.svn );
 qx( svnadmin dump /svn/tools > $dir/tools-$date.svn );
+qx( svnadmin dump /svn/work > $dir/work-$date.svn );
 
 # Add a comment about number of spams and hams
 $_ = `sa-learn --dump magic`;
