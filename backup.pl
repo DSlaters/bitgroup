@@ -29,7 +29,7 @@ sub backupMail {
 	my $t7z = "$lcname-server-$date.t7z";
 	qx( tar -cf $tar /home/$lcname/Maildir );
 	qx( 7za a $dir/$t7z $tar );
-	qx( chmod 600 $dir/$t7z );
+	qx( chmod 640 $dir/$t7z );
 	comment "$name\'s backup: $t7z (".size($tar)."/".size("$dir/$t7z").")";
 	qx( rm $tar );
 }
@@ -40,7 +40,7 @@ $s7z = "all-$date.sql.7z";
 $sql = "$dir/all.sql";
 qx( mysqldump -u $wgDBuser --password='$wgDBpassword' --default-character-set=latin1 -A >$sql );
 qx( 7za a $dir/$s7z $sql );
-qx( chmod 600 $dir/$s7z );
+qx( chmod 640 $dir/$s7z );
 comment "DB backup: $s7z (".size($sql)."/".size("$dir/$s7z").")";
 
 # Backup Znazza database
@@ -52,7 +52,7 @@ if ($date =~ /[0-9]+-[0-9]+-(01|09|16|24)/) {
 	$t7z = "www-$date.t7z";
 	qx( tar -cf $tar /var/www -X /var/www/tools/backup-exclusions );
 	qx( 7za a $dir/$t7z $tar );
-	qx( chmod 600 $dir/$t7z );
+	qx( chmod 640 $dir/$t7z );
 	comment "FS backup: $t7z (".size($tar)."/".size("$dir/$t7z").")";
 }
 
