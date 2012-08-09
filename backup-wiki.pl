@@ -40,7 +40,7 @@ $sql = "/tmp/$wgDBname.sql";
 qx( mysqldump -u $wgDBuser --password='$wgDBpass' --default-character-set=latin1 -A > $sql );
 qx( tar -r -f $tar $sql );
 qx( 7za a $tar.7z $tar );
-qx( chmod 600 $tar.7z );
+qx( chmod 640 $tar.7z );
 qx( rm $sql $tar );
 
 
