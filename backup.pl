@@ -42,6 +42,7 @@ qx( mysqldump -u $wgDBuser --password='$wgDBpassword' --default-character-set=la
 qx( 7za a $dir/$s7z $sql );
 qx( chmod 640 $dir/$s7z );
 comment "DB backup: $s7z (".size($sql)."/".size("$dir/$s7z").")";
+qx( rm $sql );
 
 # Backup Znazza database
 $sql = "/var/www/domains/znazza/images/znazza-backup.sql";
