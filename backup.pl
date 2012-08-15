@@ -9,7 +9,7 @@ $tar = "$dir/tmp.tar";
 $date = strftime( '%Y-%m-%d', localtime );
 
 # Wiki settings
-$wiki = "https://organicdesign.co.nz/wiki/index.php";
+$wiki = "https://www.organicdesign.co.nz/wiki/index.php";
 wikiLogin( $::wiki, $wikiuser, $wikipass );
 
 
