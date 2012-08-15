@@ -28,7 +28,7 @@
 #   - get namespaces
 #   - get messages used in patterns (and make methods use messages in their regexp's so lang-independent)
 
-$::wikipl_version = '1.15.4'; # 2011-11-29
+$::wikipl_version = '1.15.5'; # 2012-08-15
 
 use HTTP::Request;
 use LWP::UserAgent;
@@ -163,6 +163,7 @@ sub wikiEdit {
 			$form{wpSection}     = $1 if $response->content =~ m|<input type=['"]hidden["'] value=['"](.*?)["'] name=['"]wpSection["'] />|;
 			$form{wpStarttime}   = $1 if $response->content =~ m|<input type=['"]hidden["'] value=['"](.*?)["'] name=['"]wpStarttime["'] />|;
 			$form{wpEdittime}    = $1 if $response->content =~ m|<input type=['"]hidden["'] value=['"](.*?)["'] name=['"]wpEdittime["'] />|;
+			$form{wpAutoSummary} = $1 if $response->content =~ m|<input type=['"]hidden["'] value=['"](.*?)["'] name=['"]wpAutoSummary["'] />|;
 			$form{wpAutoSummary} = $1 if $response->content =~ m|<input name=['"]wpAutoSummary["'] type=['"]hidden["'] value=['"](.*?)["'] />|;
 
 			# Post the form
