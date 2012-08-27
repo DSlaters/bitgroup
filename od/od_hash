@@ -1,0 +1,1 @@
+$(window).bind("hashchange",$d.od_node(window.location.hash.substr(1)));

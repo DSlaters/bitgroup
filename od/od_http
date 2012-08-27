@@ -1,0 +1,4 @@
+use IO::Socket;d("od_send","od_recv");sub w{wait}$SIG{CHLD}=\&w;
+$s=IO::Socket::INET->new(LocalPort=>2012,Type=>SOCK_STREAM,Reuse=>1,Listen=>10)or die"$@\n";
+while($c=$s->accept){next if$pid=fork;die"fork:$!\n"unless defined$pid;od_send(&od_recv);exit fork}
+continue{close$c;kill CHLD=>-$$}

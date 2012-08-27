@@ -1,0 +1,2 @@
+$i="";while(<$c>){last if/^\r\n$/;$i.=$_}
+$_=$i=~/^GET \/([a-z0-9_]+)/?v($1):v("od_html").v("od_head")."<body><script type=\"text/javascript\">".v("od_json")."</script></body></html>";
