@@ -100,7 +100,7 @@ qx( svnadmin dump /svn/tools > $dir/tools-$date.svn );
 qx( svnadmin dump /svn/work > $dir/work-$date.svn );
 
 # Add a comment about number of spams and hams
-$_ = `sa-learn --dump magic`;
+$_ = `/usr/bin/sa-learn --dump magic`;
 comment m/\s([1-9]+\d*).+?am[\x00-\x1f]+.+?([1-9]+\d*).+?am[\x00-\x1f]+.+?([1-9]+\d*).+?ns$/m
 	? "$1 spams and $2 hams have been processed with $3 tokens"
 	: "ERROR";
