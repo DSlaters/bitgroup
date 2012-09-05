@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-#sub v{$_=shift;$_=`namecoind name_show d/$_`=~/"value"\s*:\s*"(.*?[^\\])"/s?$1:"404";s/\\"/"/g;s/\\n/\n/g;$_}
+#sub d{$_=shift;$_=`namecoind name_show d/$_`=~/"value"\s*:\s*"(.*?[^\\])"/s?$1:"404";s/\\"/"/g;s/\\n/\n/g;$_}
 
 # tmp v sub that just reads from file
 sub v {
@@ -12,5 +12,5 @@ sub v {
 	return '404';
 }
 
-sub d{eval"sub ".($_=shift)."{".v($_)."}"while$#_>=0}
-d("od_http");&od_http;
+sub c{eval"sub ".($_=shift)."{".d($_)."}"while$#_>=0}
+c("od_http");&od_http;

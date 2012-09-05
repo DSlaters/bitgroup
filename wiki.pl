@@ -28,7 +28,7 @@
 #   - get namespaces
 #   - get messages used in patterns (and make methods use messages in their regexp's so lang-independent)
 
-$::wikipl_version = '1.15.5'; # 2012-08-15
+$::wikipl_version = '1.15.6'; # 2012-09-05
 
 use HTTP::Request;
 use LWP::UserAgent;
@@ -124,7 +124,7 @@ sub wikiLogin {
 		}
 		else {
 			if( $html =~ /<div class="errorbox">\s*(<h2>.+?<\/h2>\s*)?(.+?)\s*<\/div>/is ) { logAdd "ERROR: $2" }
-			else { logAdd "ERROR: couldn't log $user in to $wiki!" }
+			else { logAdd "ERROR: couldn't log $user in to $wiki (" . $response->status_line . ")" }
 		}
 	}
 	return $success;
