@@ -67,6 +67,9 @@ sub wikiGetProperties;
 sub wikiGetPreferences;
 sub wikiPropertyChanges;
 
+# Don't verify SSL certs since we need to connect to many domains with invalid certs
+$ENV{PERL_LWP_SSL_VERIFY_HOSTNAME} = 0;
+
 # Set up a global client for making HTTP requests as a browser
 $::client = LWP::UserAgent->new(
 	cookie_jar => {},
