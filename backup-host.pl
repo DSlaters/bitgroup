@@ -38,13 +38,15 @@ $scp   = ();          # list of servers to send backups to over SCP protocol
 require "./backup-host.conf";
 
 # Backup and compress MySQL databases (7zip file locked with MySQL root password)
-$s7z = "$host-$date.sql.7z";
-$sql = "$dir/tmp.sql";
-qx( mysqldump -u root --password='$pass' -A >$sql );
-qx( 7za a $dir/$s7z $sql -p$pass );
-qx( chown scp:scp $dir/$s7z );
-qx( chmod 600 $dir/$s7z );
-unlink $sql;
+if( qx( which mysqldump ) ) {
+	$s7z = "$host-$date.sql.7z";
+	$sql = "$dir/tmp.sql";
+	qx( mysqldump -u root --password='$pass' -A >$sql );
+	qx( 7za a $dir/$s7z $sql -p$pass );
+	qx( chown scp:scp $dir/$s7z );
+	qx( chmod 600 $dir/$s7z );
+	unlink $sql;
+}
 
 # If there's SCP info, send the backup to the target servers
 if( $#scp >= 0 ) { qx( scp $dir/$s7z $_ ) for @scp }
@@ -63,7 +65,7 @@ if( $date =~ /[0-9]+-[0-9]+-(01|08|16|24)/ ) {
 	$tgz = "$dir/$host-$date.tgz";
 	$f = join ' ', $files;
 	$f .= " $conf" if $conf;
-	$x = -e "./backup.excl" ? "-X ./backup.excl" : "";
+	$x = -e "./backup-host.excl" ? "-X ./backup-host.excl" : "";
 	qx( tar -czf $tgz $f $x );
 	qx( chown scp:scp $dir/$tgz );
 	qx( chmod 600 $dir/$tgz );
