@@ -74,18 +74,22 @@ if( $date =~ /[0-9]+-[0-9]+-(01|08|16|24)/ ) {
 }
 
 # Prune older files in the backup dir
-for my $f ( grep "$dir/*-(\d\d\d\d)-(\d\d)-(\d\d).*" ) {
-	my $y = $1;
-	my $m = $2;
-	my $d = $3;
-	my $u = mktime(0, 0, 0, $d, $m, $y - 1900);
-	$age = (localtime - $u) / 86400;
-	if( $age > 730 )    { unlink $f unless $d == 1 and $m == 1 }   # Older than 2 years
-	elsif( $age > 365 ) { unlink $f unless $d == 1 }               # Older than 1 year
-	elsif( $age > 90 )  { unlink $f unless $d =~ /(01|15)/ }       # Older than 3 months
-	elsif( $age > 60 )  { unlink $f unless $d =~ /(01|07|15|27)/ } # Older than 2 months
-	elsif( $age > 30 )  { unlink $f unless $d =~ /\d[13579]/ }     # Older than 1 month
+opendir( DH, $dir ) or die $!;
+while( my $f = readdir( DH ) ) {
+	if( $f =~ m|[^/]+-(\d\d\d\d)-(\d\d)-(\d\d).[^/]+$| ) {
+		my $y = $1;
+		my $m = $2;
+		my $d = $3;
+		my $u = mktime(0, 0, 0, $d, $m - 1, $y - 1900);
+		$age = ( time() - $u ) / 86400;
+		if( $age > 730 )    { unlink $f unless $d == 1 and $m == 1 }   # Older than 2 years
+		elsif( $age > 365 ) { unlink $f unless $d == 1 }               # Older than 1 year
+		elsif( $age > 90 )  { unlink $f unless $d =~ /(01|15)/ }       # Older than 3 months
+		elsif( $age > 60 )  { unlink $f unless $d =~ /(01|07|15|27)/ } # Older than 2 months
+		elsif( $age > 30 )  { unlink $f unless $d =~ /\d[13579]/ }     # Older than 1 month
+	}
 }
+closedir( DH );
 
 # Email admin if server is low on space
 if( $disk ) {
