@@ -35,7 +35,7 @@ $conf  = ()           # list of files that should be encrypted (with root MySQL 
 $scp   = ();          # list of servers to send backups to over SCP protocol
 
 # Override parameters from local backup configuration file
-require "./backup.conf";
+require "./backup-host.conf";
 
 # Backup and compress MySQL databases (7zip file locked with MySQL root password)
 $s7z = "$host-$date.sql.7z";
