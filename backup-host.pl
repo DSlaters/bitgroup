@@ -49,7 +49,7 @@ if( qx( which mysqldump ) ) {
 }
 
 # If there's SCP info, send the backup to the target servers
-if( $#scp >= 0 ) { qx( scp $dir/$s7z $_ ) for @scp }
+if( $#scp >= 0 ) { qx( scp -i /home/scp/.ssh/id_rsa $dir/$s7z scp\@$_:$dir ) for @scp }
 
 # Backup, compress and send files weekly
 if( $date =~ /[0-9]+-[0-9]+-(01|08|16|24)/ ) {
@@ -69,7 +69,7 @@ if( $date =~ /[0-9]+-[0-9]+-(01|08|16|24)/ ) {
 	qx( tar -czf $tgz $f $x );
 	qx( chown scp:scp $dir/$tgz );
 	qx( chmod 600 $dir/$tgz );
-	if( $#scp >= 0 ) { qx( scp $dir/$tgz $_ ) for @scp }
+	if( $#scp >= 0 ) { qx( scp -i /home/scp/.ssh/id_rsa $dir/$tgz scp\@$_:$dir ) for @scp }
 }
 
 # Prune older files in the backup dir
