@@ -77,6 +77,7 @@ if( $date =~ /[0-9]+-[0-9]+-(01|08|16|24)/ ) {
 opendir( DH, $dir ) or die $!;
 while( my $f = readdir( DH ) ) {
 	if( $f =~ m|[^/]+-(\d\d\d\d)-(\d\d)-(\d\d).[^/]+$| ) {
+		$f = "$dir/$f";
 		my $y = $1;
 		my $m = $2;
 		my $d = $3;
