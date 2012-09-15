@@ -25,7 +25,7 @@ chdir $1 if realpath($0) =~ m|^(.+)/|;
 # Initial parameters
 $dir   = '/home/scp';
 $date  = strftime( '%Y-%m-%d', localtime );
-$admin = 'aran@organicdesign.co.nz';
+$admin = 'admin@organicdesign.co.nz';
 $host  = `hostname`;  # name used to identify backup server
 $disk  = '';          # disk to check free space on
 $free  = 5;           # minimum GB free before email is sent to admin
