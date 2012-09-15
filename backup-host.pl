@@ -26,6 +26,7 @@ chdir $1 if realpath($0) =~ m|^(.+)/|;
 $dir   = '/home/scp';
 $date  = strftime( '%Y-%m-%d', localtime );
 $admin = 'admin@organicdesign.co.nz';
+$rsa   = '-i /home/scp/.ssh/id_rsa';
 $host  = `hostname`;  # name used to identify backup server
 $disk  = '';          # disk to check free space on
 $free  = 5;           # minimum GB free before email is sent to admin
@@ -49,7 +50,7 @@ if( qx( which mysqldump ) ) {
 }
 
 # If there's SCP info, send the backup to the target servers
-if( $#scp >= 0 ) { qx( scp -i /home/scp/.ssh/id_rsa $dir/$s7z scp\@$_:$dir ) for @scp }
+if( $#scp >= 0 ) { qx( scp $rsa $dir/$s7z scp\@$_:$dir ) for @scp }
 
 # Backup, compress and send files weekly
 if( $date =~ /[0-9]+-[0-9]+-(01|08|16|24)/ ) {
@@ -69,7 +70,7 @@ if( $date =~ /[0-9]+-[0-9]+-(01|08|16|24)/ ) {
 	qx( tar -czf $tgz $f $x );
 	qx( chown scp:scp $dir/$tgz );
 	qx( chmod 600 $dir/$tgz );
-	if( $#scp >= 0 ) { qx( scp -i /home/scp/.ssh/id_rsa $dir/$tgz scp\@$_:$dir ) for @scp }
+	if( $#scp >= 0 ) { qx( scp $rsa $dir/$tgz scp\@$_:$dir ) for @scp }
 }
 
 # Prune older files in the backup dir
