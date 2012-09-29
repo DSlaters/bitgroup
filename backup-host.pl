@@ -43,7 +43,7 @@ require "./backup-host.conf";
 sub transfer {
 	if( $#scp >= 0 ) {
 		my $f = shift;
-		for @scp {
+		for( @scp ) {
 			print "\tSending $f to $_\n";
 			qx( scp $rsa $dir/$f scp\@$_:/ );
 		}
@@ -51,7 +51,7 @@ sub transfer {
 }
 
 # Backup and compress MySQL databases (7zip file locked with MySQL root password)
-if( qx( which mysqldump ) ) {
+if( `which mysqldump` ) {
 	print "Backing up databases\n";
 	$s7z = "$host-$date.sql.7z";
 	$sql = "$dir/$host-$date.sql";
