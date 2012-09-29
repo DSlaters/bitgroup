@@ -59,20 +59,25 @@ if( $date =~ /[0-9]+-[0-9]+-(01|08|16|24)/ ) {
 
 	# Compress and encrypt the configs
 	if( $#conf >= 0 ) {
-		qx( 7za a $dir/$s7z $sql -p$pass );
-		qx( chown scp:scp $dir/$s7z );
-		qx( chmod 600 $dir/$s7z );		
+		$f = join ' ', $conf;
+		$conf = "$dir/conf.tar";
+		qx( tar -cf $conf $f );
+		qx( 7za a $conf.7z $conf -p$pass );
+		qx( chown scp:scp $conf.7z );
+		qx( chmod 600 $conf.7z );		
+		unlink $conf;
 	} else { $conf = '' }
 
 	# Compress the main files
 	$tgz = "$dir/$host-$date.tgz";
 	$f = join ' ', $files;
-	$f .= " $conf" if $conf;
+	$f .= " $conf.7z" if $conf;
 	$x = -e "./backup-host.excl" ? "-X ./backup-host.excl" : "";
 	qx( tar -czf $tgz $f $x );
 	qx( chown scp:scp $dir/$tgz );
 	qx( chmod 600 $dir/$tgz );
 	if( $#scp >= 0 ) { qx( scp $rsa $dir/$tgz scp\@$_:/ ) for @scp }
+	unlink "$conf.7z" if $conf;
 }
 
 # Prune older files in the backup dir
