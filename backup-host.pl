@@ -39,6 +39,17 @@ $scp   = ();          # list of servers to send backups to over SCP protocol
 # Override parameters from local backup configuration file
 require "./backup-host.conf";
 
+# Function to send passed file to hosts listed in @scp
+sub transfer {
+	if( $#scp >= 0 ) {
+		my $f = shift;
+		for @scp {
+			print "\tSending $f to $_\n";
+			qx( scp $rsa $dir/$f scp\@$_:/ );
+		}
+	}
+}
+
 # Backup and compress MySQL databases (7zip file locked with MySQL root password)
 if( qx( which mysqldump ) ) {
 	print "Backing up databases\n";
@@ -49,10 +60,8 @@ if( qx( which mysqldump ) ) {
 	qx( chown scp:scp $dir/$s7z );
 	qx( chmod 600 $dir/$s7z );
 	unlink $sql;
+	transfer $s7z;
 }
-
-# If there's SCP info, send the backup to the target servers
-if( $#scp >= 0 ) { qx( scp $rsa $dir/$s7z scp\@$_:/ ) for @scp }
 
 # Backup, compress and send files weekly
 if( $date =~ /[0-9]+-[0-9]+-(01|08|16|24)/ ) {
@@ -77,7 +86,7 @@ if( $date =~ /[0-9]+-[0-9]+-(01|08|16|24)/ ) {
 	qx( tar -czf $tgz $f $x );
 	qx( chown scp:scp $dir/$tgz );
 	qx( chmod 600 $dir/$tgz );
-	if( $#scp >= 0 ) { qx( scp $rsa $dir/$tgz scp\@$_:/ ) for @scp }
+	transfer $tgz;
 	unlink "$conf.7z" if $conf;
 }
 
