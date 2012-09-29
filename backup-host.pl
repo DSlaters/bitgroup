@@ -40,6 +40,7 @@ require "./backup-host.conf";
 
 # Backup and compress MySQL databases (7zip file locked with MySQL root password)
 if( qx( which mysqldump ) ) {
+	print "Backing up databases\n";
 	$s7z = "$host-$date.sql.7z";
 	$sql = "$dir/tmp.sql";
 	qx( mysqldump -u root --password='$pass' -A >$sql );
@@ -54,6 +55,7 @@ if( $#scp >= 0 ) { qx( scp $rsa $dir/$s7z scp\@$_:/ ) for @scp }
 
 # Backup, compress and send files weekly
 if( $date =~ /[0-9]+-[0-9]+-(01|08|16|24)/ ) {
+	print "Doing weekly filesystem backup\n";
 
 	# Compress and encrypt the configs
 	if( $#conf >= 0 ) {
@@ -74,6 +76,7 @@ if( $date =~ /[0-9]+-[0-9]+-(01|08|16|24)/ ) {
 }
 
 # Prune older files in the backup dir
+print "Pruning old files\n";
 opendir( DH, $dir ) or die $!;
 while( my $f = readdir( DH ) ) {
 	if( $f =~ m|[^/]+-(\d\d\d\d)-(\d\d)-(\d\d).[^/]+$| ) {
@@ -89,6 +92,7 @@ while( my $f = readdir( DH ) ) {
 		elsif( $age > 60 )  { unlink $f unless $d =~ /(01|07|15|27)/ } # Older than 2 months
 		elsif( $age > 30 )  { unlink $f unless $d =~ /\d[13579]/ }     # Older than 1 month
 	}
+	print "\tRemoved \"$f\"" unless -e $f;
 }
 closedir( DH );
 
@@ -97,6 +101,7 @@ if( $disk ) {
 	$df = qx( df $disk );
 	$df =~ /\d.+?\d+.+?\d+.+?(\d+)/;
 	$size = int($1/104857.6+0.5)/10;
+	print "There is $size\G of free space available on $host.\n";
 	if( $size < $free ) {
 		$tmp = "/tmp/free.txt";
 		open FH,'>', $tmp;
