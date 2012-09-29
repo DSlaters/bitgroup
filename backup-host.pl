@@ -86,8 +86,8 @@ if( $date =~ /[0-9]+-[0-9]+-(01|08|16|24)/ ) {
 	qx( tar -czf $tgz $f $x );
 	qx( chown scp:scp $dir/$tgz );
 	qx( chmod 600 $dir/$tgz );
-	transfer $tgz;
 	unlink "$conf.7z" if $conf;
+	transfer $tgz;
 }
 
 # Prune older files in the backup dir
