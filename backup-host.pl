@@ -32,9 +32,9 @@ $host  = `hostname`;  # name used to identify backup server
 $disk  = '';          # disk to check free space on
 $free  = 5;           # minimum GB free before email is sent to admin
 $pass  = '';          # MySQL root password
-$files = ();          # locations to include in weekly file backup (also add exclusions list to backup.excl)
-$conf  = ();          # list of files that should be encrypted (with root MySQL password)
-$scp   = ();          # list of servers to send backups to over SCP protocol
+@files = ();          # locations to include in weekly file backup (also add exclusions list to backup.excl)
+@conf  = ();          # list of files that should be encrypted (with root MySQL password)
+@scp   = ();          # list of servers to send backups to over SCP protocol
 
 # Override parameters from local backup configuration file
 require "./backup-host.conf";
