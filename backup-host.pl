@@ -127,7 +127,7 @@ if( $disk ) {
 	$df = qx( df $disk );
 	$df =~ /\d.+?\d+.+?\d+.+?(\d+)/;
 	$size = int($1/104857.6+0.5)/10;
-	print "There is $size\G of free space available on $host.\n";
+	print "There is $size\G of free space available on host \"$host\".\n";
 	if( $size < $free ) {
 		$tmp = "/tmp/free.txt";
 		open FH,'>', $tmp;
