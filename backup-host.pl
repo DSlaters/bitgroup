@@ -54,7 +54,7 @@ sub transfer {
 }
 
 # Backup and compress MySQL databases (7zip file locked with MySQL root password)
-if( `which mysqldumpxxx` ) {
+if( `which mysqldump` ) {
 	print "Backing up databases\n";
 	$s7z = "$host-$date.sql.7z";
 	$sql = "$dir/$host-$date.sql";
