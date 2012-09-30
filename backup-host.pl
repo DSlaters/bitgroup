@@ -48,7 +48,7 @@ sub transfer {
 		my $f = shift;
 		for( @scp ) {
 			print "\tSending $f to $_\n";
-			qx( scp $rsa $dir/$f scp\@$_:/ );
+			qx( scp -l 1000 $rsa $dir/$f scp\@$_:/ );
 		}
 	}
 }
