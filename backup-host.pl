@@ -17,6 +17,8 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 # http://www.gnu.org/copyleft/gpl.html
 #
+# Last updated: 2012-09-30, 11:04
+#
 use POSIX;
 use Cwd 'realpath';
 
