@@ -32,7 +32,8 @@ $host  = `hostname`;  # name used to identify backup server
 $disk  = '';          # disk to check free space on
 $free  = 5;           # minimum GB free before email is sent to admin
 $pass  = '';          # MySQL root password
-@files = ();          # locations to include in weekly file backup (also add exclusions list to backup.excl)
+@files = ();          # locations to include in weekly file backup
+@excl  = ();          # locations to exclude in weekly file backup (all items in @conf will be included in here automatically)
 @conf  = ();          # list of files that should be encrypted (with root MySQL password)
 @scp   = ();          # list of servers to send backups to over SCP protocol
 
@@ -51,7 +52,7 @@ sub transfer {
 }
 
 # Backup and compress MySQL databases (7zip file locked with MySQL root password)
-if( `which mysqldump` ) {
+if( `which mysqldumpxxx` ) {
 	print "Backing up databases\n";
 	$s7z = "$host-$date.sql.7z";
 	$sql = "$dir/$host-$date.sql";
@@ -67,11 +68,19 @@ if( `which mysqldump` ) {
 if( $date =~ /[0-9]+-[0-9]+-(01|08|16|24)/ ) {
 	print "Doing weekly filesystem backup\n";
 
+	# Add all @conf items to @excl since they contain sensitive information
+	push @excl, $_ for @conf;
+
+	# Make @conf into an exclusions file for tar
+	$xf = "$dir/excl";
+	qx( echo "" > $xf );
+	qx( echo "$_" >> $xf ) for @excl;
+
 	# Compress and encrypt the configs
 	if( $#conf >= 0 ) {
-		$f = join ' ', $conf;
+		$f = join ' ', @conf;
 		$conf = "$dir/$host-$date-conf.tar";
-		qx( tar -cf $conf $f );
+		qx( tar -cf $conf $f 2> /dev/null );
 		qx( 7za a $conf.7z $conf -p$pass );
 		qx( chown scp:scp $conf.7z );
 		qx( chmod 600 $conf.7z );		
@@ -79,14 +88,14 @@ if( $date =~ /[0-9]+-[0-9]+-(01|08|16|24)/ ) {
 	} else { $conf = '' }
 
 	# Compress the main files
-	$tgz = "$dir/$host-$date.tgz";
-	$f = join ' ', $files;
+	$tgz = "$host-$date.tgz";
+	$f = join ' ', @files;
 	$f .= " $conf.7z" if $conf;
-	$x = -e "./backup-host.excl" ? "-X ./backup-host.excl" : "";
-	qx( tar -czf $tgz $f $x );
+	qx( tar -czf $dir/$tgz $f -X $xf 2> /dev/null );
 	qx( chown scp:scp $dir/$tgz );
 	qx( chmod 600 $dir/$tgz );
 	unlink "$conf.7z" if $conf;
+	unlink $xf;
 	transfer $tgz;
 }
 
