@@ -127,13 +127,14 @@ if( $disk ) {
 	$df = qx( df $disk );
 	$df =~ /\d.+?\d+.+?\d+.+?(\d+)/;
 	$size = int($1/104857.6+0.5)/10;
-	print "There is $size\G of free space available on host \"$host\".\n";
+	$msg = "There is $size\G of free space available on host \"$host\".";
+	print "$msg\n";
 	if( $size < $free ) {
 		$tmp = "/tmp/free.txt";
 		open FH,'>', $tmp;
-		print FH "There is $size\G of free space available on $host.";
+		print FH $msg;
 		close FH;
-		qx( mail -s "$host is running low on disk space" $admin < $tmp );
+		qx( mail -s "Host \"$host\" is running low on disk space" $admin < $tmp );
 		unlink $tmp;
 	}
 }
