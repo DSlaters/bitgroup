@@ -28,12 +28,12 @@ use LWP::UserAgent;
 use utf8;
 use Encode;
 use strict;
-$file = $ARGV[0];
-$post = $ARGV[1];
+my $file = $ARGV[0];
+my $post = $ARGV[1];
 
 # Read in the email file and remove it
 if( !open FH, '<', $file ) die "Couldn't read email file";
-read FH, $email, -s $file;
+read FH, my $email, -s $file;
 close FH;
 unlink $file
 
