@@ -30,7 +30,7 @@ use Encode;
 use strict;
 
 # The email is passed to STDIN
-my $file = <STDIN>;
+my $email = <STDIN>;
 
 # The URL to post the extracted data to is a program argument
 my $post = $ARGV[1];
