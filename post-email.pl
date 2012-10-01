@@ -31,14 +31,14 @@ use strict;
 
 # The email is passed to STDIN
 my @input = <STDIN>;
-my $email = join "\n", @input;
-
-open FH,'>', "/home/znazza/test.log";
-print FH $email;
-close FH;
+my $email = join '', @input;
 
 # The URL to post the extracted data to is a program argument
 my $post = $ARGV[0];
+
+open FH,'>', "/home/znazza/test.log";
+print FH $post;
+close FH;
 
 # Test if lines are doubled up and fix if so
 $email =~ s/\n\n/\n/g if $email =~ /Message-ID: \S+\n\n/s;
