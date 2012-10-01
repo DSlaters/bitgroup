@@ -32,7 +32,7 @@ my $file = $ARGV[0];
 my $post = $ARGV[1];
 
 # Read in the email file and remove it
-die "Couldn't read email file" unless open FH, '<', $file;
+die "Couldn't read email file \"$file\"" unless open FH, '<', $file;
 read FH, my $email, -s $file;
 close FH;
 unlink $file;
