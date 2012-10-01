@@ -28,14 +28,12 @@ use LWP::UserAgent;
 use utf8;
 use Encode;
 use strict;
-my $file = <STDIN>;
-my $post = $ARGV[1];
 
-# Read in the email file and remove it
-die "Couldn't read email file \"$file\"" unless open FH, '<', $file;
-read FH, my $email, -s $file;
-close FH;
-unlink $file;
+# The email is passed to STDIN
+my $file = <STDIN>;
+
+# The URL to post the extracted data to is a program argument
+my $post = $ARGV[1];
 
 # Test if lines are doubled up and fix if so
 $email =~ s/\n\n/\n/g if $email =~ /Message-ID: \S+\n\n/s;
