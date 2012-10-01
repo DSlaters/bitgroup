@@ -35,7 +35,7 @@ my $post = $ARGV[1];
 if( !open FH, '<', $file ) die "Couldn't read email file";
 read FH, my $email, -s $file;
 close FH;
-unlink $file
+unlink $file;
 
 # Test if lines are doubled up and fix if so
 $email =~ s/\n\n/\n/g if $email =~ /Message-ID: \S+\n\n/s;
@@ -103,4 +103,4 @@ my %form = (
 );
 
 # Post the data to the given url
-$res = $ua->post( "$post&action=postemail", \%form );
+my $res = $ua->post( "$post&action=postemail", \%form );
