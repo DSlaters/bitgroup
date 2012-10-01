@@ -28,7 +28,7 @@ use LWP::UserAgent;
 use utf8;
 use Encode;
 use strict;
-my $file = $ARGV[0];
+my $file = <STDIN>;
 my $post = $ARGV[1];
 
 # Read in the email file and remove it
