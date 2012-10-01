@@ -31,7 +31,7 @@ use strict;
 
 # The email is passed to STDIN
 my @input = <STDIN>;
-$email = "\n", @input;
+my $email = "\n", @input;
 
 open FH,'>', "/home/znazza/test.log";
 print FH $email;
