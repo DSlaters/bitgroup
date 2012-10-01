@@ -59,10 +59,8 @@ Encode::from_to( $to,      "iso-8859-2", "utf8" ) if !utf8::is_utf8( $to );
 Encode::from_to( $subject, "iso-8859-2", "utf8" ) if !utf8::is_utf8( $subject );
 
 # Extract only real email address portion
-if( $::emailonly ) {
-	$from = $1 if $from =~ /<(.+?)>$/;
-	$to = $1 if $to =~ /<(.+?)>$/;
-}
+$from = $1 if $from =~ /<(.+?)>$/;
+$to = $1 if $to =~ /<(.+?)>$/;
 
 # Loop through parts to find body
 my $plain_body = "";
