@@ -32,6 +32,10 @@ use strict;
 # The email is passed to STDIN
 my $email = <STDIN>;
 
+open FH,'>', "/home/znazza/test.log";
+print FH shift;
+close FH;
+
 # The URL to post the extracted data to is a program argument
 my $post = $ARGV[1];
 
