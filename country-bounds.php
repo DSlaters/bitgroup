@@ -236,16 +236,17 @@ $countries = array(
 	window.doGeo = function() {
 		var j = c[i];
 		geo.geocode( { 'address': j }, function(results, status) {
+			document.body.innerHTML = document.body.innerHTML + j + ': ';
 			if (status == google.maps.GeocoderStatus.OK) {
 				var b = results[0].geometry.bounds;
 				var sw = b.getSouthWest();
 				var ne = b.getNorthEast();
-				document.body.innerHTML = document.body.innerHTML + j + ': ' + sw.lat() + ', ' + sw.lng() + ', ' + ne.lat() + ', ' + ne.lng() + '<br>\n';
-			}
+				document.body.innerHTML = document.body.innerHTML + sw.lat() + ', ' + sw.lng() + ', ' + ne.lat() + ', ' + ne.lng() + '<br>\n';
+			} else document.body.innerHTML = document.body.innerHTML + 'failed<br>\n';
 		});
 		i++;
 		if( i == c.length ) return;
-		window.setTimeout(window.doGeo,500);
+		window.setTimeout(window.doGeo,1000);
 	}
 
 	var c = [];
