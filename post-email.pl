@@ -105,5 +105,9 @@ my %form = (
 
 # Post the data to the given url
 my $res = $ua->post( "$post&action=postemail", \%form );
+
+# If the response is a redirect, post again to the new location
+$res = $ua->post( $res->header( 'Location' ), \%form ) if $res->is_redirect();
+
 print "Error: " . $res->message . " (" . $res->code . ")\n" if $res->is_error();
 print $res->content if $res->is_success;
