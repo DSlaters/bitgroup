@@ -105,7 +105,7 @@ print "done.\n";
 
 # Get the IDs of all text records not in these sets
 print 'Searching for inactive text records...';
-$set = join ', ', $cur;
+$set = join ', ', @cur;
 $res = query( "SELECT old_id FROM $tbl_txt WHERE old_id NOT IN ( $set )" );
 @old = ();
 push @old, $data[0] while @data = $res->fetchrow_array();
