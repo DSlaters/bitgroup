@@ -40,10 +40,10 @@ $ARGV[0] =~ /^(\w+)\.(\w*)$/;
 $dbh = DBI->connect( "dbi:mysql:$db", $wgDBuser, $wgDBpassword )
 	or die "\nCan't connect to database '$db': ", $DBI::errstr, "\n";
 
-$tbl_pag = "`{$prefix}page`";
-$tbl_rev = "`{$prefix}revision`";
-$tbl_arc = "`{$prefix}archive`";
-$tbl_txt = "`{$prefix}text`";
+$tbl_pag = tableName( 'page' );
+$tbl_rev = tableName( 'revision' );
+$tbl_arc = tableName( 'archive' );
+$tbl_txt = tableName( 'text ');
 
 sub query {
 	$sql = shift;
@@ -52,6 +52,9 @@ sub query {
 	return $sth;
 }
 
+sub tableName {
+	return '`' . $prefix . shift . '`';
+}
 
 
 ### Delete the revisions ###
