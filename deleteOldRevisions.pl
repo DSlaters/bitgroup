@@ -43,7 +43,7 @@ $dbh = DBI->connect( "dbi:mysql:$db", $wgDBuser, $wgDBpassword )
 $tbl_pag = tableName( 'page' );
 $tbl_rev = tableName( 'revision' );
 $tbl_arc = tableName( 'archive' );
-$tbl_txt = tableName( 'text ');
+$tbl_txt = tableName( 'text' );
 
 sub query {
 	$sql = shift;
