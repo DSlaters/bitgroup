@@ -19,7 +19,6 @@
 #
 use DBI;
 
-
 die "\nDelete old revisions from a MediaWiki
 
 Usage:
@@ -29,10 +28,10 @@ Notes:
 - config is the file that contains $wgDBuser and $wgDBpassword
 " if $#ARGV != 1;
 
-
 require( $ARGV[1] );
 $ARGV[0] =~ /^(\w+)\.(\w*)$/;
 ( $db, $prefix ) = ( $1, $2 );
+
 
 
 ### Initialise the DB ###
@@ -55,6 +54,7 @@ sub query {
 sub tableName {
 	return '`' . $prefix . shift . '`';
 }
+
 
 
 ### Delete the revisions ###
