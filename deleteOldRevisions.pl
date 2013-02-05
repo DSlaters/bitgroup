@@ -39,6 +39,7 @@ $ARGV[0] =~ /^(\w+)\.(\w*)$/;
 $dbh = DBI->connect( "dbi:mysql:$db", $wgDBuser, $wgDBpassword )
 	or die "\nCan't connect to database '$db': ", $DBI::errstr, "\n";
 
+sub tableName { return '`' . $prefix . shift . '`' }
 $tbl_pag = tableName( 'page' );
 $tbl_rev = tableName( 'revision' );
 $tbl_arc = tableName( 'archive' );
@@ -51,74 +52,42 @@ sub query {
 	return $sth;
 }
 
-sub tableName {
-	return '`' . $prefix . shift . '`';
-}
-
 
 
 ### Delete the revisions ###
 
 # Get "active" revisions from the page table
-print "Searching for active revisions...";
+print "Searching for active revisions...\n";
 $res = query( "SELECT page_latest FROM $tbl_pag" );
 @cur = ();
 push @cur, $data[0] while @data = $res->fetchrow_array();
 print "done.\n";
 
-# Get all revisions that aren't in this set
-@old = ();
-print "Searching for inactive revisions...";
+# Delete all revisions that aren't in this set
+print "Deleting inactive revisions...\n";
 $set = join ', ', @cur;
-$res = query( "SELECT rev_id FROM $tbl_rev WHERE rev_id NOT IN ( $set )" );
-push @old, $data[0] while @data = $res->fetchrow_array();
+query( "DELETE FROM $tbl_rev WHERE rev_id NOT IN ( $set )" );
 print "done.\n";
-
-# Inform the user of what we're going to do
-$count = scalar @old;
-print "$count old revisions found.\n";
-
-# Delete as appropriate
-if( $count ) {
-	print "Deleting...";
-	$set = join ', ', @old;
-	query( "DELETE FROM $tbl_rev WHERE rev_id IN ( $set )" );
-	print "done.\n";
-}
 
 
 
 ### Purge redundant text records ###
 
 # Get "active" text records from the revisions table
-print 'Searching for active text records in revisions table...';
+print "Searching for active text records in revisions table...\n";
 $res = query( "SELECT DISTINCT rev_text_id FROM $tbl_rev" );
 @cur = ();
 push @cur, $data[0] while @data = $res->fetchrow_array();
 print "done.\n";
 
 # Get "active" text records from the archive table
-print 'Searching for active text records in archive table...';
+print "Searching for active text records in archive table...\n";
 $res = query( "SELECT DISTINCT ar_text_id FROM $tbl_arc" );
 push @cur, $data[0] while @data = $res->fetchrow_array();
 print "done.\n";
 
-# Get the IDs of all text records not in these sets
-print 'Searching for inactive text records...';
+# Delete all text records not in these sets
+print "Deleting inactive text records...\n";
 $set = join ', ', @cur;
-$res = query( "SELECT old_id FROM $tbl_txt WHERE old_id NOT IN ( $set )" );
-@old = ();
-push @old, $data[0] while @data = $res->fetchrow_array();
+query( "DELETE FROM $tbl_txt WHERE old_id NOT IN ( $set )" );
 print "done.\n";
-
-# Inform the user of what we're going to do
-$count = scalar( @old );
-print "$count inactive items found.\n";
-
-# Delete as appropriate
-if( $count ) {
-	print 'Deleting...';
-	$set = join ', ', @old;
-	query( "DELETE FROM $tbl_txt WHERE old_id IN ( $set )" );
-	print "done.\n";
-}
