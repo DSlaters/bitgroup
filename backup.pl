@@ -44,10 +44,6 @@ qx( chmod 640 $dir/$s7z );
 comment "DB backup: $s7z (".size($sql)."/".size("$dir/$s7z").")";
 qx( rm $sql );
 
-# Backup Znazza database
-$sql = "/var/www/domains/znazza/images/znazza-backup.sql";
-qx( mysqldump -u $wgDBuser --password='$wgDBpassword' --default-character-set=latin1 znazza >$sql );
-
 # Backup and compress wiki/web structure
 if ($date =~ /[0-9]+-[0-9]+-(01|09|16|24)/) {
 	$t7z = "www-$date.t7z";
@@ -84,13 +80,9 @@ qx( chown aap:aap $s7z );
 # Backup config files & svn repos
 $conf = join( ' ',
 	"/var/www/tools/wikid.conf",
-	"/var/www/tools/backup.pl",
-       	"/etc/apache2/sites-available",
+	"/etc/apache2/sites-available",
 	"/etc/exim4",
-	"/etc/bind9",
-	"/var/cache/bind",
 	"/etc/ssh/sshd_config",
-	"/etc/samba/smb.conf",
 	"/etc/crontab",
 	"/etc/network/interfaces"
 );

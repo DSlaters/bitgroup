@@ -7,6 +7,9 @@ require "/var/www/tools/wiki.pl";
 # Wiki settings
 $wiki = "https://organicdesign.co.nz/wiki/index.php";
 wikiLogin( $::wiki, $wikiuser, $wikipass );
+my $res = $::client->get( "$wiki?title=Sandbox" );
+print $res->content;
+exit;
 
 
 # Post a comment to the wiki's server-log article
