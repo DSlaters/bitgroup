@@ -98,7 +98,7 @@ comment m/\s([1-9]+\d*).+?am[\x00-\x1f]+.+?([1-9]+\d*).+?am[\x00-\x1f]+.+?([1-9]
 	: "ERROR";
 
 # And add a comment about free space on the server
-$df = qx( df /dev/sda3 );
+$df = qx( df /dev/md2 );
 $df =~ /\d.+?\d+.+?\d+.+?(\d+)/;
 $size = int($1/104857.6+0.5)/10;
 comment "There is $size\G of free space available.";
