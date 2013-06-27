@@ -1,5 +1,4 @@
 #!/bin/sh
-openssl genrsa -out /etc/ssl/private/dovecot.pem 1024
-openssl req -new -key /etc/ssl/private/dovecot.pem -out /tmp/csr
-openssl x509 -in /tmp/csr -out /etc/ssl/certs/dovecot.pem -req -signkey /etc/ssl/private/dovecot.pem -days 999
-
+openssl genrsa -out /var/www/ssl/dovecot.pem 1024
+openssl req -new -key /var/www/ssl/dovecot.pem -out /tmp/csr
+openssl x509 -in /tmp/csr -out /var/www/ssl/dovecot.pem -req -signkey /var/www/ssl/dovecot.pem -days 999
