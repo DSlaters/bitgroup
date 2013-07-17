@@ -33,13 +33,13 @@ while( <LOCALSETTINGS> ) {
 
 # Create a tar of the image hash structure (no tmp, thumbs etc - just the single character hash directories)
 $tar = "/backup/$wgDBname-$date.tar";
-qx( tar -cf $tar $wiki/images/? );
+qx( tar -cf $tar $wiki/images/? $wiki/images/jquery_upload_files );
 
 # Dump the database and add it to the tar and comrpess it
 $sql = "/tmp/$wgDBname.sql";
 qx( mysqldump -u $wgDBuser --password='$wgDBpass' --default-character-set=latin1 -A > $sql );
 qx( tar -r -f $tar $sql );
-qx( 7za a $tar.7z $tar );
+qx( 7za a $tar.7z $tar -p$wgDBpassword );
 qx( chmod 640 $tar.7z );
 qx( rm $sql $tar );
 
