@@ -7,6 +7,7 @@ import smtplib
 
 # Get username and home dir
 currentUser = os.getlogin()
+print currentUser
 
 # Import modules from bmwrapper
 sys.path.append( '/home/' + currentUser + '/bmwrapper' )
@@ -22,7 +23,7 @@ users = dict(config.items('emailusers'))
 msgCount = bminterface.listMsgs()
 print "%i messages to parse" % (msgCount)
 for msgID in range(msgCount):
-	print "Parsing msg %i" % (msgID+1)
+	print "Parsing message %i" % (msgID+1)
 
 	# Get the Bitmessage message
 	dateTime, toAddress, fromAddress, subject, body = bminterface.get(msgID)
@@ -42,10 +43,10 @@ for msgID in range(msgCount):
 	# Send the message to the local address
 	try:
 		smtpObj = smtplib.SMTP('localhost')
-		smtpObj.sendmail(fromAddress, 'nad@localhost', msg)
-		print "Successfully forwarded to local email address"
+		smtpObj.sendmail(fromAddress, toAddress, msg)
+		print 'Successfully forwarded to ' + toAddress
 	except SMTPException:
-		print "Error: unable to forward to local email address"
+		print 'Error: unable to forward to ' + toAddress
 
 	# Delete the message from Bitmessage
 	#bminterface.markForDelete(msgID)
