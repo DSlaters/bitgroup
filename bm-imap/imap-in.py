@@ -26,7 +26,7 @@ for msgID in range(msgCount):
 	fromBM = re.match(r'^(.+)@', fromAddress).group(1)
 
 	# If the from
-	toAddress = users.keys()[users.values().index(toBM in users.values() ? toBM : 0)]
+	toAddress = users.keys()[users.values().index(toBM in users.values() if toBM else 0)]
 	print toAddress
 
 	msg = makeEmail(dateTime, toAddress, fromAddress, subject, body)
