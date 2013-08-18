@@ -1,10 +1,9 @@
 #!/usr/bin/python2.7
-import ConfigParser
-import '~/bmwrapper/incoming.py'
+from ~/bmwrapper/incoming.py import *
 
 # This script is now called directly on a cronjob and sends the retrieved Bitmessage messages to a local email address
 config = ConfigParser.SafeConfigParser()
-config.read('~/.config/PyBitmessage/keys.dat')
+config.read(keysPath)
 emailAddresses = config.items('Email addresses')
 
 # Loop through the Bitmessage messages
