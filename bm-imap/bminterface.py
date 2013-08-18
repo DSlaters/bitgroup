@@ -9,7 +9,7 @@ purgeList = []
 allMessages = []
 
 def _getKeyLocation():  #make this not suck later
-    return '~/.PyBitmessage/keys.dat'
+    return '~/.config/PyBitmessage/keys.dat'
 
 def _getConfig(keys):
     return apiData()
@@ -44,6 +44,9 @@ def _sendBroadcast(fromAddress, subject, body):
       return 0
       
 def _stripAddress(address):
+    if 'broadcast' in address.lower():
+      return 'broadcast'
+
     orig = address
     alphabet = '123456789abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ'
     retstring = ''
@@ -64,7 +67,7 @@ def send(toAddress, fromAddress, subject, body):
     fromAddress = _stripAddress(fromAddress)
     subject = subject.encode('base64')
     body = body.encode('base64')
-    if toAddress == fromAddress:
+    if toAddress == 'broadcast':
       return _sendBroadcast(fromAddress, subject, body)
     else:
       return _sendMessage(toAddress, fromAddress, subject, body)
@@ -81,8 +84,11 @@ def get(msgID):
     dateTime = email.utils.formatdate(time.mktime(datetime.datetime.fromtimestamp(float(inboxMessages['inboxMessages'][msgID]['receivedTime'])).timetuple()))
     toAddress = inboxMessages['inboxMessages'][msgID]['toAddress'] + '@bm.addr'
     fromAddress = inboxMessages['inboxMessages'][msgID]['fromAddress'] + '@bm.addr'
-    if 'Broadcast' in toAddress:
-      toAddress = fromAddress
+
+    ##Disabled to support new chan format
+    #if 'Broadcast' in toAddress:
+    #  toAddress = fromAddress
+
     subject = inboxMessages['inboxMessages'][msgID]['subject'].decode('base64')
     body = inboxMessages['inboxMessages'][msgID]['message'].decode('base64')
     return dateTime, toAddress, fromAddress, subject, body
@@ -142,7 +148,7 @@ def lookupAppdataFolder(): #gets the appropriate folders for the .dat files depe
     elif 'win32' in sys.platform or 'win64' in sys.platform:
         dataFolder = path.join(environ['APPDATA'], APPNAME) + '\\'
     else:
-        dataFolder = path.expanduser(path.join("~", "." + APPNAME + "/"))
+        dataFolder = path.expanduser(path.join("~", "." + "config", APPNAME + "/"))
     return dataFolder
     
 def apiData():
@@ -180,9 +186,13 @@ def apiData():
         apiEnabled = apiConfigured
     except:
         apiConfigured = False #If not found, set to false since it still needs to be configured
+        print "You need to edit your keys.dat file and enable bitmessage's API"
+        print "See for more details: https://bitmessage.org/wiki/API"
+        print "Will now crash..."
+        raise
 
-    if (apiConfigured == False):#If the apienabled == false or is not present in the keys.dat file, notify the user and set it up
-        apiInit(apiEnabled) #Initalize the keys.dat file with API information
+    #if (apiConfigured == False):#If the apienabled == false or is not present in the keys.dat file, notify the user and set it up
+        #apiInit(apiEnabled) #Initalize the keys.dat file with API information
 
     #keys.dat file was found or appropriately configured, allow information retrieval
     apiEnabled = config.getboolean('bitmessagesettings','apienabled')

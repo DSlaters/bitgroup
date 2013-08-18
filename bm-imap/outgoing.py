@@ -1,6 +1,6 @@
 import asyncore
 from smtpd import SMTPServer
-import email.parser
+import email.parser, email.header
 import bminterface
 
 class outgoingServer(SMTPServer):
@@ -11,7 +11,7 @@ class outgoingServer(SMTPServer):
 
         toAddress = msg['To']
         fromAddress = msg['From']
-        subject = msg['Subject']
+        subject = u' '.join(unicode(t[0], t[1] or 'UTF-8') for t in email.header.decode_header(msg['Subject'])).encode('UTF-8')
         body = self._bmformat(msg)
         
         #Make sure we don't send an actually blank subject or body--this can cause problems.
@@ -75,7 +75,7 @@ class outgoingServer(SMTPServer):
       while len(rawText):
         for line in range(len(rawText)):
           if rawText[line]:
-            if rawText[line][0] == '>':
+            if (rawText[line][0] == '>'): # and rawText[line].strip('>')[0] == ' '):
               rawText[line] = rawText[line][1:]
               if rawText[line]:
                 if rawText[line][0] == ' ':
