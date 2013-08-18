@@ -253,7 +253,6 @@ for msgID in range(msgCount):
 	print "Parsing msg %i" % (msgID+1)
 
 	# Get the message and make into an email
-	msgID = int(data.split()[1])-1
 	dateTime, toAddress, fromAddress, subject, body = bminterface.get(msgID)
 	msg = makeEmail(dateTime, toAddress, fromAddress, subject, body)
 
