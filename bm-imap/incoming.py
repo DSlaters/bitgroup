@@ -248,8 +248,9 @@ def incomingServer_main(host, port):
 
 # Loop through the Bitmessage messages
 msgCount = bminterface.listMsgs()
+print "%i messages to parse" % (msgCount)
 for msgID in range(msgCount):
-	print "Parsing msg %i of %i" % (msgID+1, msgCount)
+	print "Parsing msg %i" % (msgID+1)
 
 	# Get the message and make into an email
 	msgID = int(data.split()[1])-1
