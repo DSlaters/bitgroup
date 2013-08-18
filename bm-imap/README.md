@@ -14,3 +14,7 @@ Outgoing messages are sent to a local user account that is configured to forward
 can be set up in the local user's .forward file that uses the pipe command to send the message to this script for forwarding to Bitmessage.
 This uses the same function that the bmwrapper SMTP server used, but is now called in response to the pipe command instead.
 
+The original bmwrapper works in response to mail events of checking incoming messages or sending a message. Our sending part still works in
+a similar way, but the incoming must now run from a cronjob because there is no incoming check event. Before when a user checked the local
+POP server, the script would respond by getting the list of all messages from the Bitmessage API and returning them instead of checking a
+POP box. Now the incoming script has to be called at regular intervals and any new messages are then sent to a local email address.

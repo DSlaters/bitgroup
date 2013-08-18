@@ -6,6 +6,7 @@ import email.mime.multipart
 import email.header
 import bminterface
 import re
+import smtplib
 
 class ChatterboxConnection(object):
     END = "\r\n"
@@ -242,3 +243,26 @@ def incomingServer_main(host, port):
         sock.shutdown(socket.SHUT_RDWR)
         sock.close()
 
+# This script is now called directly on a cronjob and sends the retrieved Bitmessage messages to a local email address
+
+# Loop through the Bitmessage messages
+msgCount = bminterface.listMsgs()
+for msgID in range(msgCount):
+	print "Parsing msg %i of %i" % (msgID+1, msgCount)
+
+	# Get the message and make into an email
+	msgID = int(data.split()[1])-1
+	dateTime, toAddress, fromAddress, subject, body = bminterface.get(msgID)
+	msg = makeEmail(dateTime, toAddress, fromAddress, subject, body)
+
+	# Send the message to the local address
+	try:
+		smtpObj = smtplib.SMTP('localhost')
+		smtpObj.sendmail(fromAddress, 'nad@localhost', msg)
+		print "Successfully forwarded to local email address"
+	except SMTPException:
+		print "Error: unable to forward to local email address"
+
+	# Delete the message from Bitmessage
+	msgID = int(data.split()[1])-1
+	bminterface.markForDelete(msgID)
