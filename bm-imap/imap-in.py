@@ -26,8 +26,8 @@ for msgID in range(msgCount):
 	fromBM = re.match(r'^(.+)@', fromAddress).group(1)
 
 	# If the from
-	toAddress = emailUsers.index(toBM) or emailUsers[0];
 	print emalUsers
+	toAddress = emailUsers.index(toBM) or emailUsers[0];
 
 	msg = makeEmail(dateTime, toAddress, fromAddress, subject, body)
 
