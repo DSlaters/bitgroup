@@ -27,7 +27,7 @@ for msgID in range(msgCount):
 
 	# If the from
 	toAddress = emailUsers.index(toBM) or emailUsers[0];
-	print toAddress
+	print emalUsers
 
 	msg = makeEmail(dateTime, toAddress, fromAddress, subject, body)
 
