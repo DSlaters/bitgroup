@@ -1,9 +1,15 @@
 #!/usr/bin/python2.7
+import os
 import sys
 import ConfigParser
 import re
 import smtplib
-sys.path.append( '/home/odsmtp/bmwrapper' )
+
+# Get username and home dir
+currentUser = os.getlogin()
+
+# Import modules from bmwrapper
+sys.path.append( '/home/' + currentUser + '/bmwrapper' )
 from bminterface import *
 from incoming import *
 
@@ -28,9 +34,9 @@ for msgID in range(msgCount):
 	# Find the user in the list that has the matching Bitmessage address, or use first user if none match
 	toAddress = users.keys()[users.values().index(toBM if toBM in users.values() else 0)] + '@localhost'
 
-	# Format the email addresses to use the Bitmessage address as the friendly name
-	toAddress = '"' + toBM + '" <' + toAddress + '>'
-
+	# Format the email addresses to use the Bitmessage address as the friendly name and compose the message
+	toAddress = toBM + ' <' + toAddress + '>'
+	fromAddress = fromBM + ' <' + currentUser + '@localhost>'
 	msg = makeEmail(dateTime, toAddress, fromAddress, subject, body)
 
 	# Send the message to the local address
