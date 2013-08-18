@@ -3,7 +3,7 @@ import sys
 import ConfigParser
 import bminterface
 import re
-sys.path.append( '~/bmwrapper' )
+sys.path.append( '/home/odsmtp/bmwrapper' )
 from incoming import *
 
 # This script is now called directly on a cronjob and sends the retrieved Bitmessage messages to a local email address
