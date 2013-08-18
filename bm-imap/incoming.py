@@ -6,7 +6,7 @@ from incoming import *
 
 # This script is now called directly on a cronjob and sends the retrieved Bitmessage messages to a local email address
 config = ConfigParser.SafeConfigParser()
-config.read('~/.config/PyBitmessage/keys.dat')
+config.read('/home/odsmtp/.config/PyBitmessage/keys.dat')
 emailUsers = config.items('emailusers')
 
 # Loop through the Bitmessage messages
