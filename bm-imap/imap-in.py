@@ -2,6 +2,7 @@
 import sys
 import ConfigParser
 import re
+import smtplib
 sys.path.append( '/home/odsmtp/bmwrapper' )
 from bminterface import *
 from incoming import *
