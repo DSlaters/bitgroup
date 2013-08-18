@@ -6,7 +6,7 @@ from incoming import *
 
 # This script is now called directly on a cronjob and sends the retrieved Bitmessage messages to a local email address
 config = ConfigParser.SafeConfigParser()
-config.read(keysPath)
+config.read(incoming.keysPath)
 emailAddresses = config.items('Email addresses')
 
 # Loop through the Bitmessage messages
