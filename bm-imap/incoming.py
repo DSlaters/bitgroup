@@ -265,5 +265,4 @@ for msgID in range(msgCount):
 		print "Error: unable to forward to local email address"
 
 	# Delete the message from Bitmessage
-	msgID = int(data.split()[1])-1
 	bminterface.markForDelete(msgID)
