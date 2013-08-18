@@ -10,7 +10,7 @@ from incoming import *
 # This script is now called directly on a cronjob and sends the retrieved Bitmessage messages to a local email address
 config = ConfigParser.SafeConfigParser()
 config.read(bminterface.lookupAppdataFolder() + 'keys.dat')
-emailUsers = dict(config.items('emailusers'))
+users = dict(config.items('emailusers'))
 
 # Loop through the Bitmessage messages
 msgCount = bminterface.listMsgs()
@@ -26,8 +26,8 @@ for msgID in range(msgCount):
 	fromBM = re.match(r'^(.+)@', fromAddress).group(1)
 
 	# If the from
-	print emailUsers
-	toAddress = emailUsers.index(toBM) or emailUsers[0];
+	toAddress = users.keys()[users.values().index(toBM)]
+	print toAddress
 
 	msg = makeEmail(dateTime, toAddress, fromAddress, subject, body)
 
