@@ -266,3 +266,5 @@ for msgID in range(msgCount):
 
 	# Delete the message from Bitmessage
 	bminterface.markForDelete(msgID)
+
+bminterface.cleanup()
