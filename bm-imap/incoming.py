@@ -1,6 +1,8 @@
 #!/usr/bin/python2.7
 import sys
 import ConfigParser
+import bminterface
+import re
 sys.path.append( '~/bmwrapper' )
 from incoming import *
 
