@@ -7,7 +7,7 @@ import smtplib
 
 # Get username and home dir
 currentUser = os.getlogin()
-print currentUser
+currentUser = 'odsmtp'
 
 # Import modules from bmwrapper
 sys.path.append( '/home/' + currentUser + '/bmwrapper' )
