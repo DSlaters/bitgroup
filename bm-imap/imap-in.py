@@ -25,9 +25,11 @@ for msgID in range(msgCount):
 	toBM = re.match(r'^(.+)@', toAddress).group(1)
 	fromBM = re.match(r'^(.+)@', fromAddress).group(1)
 
-	# If the from
-	toAddress = users.keys()[users.values().index(toBM if toBM in users.values() else 0)]
-	print toAddress
+	# Find the user in the list that has the matching Bitmessage address, or use first user if none match
+	toAddress = users.keys()[users.values().index(toBM if toBM in users.values() else 0)] + '@localhost'
+
+	# Format the email addresses to use the Bitmessage address as the friendly name
+	toAddress = '"' + toBM + '" <' + toAddress + '>'
 
 	msg = makeEmail(dateTime, toAddress, fromAddress, subject, body)
 
