@@ -21,8 +21,13 @@ for msgID in range(msgCount):
 	# Get the Bitmessage message
 	dateTime, toAddress, fromAddress, subject, body = bminterface.get(msgID)
 
-	# Convert the To and From addresses to raw Bitmessage addresses
-	print re.match(r'^(.+)@', toAddress).group(1)
+	# Get the To and From raw Bitmessage addresses
+	toBM = re.match(r'^(.+)@', toAddress).group(1)
+	fromBM = re.match(r'^(.+)@', fromAddress).group(1)
+
+	# If the from
+	toAddress = emailUsers.index(toBM) or emailUsers[0];
+	print toAddress
 
 	msg = makeEmail(dateTime, toAddress, fromAddress, subject, body)
 
