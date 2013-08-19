@@ -17,7 +17,7 @@ from bminterface import *
 from outgoing import *
 
 # Start up an instance of the outgoing server based on out dummy SMTPserver class
-dummy = outgoingServer(('localhost', 12345), None)
+dummy = outgoingServer()
 
 # Now we can call its process_message method on the data received from our external email server
 dummy.process_message(None, None, None, data)
