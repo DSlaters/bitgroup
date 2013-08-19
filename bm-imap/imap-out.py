@@ -38,7 +38,7 @@ from outgoing import *
 data = '';
 for line in sys.stdin:
 	fromAddress = re.match(r'^From:.*?([a-zA-Z_-.0-9]+@[a-zA-Z_-.0-9]+)', line).group(1)
-    if(fromAddress):
+    if fromAddress:
 		fromBM = emails.get(fromAddress, emails.values()[0])
 		line = 'From: ' + fromBM + ' <' + fromAddress + '>'
     data += line
