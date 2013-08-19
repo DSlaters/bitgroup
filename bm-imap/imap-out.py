@@ -8,23 +8,16 @@ import email.parser, email.header
 currentUser = os.getlogin()
 currentUser = 'odsmtp'
 
+# The email data is passed to STDIN
+data = sys.stdin.readlines()
+
 # Import modules from bmwrapper
 sys.path.append( '/home/' + currentUser + '/bmwrapper' )
 from bminterface import *
 from outgoing import *
 
-# The email is passed to STDIN
-#my @input = <STDIN>;
+# Start up an instance of the outgoing server based on out dummy SMTPserver class
+dummy = outgoingServer()
 
-# The URL to post the extracted data to is a program argument
-#my $post = $ARGV[0];
-
-# Extract the useful header portion of the message
-#my $id      = $1 if $email =~ /^message-id:\s*<(.+?)>\s*$/mi;
-#my $date    = $1 if $email =~ /^date:\s*(.+?)\s*$/mi;
-#my $to      = $1 if $email =~ /^to:\s*(.+?)\s*$/mi;
-#my $from    = $1 if $email =~ /^from:\s*(.+?)\s*$/mi;
-#my $subject = $1 if $email =~ /^subject:\s*(.+?)\s*$/im;
-
-foo = outgoingServer()
-
+# Now we can call its process_message method on the data received from our external email server
+dummy.process_message(dummy, None, None, None, data)
