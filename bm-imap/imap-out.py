@@ -30,7 +30,7 @@ from outgoing import *
 # Extend the outgoingServer class but with a null constructor so that no server gets started
 class imapOut(outgoingServer):
 	def __init__(self):
-		return self
+		return None
 
 # Call the process_message method on the data received from our external email server on STDIN
 imapOut().process_message(None, None, None, sys.stdin.read())
