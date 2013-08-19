@@ -45,7 +45,7 @@ for line in sys.stdin:
 	if re.match(r'^From:', line):
 		fromAddress = parseaddr(line)[1]
 		fromBM = emails.get(fromAddress, emails.values()[0])
-		line = 'From: ' + fromBM + ' <' + fromAddress + '>'
+		line = 'From: ' + fromBM + ' <' + fromAddress + '>\n'
 	data += line
 
 with open("/var/log/bitmessage.log", "a") as log:
