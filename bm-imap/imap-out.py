@@ -20,4 +20,4 @@ from outgoing import *
 dummy = outgoingServer()
 
 # Now we can call its process_message method on the data received from our external email server
-dummy.process_message(dummy, None, None, None, data)
+dummy.process_message(None, None, None, data)
