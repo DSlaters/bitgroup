@@ -4,6 +4,7 @@ bm-gateway
 Bitmessage is a peer-to-peer communications protocol based on the Bitcoin crypto-currency used to send encrypted messages to another person or to many subscribers. It is decentralized and trustless, meaning that you need-not inherently trust any entities like root certificate authorities. It uses strong authentication which means that the sender of a message cannot be spoofed, and it aims to hide "non-content" data, like the sender and receiver of messages, from passive eavesdroppers like those running warrantless wiretapping programs. If Bitmessage is completely new to you, you may wish to start by reading the whitepaper at https://bitmessage.org/bitmessage.pdf
 
 bmwrapper is a python script to let a local email client and PyBitmessage communicate, similar to AyrA's (generally much better) application, ﻿Bitmessage2Mail, but that's Windows-only. It works by starting local SMTP and POP servers as an interface to the Bitmessage API.
+http://github.com/Arceliar/bmwrapper
 
 bm-gateway utilises the functionality of bmwrapper on hosts that already have a running mail server and acts as a gateway between the local Bitmessage instance and the mail server without starting up an additional SMTP and POP server.
 
