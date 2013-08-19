@@ -5,7 +5,7 @@ import re
 import email.parser, email.header
 
 # Get username and home dir
-currentUser = os.getlogin()
+#currentUser = os.getlogin()
 currentUser = 'odsmtp'
 
 # The email data is passed to STDIN
