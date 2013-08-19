@@ -11,3 +11,19 @@ SMTP and POP server running.
 Incoming Bitmessage messages are now sent to a local email address, actually any email address would do, but if it's not local, then the security of using Bitmessage would be compromised. The email address that correspond to each Bitmessage address are added to a new "emailaddresses" section in the keys.dat configuration file in the form foo@bar.baz = BM-xxxxxxx. If an incoming Bitmessage's address does not match any of the email addresses then the first is used as a "catch all".
 
 Outgoing messages are sent to a local user account that is configured to forward the message to Bitmessage. For example using Exim a filter can be set up in the local user's .forward file that uses the pipe command to send the message to this script for forwarding to Bitmessage. This user account is also the user under which Bitmessage should be running, and all them (PyBitmessage, PyBitmessage-Daemon, bmwrapper and bm-imap) should be located in this account's home directory.
+
+Installation
+============
+First set up an unprivileged user account to run Bitmessage and all the scripts under. Install Bitmessage, Bitmessage-Daemon, bmwrapper and bm-imap into this user's home directory. Add a .config/PyBitmessage/keys.dat configuration file for Bitmessage with the API enabled and add a new "emailaddresses" section with mappings of each of your email addresses to Bitmessage addresses, e.g.
+
+[emailaddresses]
+foo@bar.com = BM-2D8WUhjPbRABrRdZqQeYZUAJdpvxDfjej4
+bar@baz.com = BM-2D7F9ILxyeVXqrMsfyRcPZuhzhDXjMtkbQ
+
+Set up an email account for this user which will be the generic account through which all outgoing Bitmessage messages will sent. You'll need to set up a way for the emails to be sent to the bm-imap/imap-out.py script instead of to standard delivery. For Exim this can be done by using a filter in a .forward file in the user's home directory that uses the pipe command. Here's an example filter which uses a condition to check that it's a Bitmessage recipient incase the user also has normal mail delivered too.
+
+# Exim filter
+if
+   $header_to matches "^BM-"
+then
+   pipe "$home/bm-imap/imap-out.
