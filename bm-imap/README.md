@@ -30,3 +30,7 @@ if
 then
    pipe "$home/bm-imap/imap-out.py"
 endif
+
+The ''bm-imap/imap-in.py'' script will need to be called on a regular basis to check for new incoming Bitmessage messages and forward them to the appropriate local email account. You can add something similar to the following to your ''crontab'' to achieve this:
+
+*/5 * * * * bitmessage /home/bitmessage/bm-imap/imap-in.py > /dev/null
