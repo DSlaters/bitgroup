@@ -26,4 +26,5 @@ Set up an email account for this user which will be the generic account through 
 if
    $header_to matches "^BM-"
 then
-   pipe "$home/bm-imap/imap-out.
+   pipe "$home/bm-imap/imap-out.py"
+endif

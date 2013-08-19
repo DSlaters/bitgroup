@@ -19,6 +19,7 @@ import os
 import sys
 import re
 import ConfigParser
+from email.utils import parseaddr
 
 # Get dir containing the code
 path = os.path.dirname(os.path.dirname(__file__))
@@ -41,9 +42,8 @@ class imapOut(outgoingServer):
 # The email is sent to STDIN, we need to read it and map the From field to one of the Bitmessage addresses in the config file
 data = '';
 for line in sys.stdin:
-	fromAddress = re.match(r'^From:.*?([a-zA-Z_-.0-9]+@[a-zA-Z_-.0-9]+)', line).group(1)
-	if fromAddress:
-		fromBM = emails.get(fromAddress, emails.values()[0])
+	if re.match(r'^From:', line):
+		fromBM = emails.get(parseaddr(line)[1], emails.values()[0])
 		line = 'From: ' + fromBM + ' <' + fromAddress + '>'
 	data += line
 
