@@ -34,19 +34,19 @@ sys.path.append( '/home/' + currentUser + '/bmwrapper' )
 from bminterface import *
 from outgoing import *
 
-# The email is sent to STDIN, we need to read it and map the From field to one of the Bitmessage addresses in the config file
-data = '';
-for line in sys.stdin:
-	fromAddress = re.match(r'^From:.*?([a-zA-Z_-.0-9]+@[a-zA-Z_-.0-9]+)', line).group(1)
-    if fromAddress:
-		fromBM = emails.get(fromAddress, emails.values()[0])
-		line = 'From: ' + fromBM + ' <' + fromAddress + '>'
-    data += line
-
 # Extend the outgoingServer class but with a null constructor so that no server gets started
 class imapOut(outgoingServer):
 	def __init__(self):
 		return None
 
-# Call the process_message method on the data received from our external email server on STDIN
+# The email is sent to STDIN, we need to read it and map the From field to one of the Bitmessage addresses in the config file
+data = '';
+for line in sys.stdin:
+	fromAddress = re.match(r'^From:.*?([a-zA-Z_-.0-9]+@[a-zA-Z_-.0-9]+)', line).group(1)
+	if fromAddress:
+		fromBM = emails.get(fromAddress, emails.values()[0])
+		line = 'From: ' + fromBM + ' <' + fromAddress + '>'
+    data += line
+
+# Call the process_message method on the email data
 imapOut().process_message(None, None, None, data)
