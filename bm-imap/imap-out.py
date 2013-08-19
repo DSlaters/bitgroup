@@ -8,16 +8,14 @@ import email.parser, email.header
 #currentUser = os.getlogin()
 currentUser = 'odsmtp'
 
-# The email data is passed to STDIN
-data = sys.stdin.readlines()
-
 # Import modules from bmwrapper
 sys.path.append( '/home/' + currentUser + '/bmwrapper' )
 from bminterface import *
 from outgoing import *
 
-# Start up an instance of the outgoing server based on out dummy SMTPserver class
-dummy = outgoingServer()
+# Extend the outgoingServer class but with a null constructor so that no server gets started
+class imapOut(outgoingServer):
+	def __init__():
 
-# Now we can call its process_message method on the data received from our external email server
-dummy.process_message(None, None, None, data)
+# Call the process_message method on the data received from our external email server on STDIN
+imapOut().process_message(None, None, None, sys.stdin.read())
