@@ -17,10 +17,25 @@
 # http://www.gnu.org/copyleft/gpl.html
 import os
 import sys
+import re
+import ConfigParser
 
 # Get username and home dir
 #currentUser = os.getlogin()
 currentUser = 'odsmtp'
+
+# Get the mappings of email addresses to Bitmessage addresses
+config = ConfigParser.SafeConfigParser()
+config.read(bminterface.lookupAppdataFolder() + 'keys.dat')
+emails = dict(config.items('emailaddresses'))
+
+# The email is sent to STDIN, we need to read it and map the From field to one of the Bitmessage addresses in the config file
+data = '';
+for line in sys.stdin:
+    if(fromAddress = re.match(r'^From:.*?([a-zA-Z_-.0-9]+@[a-zA-Z_-.0-9]+)', line).group(1)):
+		fromBM = emails.get(fromAddress, emails.values()[0])
+		line = 'From: ' + fromBM + ' <' + fromAddress + '>'
+    data += line
 
 # Import modules from bmwrapper
 sys.path.append( '/home/' + currentUser + '/bmwrapper' )
@@ -33,4 +48,4 @@ class imapOut(outgoingServer):
 		return None
 
 # Call the process_message method on the data received from our external email server on STDIN
-imapOut().process_message(None, None, None, sys.stdin.read())
+imapOut().process_message(None, None, None, data)

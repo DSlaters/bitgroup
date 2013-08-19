@@ -30,10 +30,10 @@ sys.path.append( '/home/' + currentUser + '/bmwrapper' )
 from bminterface import *
 from incoming import *
 
-# This script is now called directly on a cronjob and sends the retrieved Bitmessage messages to a local email address
+# Get the mappings of email addresses to Bitmessage addresses
 config = ConfigParser.SafeConfigParser()
 config.read(bminterface.lookupAppdataFolder() + 'keys.dat')
-users = dict(config.items('emailusers'))
+emails = dict(config.items('emailaddresses'))
 
 # Loop through the Bitmessage messages
 msgCount = bminterface.listMsgs()
@@ -49,7 +49,7 @@ for msgID in range(msgCount):
 	fromBM = re.match(r'^(.+)@', fromAddress).group(1)
 
 	# Find the user in the list that has the matching Bitmessage address, or use first user if none match
-	toAddress = users.keys()[users.values().index(toBM if toBM in users.values() else 0)] + '@localhost'
+	toAddress = emails.keys()[emails.values().index(toBM if toBM in emails.values() else 0)]
 
 	# Format the email addresses to use the Bitmessage address as the friendly name and compose the message
 	toAddress = toBM + ' <' + toAddress + '>'
