@@ -21,12 +21,12 @@ import re
 import ConfigParser
 import smtplib
 
-# Get username and home dir
-currentUser = os.getlogin()
-currentUser = 'odsmtp'
+# Get dir containing the code (must be the home dir of the user running the scripts and receiving the mails)
+path = os.path.dirname(os.path.dirname(__file__))
+currentUser = re.match(r'/home/([^/]+)', path).group(1)
 
-# Import modules from bmwrapper
-sys.path.append( '/home/' + currentUser + '/bmwrapper' )
+# Import modules from bmwrapper (expected to be in the same dir as bm-imap)
+sys.path.append( path + '/bmwrapper' )
 from bminterface import *
 from incoming import *
 

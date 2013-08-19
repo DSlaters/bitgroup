@@ -20,17 +20,16 @@ import sys
 import re
 import ConfigParser
 
-# Get username and home dir
-#currentUser = os.getlogin()
-currentUser = 'odsmtp'
+# Get dir containing the code
+path = os.path.dirname(os.path.dirname(__file__))
 
 # Get the mappings of email addresses to Bitmessage addresses
 config = ConfigParser.SafeConfigParser()
 config.read(bminterface.lookupAppdataFolder() + 'keys.dat')
 emails = dict(config.items('emailaddresses'))
 
-# Import modules from bmwrapper
-sys.path.append( '/home/' + currentUser + '/bmwrapper' )
+# Import modules from bmwrapper (expected to be in the same dir as bm-imap)
+sys.path.append( path + '/bmwrapper' )
 from bminterface import *
 from outgoing import *
 
@@ -46,7 +45,7 @@ for line in sys.stdin:
 	if fromAddress:
 		fromBM = emails.get(fromAddress, emails.values()[0])
 		line = 'From: ' + fromBM + ' <' + fromAddress + '>'
-    data += line
+	data += line
 
 # Call the process_message method on the email data
 imapOut().process_message(None, None, None, data)
