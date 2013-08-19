@@ -64,7 +64,7 @@ for msgID in range(msgCount):
 		print 'Error: unable to forward to ' + toAddress
 
 	# Delete the message from Bitmessage
-	#bminterface.markForDelete(msgID)
+	bminterface.markForDelete(msgID)
 
 bminterface.cleanup()
 
