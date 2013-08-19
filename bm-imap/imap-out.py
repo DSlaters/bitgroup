@@ -1,8 +1,6 @@
 #!/usr/bin/python2.7
 import os
 import sys
-import re
-import email.parser, email.header
 
 # Get username and home dir
 #currentUser = os.getlogin()
