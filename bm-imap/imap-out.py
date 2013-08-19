@@ -43,7 +43,8 @@ class imapOut(outgoingServer):
 data = '';
 for line in sys.stdin:
 	if re.match(r'^From:', line):
-		fromBM = emails.get(parseaddr(line)[1], emails.values()[0])
+		fromAddress = parseaddr(line)[1]
+		fromBM = emails.get(fromAddress, emails.values()[0])
 		line = 'From: ' + fromBM + ' <' + fromAddress + '>'
 	data += line
 
