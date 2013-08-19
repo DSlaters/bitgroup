@@ -23,7 +23,6 @@ import smtplib
 
 # Get dir containing the code (must be the home dir of the user running the scripts and receiving the mails)
 path = os.path.dirname(os.path.dirname(__file__))
-currentUser = re.match(r'/home/([^/]+)', path).group(1)
 
 # Import modules from bmwrapper (expected to be in the same dir as bm-imap)
 sys.path.append( path + '/bmwrapper' )
@@ -49,11 +48,11 @@ for msgID in range(msgCount):
 	fromBM = re.match(r'^(.+)@', fromAddress).group(1)
 
 	# Find the user in the list that has the matching Bitmessage address, or use first user if none match
-	toAddress = emails.keys()[emails.values().index(toBM if toBM in emails.values() else 0)]
+	toAddress = emails.keys()[emails.values().index(toBM if toBM in emails.values() else 1)]
 
 	# Format the email addresses to use the Bitmessage address as the friendly name and compose the message
 	toAddress = toBM + ' <' + toAddress + '>'
-	fromAddress = fromBM + ' <' + currentUser + '@localhost>'
+	fromAddress = fromBM + ' <' + emails.keys()[0] + '>'
 	msg = makeEmail(dateTime, toAddress, fromAddress, subject, body)
 
 	# Send the message to the local address
