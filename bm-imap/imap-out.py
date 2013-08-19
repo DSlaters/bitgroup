@@ -48,5 +48,8 @@ for line in sys.stdin:
 		line = 'From: ' + fromBM + ' <' + fromAddress + '>'
 	data += line
 
+with open("/var/log/bitmessage.log", "a") as log:
+	log.write(data)
+
 # Call the process_message method on the email data
 imapOut().process_message(None, None, None, data)
