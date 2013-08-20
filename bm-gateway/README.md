@@ -37,5 +37,5 @@ The ''bm-gateway/in.py'' script will need to be called on a regular basis to che
 Usage
 =====
 Nothing needs to be done to receive or reply to messages, they just arrive in the inbox and can be replied to in to in the normal way. Sending messages to Bitmessage addresses that isn't a reply is done by using the following format for the To field:
-<pre>BM-2D7F9ILxyeABCD1234xyzfPZuhzhD <bitmessage@foo.com></pre>
+<pre>BM-2D7F9ILxyeABCD1234xyzfPZuhzhD &lt;bitmessage@foo.com&gt;</pre>
 where the name portion is the recipient Bitmessage address, and the email address portion is the address of the account that was set up to receive all the messages for the gateway to forward to Bitmessage - in our example above, bitmessage@foo.com
