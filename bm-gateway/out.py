@@ -46,7 +46,7 @@ for line in sys.stdin:
 
 	# If the To field is one of the local addresses, return from the script with a message
 	if re.match(r'^To:', line) and emails.get(parseaddr(line)[1]):
-		sys.exit('You cannot send to local users via the Bitmessage network.')
+		raise Exception('You cannot send to local users via the Bitmessage network.')
 	
 	# Map the From field to one of the Bitmessage addresses in the config file
 	if re.match(r'^From:', line):
