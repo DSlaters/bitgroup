@@ -39,13 +39,20 @@ class imapOut(outgoingServer):
 	def __init__(self):
 		return None
 
-# The email is sent to STDIN, we need to read it and map the From field to one of the Bitmessage addresses in the config file
+# The email is sent to STDIN, we need to read it and 
 data = '';
 for line in sys.stdin:
+
+	# If the To field is one of the local addresses, return from the script with a message
+	if re.match(r'^To:', line) && emails.get(parseaddr(line)[1]):
+		sys.exit('You cannot send to local users via the Bitmessage network.')
+	
+	# Map the From field to one of the Bitmessage addresses in the config file
 	if re.match(r'^From:', line):
 		fromAddress = parseaddr(line)[1]
 		fromBM = emails.get(fromAddress, emails.values()[0])
 		line = 'From: ' + fromBM + ' <' + fromAddress + '>\n'
+
 	data += line
 
 # Call the process_message method on the email data
