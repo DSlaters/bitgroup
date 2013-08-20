@@ -13,7 +13,7 @@ Outgoing messages are sent to a local user account that is configured to forward
 
 Installation
 ============
-First set up an unprivileged user account to run Bitmessage and all the scripts under. Install Bitmessage, Bitmessage-Daemon, bmwrapper and bm-gateway into this user's home directory. Ensure that daemon and API are enabled in your .config/PyBitmessage/keys.dat configuration file for Bitmessage. Set up a .config file in the bm-gateway directory containing a "settings" and a "addresses" section. The first section contains a "gatewat" value with the email address of the user running the scripts, and the second section contains mappings of each of your email addresses to Bitmessage addresses, including the address of the account through which all outgoing messages will be sent, e.g.
+First set up an unprivileged user account to run Bitmessage and all the scripts under. Install Bitmessage, Bitmessage-Daemon, bmwrapper and bm-gateway into this user's home directory. Ensure that daemon and API are enabled in your .config/PyBitmessage/keys.dat configuration file for Bitmessage. Set up a .config file in the bm-gateway directory containing a "settings" and a "addresses" section. The first section contains a "gateway" value with the email address of the user running the scripts, and the second section contains mappings of each of your email addresses to Bitmessage addresses, including the address of the account through which all outgoing messages will be sent, e.g.
 <pre>
 [settings]
 gateway = bitmessage@foo.com
