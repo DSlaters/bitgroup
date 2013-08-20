@@ -40,7 +40,7 @@ class outgoingGateway(outgoingServer):
 	def __init__(self):
 		return None
 
-# The email is sent to STDIN, we need to read it and 
+# The email is sent to STDIN by the local mailserver's delivery filter
 data = '';
 for line in sys.stdin:
 
