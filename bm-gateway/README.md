@@ -40,3 +40,5 @@ Usage
 Nothing needs to be done to receive or reply to messages, they just arrive in the inbox and can be replied to in to in the normal way. Sending messages to Bitmessage addresses that isn't a reply is done by using the following format for the To field:
 <pre>BM-2D7F9ILxyeABCD1234xyzfPZuhzhD <bitmessage&#64;foo.com></pre>
 where the name portion is the recipient Bitmessage address, and the email address portion is the address of the account that was set up to receive all the messages for the gateway to forward to Bitmessage - in our example above, bitmessage@foo.com
+
+Note that users on the same gateway cannot sent messages to each other via the Bitmessage network, because Bitmessage doesn't allow a user to send to one of their own addresses, and in the case of the gateway, all the local user's addresses are on the same Bitmessage instance. If this is attempted, the script will raise an exception, and in the case of Exim the message and the exception details will be returned to the sender.
