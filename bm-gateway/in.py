@@ -31,8 +31,9 @@ from incoming import *
 
 # Get the mappings of email addresses to Bitmessage addresses
 config = ConfigParser.SafeConfigParser()
-config.read(bminterface.lookupAppdataFolder() + 'keys.dat')
-emails = dict(config.items('emailaddresses'))
+config.read(dirname(__file__) + '/.config')
+gateway = config.get('settings','gateway')
+emails = dict(config.items('addresses'))
 
 # Loop through the Bitmessage messages
 msgCount = bminterface.listMsgs()
@@ -48,11 +49,11 @@ for msgID in range(msgCount):
 	fromBM = re.match(r'^(.+)@', fromAddress).group(1)
 
 	# Find the user in the list that has the matching Bitmessage address, or use first user if none match
-	toAddress = emails.keys()[emails.values().index(toBM if toBM in emails.values() else 1)]
+	toAddress = emails.keys()[emails.values().index(toBM if toBM in emails.values() else 0)]
 
 	# Format the email addresses to use the Bitmessage address as the friendly name and compose the message
 	toAddress = toBM + ' <' + toAddress + '>'
-	fromAddress = fromBM + ' <' + emails.keys()[0] + '>'
+	fromAddress = fromBM + ' <' + gateway + '>'
 	msg = makeEmail(dateTime, toAddress, fromAddress, subject, body)
 
 	# Send the message to the local address

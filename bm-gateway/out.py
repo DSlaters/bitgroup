@@ -30,9 +30,9 @@ from bminterface import *
 from outgoing import *
 
 # Get the mappings of email addresses to Bitmessage addresses
-config = ConfigParser.SafeConfigParser()
-config.read(bminterface.lookupAppdataFolder() + 'keys.dat')
-emails = dict(config.items('emailaddresses'))
+config.read(dirname(__file__) + '/.config')
+gateway = config.get('settings','gateway')
+emails = dict(config.items('addresses'))
 
 # Extend the outgoingServer class but with a null constructor so that no server gets started
 class imapOut(outgoingServer):
