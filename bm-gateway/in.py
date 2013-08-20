@@ -61,11 +61,9 @@ for msgID in range(msgCount):
 		smtpObj = smtplib.SMTP('localhost')
 		smtpObj.sendmail(fromAddress, toAddress, msg)
 		print 'Successfully forwarded to ' + toAddress
+		bminterface.markForDelete(msgID)
 	except SMTPException:
 		print 'Error: unable to forward to ' + toAddress
-
-	# Delete the message from Bitmessage
-	bminterface.markForDelete(msgID)
 
 bminterface.cleanup()
 
