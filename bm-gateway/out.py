@@ -36,7 +36,7 @@ gateway = config.get('settings','gateway')
 emails = dict(config.items('addresses'))
 
 # Extend the outgoingServer class but with a null constructor so that no server gets started
-class imapOut(outgoingServer):
+class outgoingGateway(outgoingServer):
 	def __init__(self):
 		return None
 
@@ -57,4 +57,4 @@ for line in sys.stdin:
 	data += line
 
 # Call the process_message method on the email data
-imapOut().process_message(None, None, None, data)
+outgoingGateway().process_message(None, None, None, data)
