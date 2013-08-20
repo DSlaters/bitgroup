@@ -7,22 +7,23 @@ bmwrapper (http://github.com/Arceliar/bmwrapper) is a python script to let a loc
 
 bm-gateway utilises the functionality of bmwrapper on hosts that already have a running mail server and acts as a gateway between the local Bitmessage instance and the mail server without starting up an additional SMTP and POP server.
 
-Incoming Bitmessage messages are now sent to a local email address, actually any email address would do, but if it's not local, then the security of using Bitmessage would be compromised. The email address that correspond to each Bitmessage address are added to a new "emailaddresses" section in the keys.dat configuration file in the form foo@bar.baz = BM-xxxxxxx. If an incoming Bitmessage's address does not match any of the email addresses then the second is used as a "catch all" (the first email address is the address of the user
-account for outgoing messages, described below).
+Incoming Bitmessage messages are now sent to a local email address, actually any email address would do, but if it's not local, then the security of using Bitmessage would be compromised. The email address that correspond to each Bitmessage address in the "addresses" section of the gateway configuration file in the form foo@bar.baz = BM-xxxxxxx. If an incoming Bitmessage's address does not match any of the email addresses then the first is used as a "catch all".
 
-Outgoing messages are sent to a local user account that is configured to forward the messages to Bitmessage. The email address of this account is the first one in the "emailaddresses" section of the configuration and has no associated Bitmessage address. For example using Exim a filter can be set up in the local user's .forward file that uses the pipe command to send the message to this script for forwarding to Bitmessage. This user account is also the user under which Bitmessage should be running, and all them (PyBitmessage, PyBitmessage-Daemon, bmwrapper and bm-gateway) should be located in this account's home directory.
+Outgoing messages are sent to a local user account that is configured to forward the messages to Bitmessage. The email address of this account is defined in the "settings" section of the configuration. For example using Exim a filter can be set up in the local user's .forward file that uses the pipe command to send the message to this script for forwarding to Bitmessage. This user account is also the user under which Bitmessage should be running, and all them (PyBitmessage, PyBitmessage-Daemon, bmwrapper and bm-gateway) should be located in this account's home directory.
 
 Installation
 ============
-First set up an unprivileged user account to run Bitmessage and all the scripts under. Install Bitmessage, Bitmessage-Daemon, bmwrapper and bm-gateway into this user's home directory. Add a .config/PyBitmessage/keys.dat configuration file for Bitmessage with the API enabled and add a new "emailaddresses" section with mappings of each of your email addresses to Bitmessage addresses, including the address of the account through which all outgoing messages will be sent, e.g.
+First set up an unprivileged user account to run Bitmessage and all the scripts under. Install Bitmessage, Bitmessage-Daemon, bmwrapper and bm-gateway into this user's home directory. Ensure that daemon and API are enabled in your .config/PyBitmessage/keys.dat configuration file for Bitmessage. Set up a .config file in the bm-gateway directory containing a "settings" and a "addresses" section. The first section contains a "gatewat" value with the email address of the user running the scripts, and the second section contains mappings of each of your email addresses to Bitmessage addresses, including the address of the account through which all outgoing messages will be sent, e.g.
 <pre>
-[emailaddresses]
-bitmessage@foo.com =
+[settings]
+gateway = bitmessage@foo.com
+
+[addresses]
 bar@foo.com = BM-2D8WUhjPbRABrRdZqQeYZUAJdpvxDfjej4
 baz@foo.com = BM-2D7F9ILxyeVXqrMsfyRcPZuhzhDXjMtkbQ
 </pre>
 
-Set up an email account for this user which will be the generic account through which all outgoing Bitmessage messages will sent, in the example configuration above, this email address is assumed to be "bitmessage@foo.com". You'll need to set up a way for the emails to be sent to the bm-imap/imap-out.py script instead of to standard delivery. For Exim this can be done by using a filter in a .forward file in the user's home directory that uses the pipe command. Here's an example filter which uses a condition to check that it's a Bitmessage recipient incase the user also has normal mail delivered too.
+Set up an email account for this gateway user which will be the generic account through which all outgoing Bitmessage messages will sent, in the example configuration above, this email address is assumed to be "bitmessage@foo.com". You'll need to set up a way for the emails to be sent to the bm-gateway/out.py script instead of to standard delivery. For Exim this can be done by using a filter in a .forward file in the user's home directory that uses the pipe command. Here's an example filter which uses a condition to check that it's a Bitmessage recipient incase the user also has normal mail delivered too.
 <pre>
 # Exim filter
 if
@@ -32,7 +33,7 @@ then
 endif
 </pre>
 The ''bm-gateway/in.py'' script will need to be called on a regular basis to check for new incoming Bitmessage messages and forward them to the appropriate local email account. You can add something similar to the following to your ''crontab'' to achieve this:
-<pre>*/5 * * * * bitmessage /home/bitmessage/bm-imap/imap-in.py > /dev/null</pre>
+<pre>*/5 * * * * bitmessage /home/bitmessage/bm-gateway/in.py > /dev/null</pre>
 
 Usage
 =====
