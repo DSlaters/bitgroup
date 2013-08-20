@@ -30,6 +30,7 @@ from bminterface import *
 from outgoing import *
 
 # Get the mappings of email addresses to Bitmessage addresses
+config = ConfigParser.SafeConfigParser()
 config.read(dirname(__file__) + '/.config')
 gateway = config.get('settings','gateway')
 emails = dict(config.items('addresses'))
