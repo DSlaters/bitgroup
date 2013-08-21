@@ -57,7 +57,7 @@ for msgID in range(msgCount):
 	msg = makeEmail(dateTime, toAddress, fromAddress, subject, body)
 
 	# Add a reply-to field so that replies come back to the gateway, but the To field uses the @bm.addr format
-	msg = re.sub('^(From:.+?)$', '\1\nReply-To: '+gateway, msg, re.MULTILINE)
+	msg = re.sub('^(From:.+?)$', '\1\nReply-To: ' + toBM + ' <' + gateway + '>', msg, re.MULTILINE)
 
 	# Send the message to the local address
 	try:
