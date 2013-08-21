@@ -52,7 +52,7 @@ for line in sys.stdin:
 	if re.match(r'^From:', line):
 		fromAddress = parseaddr(line)[1]
 		fromBM = emails.get(fromAddress, emails.values()[0])
-		line = 'From: ' + fromBM + ' <' + fromAddress + '>\n'
+		line = 'From: ' + fromBM + '@bm.addr\n'
 
 	data += line
 
