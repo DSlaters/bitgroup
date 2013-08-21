@@ -55,7 +55,7 @@ for msgID in range(msgCount):
 	toAddress = toBM + ' <' + toAddress + '>'
 	fromAddress = fromBM + '@bm.addr'
 	msg = makeEmail(dateTime, toAddress, fromAddress, subject, body)
-	msg = re.sub('^(From:.+?)$', '\1\nReply-To: ' + fromBM + ' <' + gateway + '>', msg, re.MULTILINE)
+	msg = re.sub('^(From:.+?)$', '\\1\nReply-To: ' + fromBM + ' <' + gateway + '>', msg, 1, re.M)
 
 	# Send the message to the local address
 	try:
