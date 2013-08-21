@@ -45,19 +45,19 @@ for msgID in range(msgCount):
 	dateTime, toAddress, fromAddress, subject, body = bminterface.get(msgID)
 
 	# Get the To and From raw Bitmessage addresses
-	toBM = re.match(r'^(.+)@', toAddress).group(1)
-	fromBM = re.match(r'^(.+)@', fromAddress).group(1)
+	toBM = re.match('(.+)@', toAddress).group(1)
+	fromBM = re.match('(.+)@', fromAddress).group(1)
 
 	# Find the user in the list that has the matching Bitmessage address, or use first user if none match
 	toAddress = emails.keys()[emails.values().index(toBM if toBM in emails.values() else 0)]
 
 	# Format the email addresses to use the Bitmessage address as the friendly name and compose the message
 	toAddress = toBM + ' <' + toAddress + '>'
-	fromAddress = fromBM + ' <' + gateway + '>'
+	fromAddress = fromBM + '@bm.addr'
 	msg = makeEmail(dateTime, toAddress, fromAddress, subject, body)
 
 	# Add a reply-to field so that replies come back to the gateway, but the To field uses the @bm.addr format
-	msg = re.sub('^(From:.+?)$', '\1\nReply-To: ' + toBM + ' <' + gateway + '>', msg, re.MULTILINE)
+	msg = re.sub('^(From:.+?)$', '\1\nReply-To: ' + fromBM + ' <' + gateway + '>', msg, re.MULTILINE)
 
 	# Send the message to the local address
 	try:
