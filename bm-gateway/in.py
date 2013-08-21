@@ -51,12 +51,10 @@ for msgID in range(msgCount):
 	# Find the user in the list that has the matching Bitmessage address, or use first user if none match
 	toAddress = emails.keys()[emails.values().index(toBM if toBM in emails.values() else 0)]
 
-	# Format the email addresses to use the Bitmessage address as the friendly name and compose the message
+	# Compose the message and add a reply-to field so that replies come back to the gateway, but the To field uses the @bm.addr format
 	toAddress = toBM + ' <' + toAddress + '>'
 	fromAddress = fromBM + '@bm.addr'
 	msg = makeEmail(dateTime, toAddress, fromAddress, subject, body)
-
-	# Add a reply-to field so that replies come back to the gateway, but the To field uses the @bm.addr format
 	msg = re.sub('^(From:.+?)$', '\1\nReply-To: ' + fromBM + ' <' + gateway + '>', msg, re.MULTILINE)
 
 	# Send the message to the local address
