@@ -30,9 +30,9 @@ from bminterface import *
 from outgoing import *
 
 # Get the mappings of email addresses to Bitmessage addresses
-config = ConfigParser.SafeConfigParser()
+config = ConfigParser.SafeConfigParser({'domain':'bm.addr'})
 config.read(os.path.dirname(__file__) + '/.config')
-gateway = config.get('settings','gateway')
+domain = config.get('settings','domain')
 emails = dict(config.items('addresses'))
 
 # Extend the outgoingServer class but with a null constructor so that no server gets started
@@ -52,7 +52,7 @@ for line in sys.stdin:
 	if re.match('From:', line):
 		fromAddress = parseaddr(line)[1]
 		fromBM = emails.get(fromAddress, emails.values()[0])
-		line = 'From: ' + fromBM + '@bm.addr\n'
+		line = 'From: ' + fromBM + '@' + domain + '\n'
 
 	data += line
 

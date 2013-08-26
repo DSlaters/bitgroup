@@ -25,14 +25,14 @@ import smtplib
 path = os.path.dirname(os.path.dirname(__file__))
 
 # Import modules from bmwrapper (expected to be in the same dir as bm-imap)
-sys.path.append( path + '/bmwrapper' )
+sys.path.append(path + '/bmwrapper')
 from bminterface import *
 from incoming import *
 
 # Get the mappings of email addresses to Bitmessage addresses
-config = ConfigParser.SafeConfigParser()
+config = ConfigParser.SafeConfigParser({'domain':'bm.addr'})
 config.read(os.path.dirname(__file__) + '/.config')
-gateway = config.get('settings','gateway')
+domain = config.get('settings','domain')
 emails = dict(config.items('addresses'))
 
 # Loop through the Bitmessage messages
@@ -51,11 +51,15 @@ for msgID in range(msgCount):
 	# Find the user in the list that has the matching Bitmessage address, or use first user if none match
 	toAddress = emails.keys()[emails.values().index(toBM if toBM in emails.values() else 0)]
 
-	# Compose the message and add a reply-to field so that replies come back to the gateway, but the To field uses the @bm.addr format
+	# Compose the email message
 	toAddress = toBM + ' <' + toAddress + '>'
-	fromAddress = fromBM + '@bm.addr'
+	fromAddress = fromBM + '@' + domain
 	msg = makeEmail(dateTime, toAddress, fromAddress, subject, body)
-	msg = re.sub('^(From:.+?)$', '\\1\nReply-To: ' + fromBM + ' <' + gateway + '>', msg, 1, re.M)
+
+	# If not using a domain for incoming messages, add a reply-to field back to the gateway account
+	if domain == 'bm.addr':
+		gateway = config.get('settings','gateway')
+		msg = re.sub('^(From:.+?)$', '\\1\nReply-To: ' + fromBM + ' <' + gateway + '>', msg, 1, re.M)
 
 	# Send the message to the local address
 	try:
