@@ -45,8 +45,10 @@ data = '';
 for line in sys.stdin:
 
 	# If the To field is one of the local addresses, return from the script with a message
-	if re.match('To:', line) and parseaddr(line)[0] in emails.values():
-		sys.exit('You cannot send to local users via the Bitmessage network.')
+	if re.match('To:', line):
+		toBM = re.match('To:.*?(BM-[a-zA-Z0-9]+)', line).group(1)
+		if toBM in emails.values():
+			sys.exit('You cannot send to local users via the Bitmessage network.')
 	
 	# Map the From field to one of the Bitmessage addresses in the config file
 	if re.match('From:', line):
