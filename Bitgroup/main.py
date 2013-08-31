@@ -1,17 +1,49 @@
 #!/usr/bin/python2.7
-# Copyright (C) 2013 Aran Dunkley
-#
-# This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License along
-# with this program; if not, write to the Free Software Foundation, Inc.,
-# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
-# http://www.gnu.org/copyleft/gpl.html
+import os
+import sys
+import re
+import ConfigParser
+import singleton
+import server
+import xmlrpclib
+import json
+
+class app:
+	def __init__(self):
+
+		# Read the configuration file
+		path = os.path.dirname(os.path.dirname(__file__))
+		config = ConfigParser.SafeConfigParser();
+		config.read(os.path.dirname(__file__) + '/.config')
+		self.config.port = config.get('interface', 'port')
+		self.config.version = '0.0.0'
+		self.config.api.port = config.getint('bitmessage', 'port')
+		self.config.api.interface = config.get('bitmessage', 'interface')
+		self.config.api.username = config.get('bitmessage', 'username')
+		self.config.api.password = config.get('bitmessage', 'password')
+
+		# Build the Bitmessage RPC URL from the key and password
+		self.rpc_url = "http://"+self.config.api.username+":"+self.config.api.password+"@"+self.config.api.interface+":"+str(self.config.api.port)+"/"
+
+		# Initialise the messages list
+		self.getMessages()
+
+		# Set up a simple HTTP server to handle requests from the interface
+		srv = http.server('localhost', self.config.port)
+
+		return None
+
+	# Retrieve the messages from the Bitmessage inbox returning ours as the appropriate class
+	def getMessages:
+		api = xmlrpclib.ServerProxy(self.config.rpc_url)
+		self.messages = json.loads(api.getAllInboxMessages())
+
+
+if __name__ == '__main__':
+
+	# Bail if this app is already running
+	singleton.SingleInstance()
+
+	# Instantiate the main app instance
+	a = app()
+
