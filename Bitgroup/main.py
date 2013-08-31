@@ -47,3 +47,12 @@ if __name__ == '__main__':
 	# Instantiate the main app instance
 	a = app()
 
+	# Wait for incoming connections and handle them forever
+	try:
+		print "Press Ctrl+C to exit."
+		asyncore.loop()
+	except KeyboardInterrupt:
+		print "Exiting..."
+		print "Sockets might get stuck open..."
+		print "Just wait a minute before restarting the program..."
+		pass
