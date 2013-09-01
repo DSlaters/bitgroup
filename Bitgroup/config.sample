@@ -1,0 +1,9 @@
+[bitmessage]
+addr = BM-YourBitMessageAddress
+port = 8442
+interface = 127.0.0.1
+username = BitMessageAPIuser
+password = BitMessageAPIpass
+
+[interface]
+port = 80

@@ -1,10 +1,14 @@
-# Class representing the current user
 import extensions
 from node import *
 from bminterface import *
 
-class User(bmAddress,Node):
-	def __init__(self):
+class User(BitmessageAddress, Node):
+	"""Class representing the current user"""
+
+	def __init__(self,addr):
+
+		# Set the Bitmessage address for this user
+		self.addr = addr
 
 		# Add extensions that extend the group class to this class
 		extensions.add()
