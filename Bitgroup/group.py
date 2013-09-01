@@ -3,7 +3,7 @@ import extensions
 from node import *
 from bminterface import *
 
-class Group(bmAddress,Node):
+class Group(BitmessageAddress,Node):
 	def __init__(self):
 
 		# Add extensions that extend the group class to this class
