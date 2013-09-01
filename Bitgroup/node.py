@@ -1,6 +1,4 @@
-import json
-
-class Node(BitmessageAddress, Node):
+class Node:
 	"""User and Group classes inherit this functionality so they can have a persistent properties structure"""
 
 	data = None # cache of this node's data
