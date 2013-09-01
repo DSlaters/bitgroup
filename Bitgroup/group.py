@@ -1,10 +1,12 @@
 # This is the class that messages from the Bitmessage inbox are returned as if they're for our app
 import extensions
+from node import *
+from bminterface import *
 
-class Group:
+class Group(bmAddress,Node):
 	def __init__(self):
 
-		# Add extensions that extend the group class to the Group base class__pt
+		# Add extensions that extend the group class to this class
 		extensions.add()
 
 		return None

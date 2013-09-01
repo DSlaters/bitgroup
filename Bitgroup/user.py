@@ -1,7 +1,9 @@
 # Class representing the current user
 import extensions
+from node import *
+from bminterface import *
 
-class User:
+class User(bmAddress,Node):
 	def __init__(self):
 
 		# Add extensions that extend the group class to this class
