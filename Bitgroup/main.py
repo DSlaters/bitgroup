@@ -4,6 +4,8 @@ import sys
 import re
 import ConfigParser
 import singleton
+import user
+import group
 import server
 import xmlrpclib
 import json
@@ -12,7 +14,6 @@ class app:
 	def __init__(self):
 
 		# Read the configuration file
-		path = os.path.dirname(os.path.dirname(__file__))
 		config = ConfigParser.SafeConfigParser();
 		config.read(os.path.dirname(__file__) + '/.config')
 		self.config.port = config.get('interface', 'port')
@@ -24,6 +25,12 @@ class app:
 
 		# Build the Bitmessage RPC URL from the key and password
 		self.rpc_url = "http://"+self.config.api.username+":"+self.config.api.password+"@"+self.config.api.interface+":"+str(self.config.api.port)+"/"
+
+		# Initialise the current user
+		self.user = user.User()
+
+		# Initialise groups
+		self.groups = self.user.getGroups()
 
 		# Initialise the messages list
 		self.getMessages()
