@@ -8,6 +8,6 @@ class Group(BitmessageAddress, Node):
 	def __init__(self):
 
 		# Add extensions that extend the group class to this class
-		extensions.add()
+		extensions.add(self)
 
 		return None

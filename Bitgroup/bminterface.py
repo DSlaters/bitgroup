@@ -33,7 +33,7 @@ def _stripAddress(address):
 			retstring += address[0]
 			address = address[1:]
 		else:
-		 address = address[1:]
+			address = address[1:]
 	print "converted address " + orig + " to " + retstring
 	return retstring
 

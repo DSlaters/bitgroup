@@ -11,7 +11,7 @@ class User(BitmessageAddress, Node):
 		self.addr = addr
 
 		# Add extensions that extend the group class to this class
-		extensions.add()
+		extensions.add(self)
 
 		return None
 
