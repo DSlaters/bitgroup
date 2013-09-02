@@ -30,6 +30,14 @@ class App:
 		self.config.api.username = config.get('bitmessage', 'username')
 		self.config.api.password = config.get('bitmessage', 'password')
 
+		# Ensure that PyBitmessage is in the same dir and add it to the import path if so
+		bmsrc = os.path.dirname(os.path.dirname(__file__))) + '/PyBitmessage/src'
+		if os.path.exists(bmsrc):
+			sys.path.append(bmsrc)
+		else:
+			print "Error: Bitgroup needs to be installed in the same location as Bitmessage."
+			exit
+
 		# Set the location for application data and create the dir if it doesn't exist
 		self.datapath = "~/.Bitgroup"
 		if not os.path.exists(self.datapath):

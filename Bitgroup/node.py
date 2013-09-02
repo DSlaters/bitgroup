@@ -1,7 +1,17 @@
-class Node:
-	"""User and Group classes inherit this functionality so they can have a persistent properties structure"""
+import hashlib
+import pyelliptic
+import highlevelcrypto
+from pyelliptic.openssl import OpenSSL
+from bitmessagemain import pointMult
 
-	data = None # cache of this node's data
+class Node:
+	"""
+	User and Group classes inherit this functionality so they can have a persistent properties structure.
+	The data is stored encrypted using the encryption functions directly from the PyBitmessage source.
+	"""
+
+	data = None    # cache of this node's data
+	passwd = None  # used to ecrypt data and messages for this user or group
 
 	# Get a property in this nodes data structure
 	def get(self, key):
@@ -45,6 +55,13 @@ class Node:
 		# Save the updated data
 		self.save()
 
+	# TODO
+	def del(self):
+
+		# Load the data if the cache is uninitialised
+		if self.data == None:
+			self.load()
+
 	# Get the filesystem location of this node's data
 	def path(self):
 		return app.data + '/' + self.addr + '.json'
@@ -52,27 +69,28 @@ class Node:
 	# Load this node's data into the local cache
 	def load(self):
 		f = self.path()
-
-		# Create the file if it doesn't exist
 		if os.path.exists(f):
 			h = open(f, "rb")
-			self.data = json.loads(h.read())
+			self.data = self.decrypt(json.loads(h.read()), self.passwd)
+			h.close()
 		else:
-			s = '{}'
-			self.data = json.loads(s)
-			h = open(f, "wb+")
-			h.write(s);
-		h.close()
+			self.data = {}
 
 	# Save the local cache to the data file
+	# TODO: data changes should queue and save periodically, not on every property change
 	def save(self):
 		f = self.path()
 		h = open(f, "wb+")
-		h.write(json.dumps(self.data));
+		h.write(self.encrypt(json.dumps(self.data), self.passwd));
 		h.close()
 
-	# Delete this node's data
-	def delete(self):
-		f = self.path()
-		if os.path.exists(f):
-			os.remove(f)
+	# Encrypt the passed data using a password
+	def encrypt(data, passwd):
+		privKey = hashlib.sha512(passwd).digest()[:32]
+		pubKey = pointMult(privKey)
+		return highlevelcrypto.encrypt(data, pubKey.encode('hex'))
+
+	# Decrypt the passed encrypted data
+	def decrypt(data, passwd):
+		privKey = hashlib.sha512(passwd).digest()[:32]
+		return highlevelcrypto.decrypt(data, privKey.encode('hex'))

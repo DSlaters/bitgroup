@@ -5,13 +5,13 @@ from bminterface import *
 class User(BitmessageAddress, Node):
 	"""Class representing the current user"""
 
-	def __init__(self, addr):
+	def __init__(self, addr, passwd):
 
 		# Set the Bitmessage address for this user
 		self.addr = addr
 
-		# Add extensions that extend the group class to this class
-		extensions.add(self)
+		# Set the user's passpwd for encrypting stored data and messages
+		self.passwd = passwd
 
 		return None
 
