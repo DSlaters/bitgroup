@@ -11,31 +11,27 @@ from group import *
 class App:
 	"""The main top-level class for all teh functionality of the Bitgroup application"""
 
-	config = ()
-	messages = ()
-	events = ()
-	user = ()
-	groups = ()
+	messages = []
+	events = {}
+	groups = {}
 
 	def __init__(self):
 
 		# Read the configuration file
 		config = ConfigParser.SafeConfigParser();
 		config.read(os.path.dirname(__file__) + '/.config')
-		self.config.port = config.get('interface', 'port')
-		self.config.version = '0.0.0'
-		self.config.addr = config.get('bitmessage', 'addr')
-		self.config.api.port = config.getint('bitmessage', 'port')
-		self.config.api.interface = config.get('bitmessage', 'interface')
-		self.config.api.username = config.get('bitmessage', 'username')
-		self.config.api.password = config.get('bitmessage', 'password')
+		self.port = config.get('interface', 'port')
+		self.version = '0.0.0'
 
-		# Ensure that PyBitmessage is in the same dir and add it to the import path if so
-		bmsrc = os.path.dirname(os.path.dirname(__file__))) + '/PyBitmessage/src'
+		# Get location of Bitmessage from config, same location is this if not defined
+		try:
+			bmsrc = config.get('bitmessage', 'program')
+		except:
+			bmsrc = os.path.dirname(os.path.dirname(__file__)) + '/PyBitmessage/src'
 		if os.path.exists(bmsrc):
 			sys.path.append(bmsrc)
 		else:
-			print "Error: Bitgroup needs to be installed in the same location as Bitmessage."
+			print "Error: Couldn't find Bitmessage src directory."
 			exit
 
 		# Set the location for application data and create the dir if it doesn't exist
@@ -44,11 +40,14 @@ class App:
 			os.mkdir(self.datapath)
 
 		# Build the Bitmessage RPC URL from the key and password
-		self.rpc_url = "http://"+self.config.api.username+":"+self.config.api.password+"@"+self.config.api.interface+":"+str(self.config.api.port)+"/"
-		self.api = xmlrpclib.ServerProxy(self.rpc_url)
+		port = config.getint('bitmessage', 'port')
+		interface = config.get('bitmessage', 'interface')
+		username = config.get('bitmessage', 'username')
+		password = config.get('bitmessage', 'password')
+		self.api = xmlrpclib.ServerProxy("http://"+username+":"+password+"@"+interface+":"+str(port)+"/")
 
 		# Initialise the current user
-		self.user = user.User(self.config.addr)
+		self.user = user.User(config.get('bitmessage', 'addr'))
 
 		# Initialise groups
 		self.groups = self.user.getGroups()
@@ -61,3 +60,6 @@ class App:
 
 		return None
 
+	# Read the messages from Bitmessage abd store in local app list
+	def getMessage():
+		return []

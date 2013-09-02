@@ -1,5 +1,6 @@
 # This will be a simple HHTP server to handle requests from the interface (and only the interface)
 # it must populate and server the html templates and serve the JS, CSS and image resources
+import asyncore
 
 class handler(asyncore.dispatcher_with_send):
 
