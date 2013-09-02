@@ -1,7 +1,6 @@
 import os
 import sys
 import re
-import ConfigParser
 import http
 import xmlrpclib
 import json
@@ -15,27 +14,12 @@ class App:
 	events = {}
 	groups = {}
 
-	def __init__(self):
+	def __init__(self, config):
 
-		# Read the configuration file
-		config = ConfigParser.SafeConfigParser();
-		config.read(os.path.dirname(__file__) + '/.config')
-		self.port = config.get('interface', 'port')
 		self.version = '0.0.0'
 
-		# Get location of Bitmessage from config, same location is this if not defined
-		try:
-			bmsrc = config.get('bitmessage', 'program')
-		except:
-			bmsrc = os.path.dirname(os.path.dirname(__file__)) + '/PyBitmessage/src'
-		if os.path.exists(bmsrc):
-			sys.path.append(bmsrc)
-		else:
-			print "Error: Couldn't find Bitmessage src directory."
-			exit
-
 		# Set the location for application data and create the dir if it doesn't exist
-		self.datapath = "~/.Bitgroup"
+		self.datapath = os.getenv("HOME") + "/.Bitgroup"
 		if not os.path.exists(self.datapath):
 			os.mkdir(self.datapath)
 
@@ -46,8 +30,8 @@ class App:
 		password = config.get('bitmessage', 'password')
 		self.api = xmlrpclib.ServerProxy("http://"+username+":"+password+"@"+interface+":"+str(port)+"/")
 
-		# Initialise the current user
-		self.user = user.User(config.get('bitmessage', 'addr'))
+		# Initialise the current user (just using API password for encrypting user data for now)
+		self.user = User(config.get('bitmessage', 'addr'), password)
 
 		# Initialise groups
 		self.groups = self.user.getGroups()
@@ -56,10 +40,10 @@ class App:
 		self.getMessages()
 
 		# Set up a simple HTTP server to handle requests from the interface
-		srv = http.server('localhost', self.config.port)
+		srv = http.server('localhost', config.getint('interface', 'port'))
 
 		return None
 
 	# Read the messages from Bitmessage abd store in local app list
-	def getMessage():
+	def getMessages(self):
 		return []

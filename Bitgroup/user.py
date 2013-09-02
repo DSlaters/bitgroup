@@ -15,5 +15,5 @@ class User(BitmessageAddress, Node):
 		return None
 
 	# return a list of all the groups the user is a member of
-	def getGroups():
+	def getGroups(self):
 		return None;

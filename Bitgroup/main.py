@@ -1,4 +1,22 @@
 #!/usr/bin/python2.7
+import os
+import sys
+import ConfigParser
+
+# Read the configuration file
+config = ConfigParser.SafeConfigParser();
+config.read(os.path.dirname(__file__) + '/.config')
+
+# Get location of Bitmessage from config, same location is this if not defined
+try:
+	bmsrc = config.get('bitmessage', 'program')
+except:
+	bmsrc = os.path.dirname(os.path.dirname(__file__)) + '/PyBitmessage/src'
+if os.path.exists(bmsrc):
+	sys.path.append(bmsrc)
+else:
+	raise Exception("Error: Couldn't find Bitmessage src directory.")
+
 import singleton
 import asyncore
 from app import *
@@ -9,7 +27,7 @@ if __name__ == '__main__':
 	singleton.SingleInstance()
 
 	# Instantiate the main app instance
-	app = App()
+	app = App(config)
 
 	# Wait for incoming connections and handle them forever
 	try:

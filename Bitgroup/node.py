@@ -56,7 +56,7 @@ class Node:
 		self.save()
 
 	# TODO
-	def del(self):
+	def remove(self):
 
 		# Load the data if the cache is uninitialised
 		if self.data == None:

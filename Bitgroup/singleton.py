@@ -1,4 +1,9 @@
 # Source: http://pythonhosted.org/tendo/_modules/tendo/singleton.html#SingleInstance
+import os
+import sys
+import tempfile
+import logging
+
 class SingleInstance:
 	"""
 	If you want to prevent your script from running in parallel just instantiate SingleInstance() class. If is there another instance already running it will exist the application with the message "Another instance is already running, quitting.", returning -1 error code.
