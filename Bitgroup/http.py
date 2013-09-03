@@ -50,14 +50,14 @@ class handler(asyncore.dispatcher_with_send):
 				content += "<p>The requested URL " + uri + " was not found on this server.</p>\n"
 				content += "</body></html>"
 
-			http = "HTTP/1.0 " + status + "\r\n"
-			http += "Date: " + date + "\r\n"
-			http += "Server: " + server + "\r\n"
-			http += "Content-Type: " + ctype + "\r\n"
-			http += "Connection: close\r\n"
-			http += "Content-Length: " + str(len(content)) + "\r\n\r\n"
+			header = "HTTP/1.0 " + status + "\r\n"
+			header += "Date: " + date + "\r\n"
+			header += "Server: " + server + "\r\n"
+			header += "Content-Type: " + ctype + "\r\n"
+			header += "Connection: close\r\n"
+			header += "Content-Length: " + str(len(content)) + "\r\n\r\n"
 
-			self.send(http + content)
+			self.send(header + content)
 
 class server(asyncore.dispatcher):
 
