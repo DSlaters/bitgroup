@@ -19,11 +19,11 @@ class App:
 
 		self.name = 'Bitgroup'
 		self.version = '0.0.0'
+		self.docroot = os.path.dirname(__file__) + '/interface'
 
 		# Set the location for application data and create the dir if it doesn't exist
 		self.datapath = os.getenv("HOME") + '/.Bitgroup'
-		if not os.path.exists(self.datapath):
-			os.mkdir(self.datapath)
+		if not os.path.exists(self.datapath): os.mkdir(self.datapath)
 
 		# Build the Bitmessage RPC URL from the key and password
 		port = config.getint('bitmessage', 'port')

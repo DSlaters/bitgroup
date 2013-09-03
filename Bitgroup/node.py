@@ -17,8 +17,7 @@ class Node:
 	def get(self, key):
 
 		# Load the data if the cache is uninitialised
-		if self.data == None:
-			self.load()
+		if self.data == None: self.load()
 
 		# Split key path and walk data path to get value
 		val = self.data
@@ -34,8 +33,7 @@ class Node:
 	def set(self, key, val):
 
 		# Load the data if the cache is uninitialised
-		if self.data == None:
-			self.load()
+		if self.data == None: self.load()
 
 		# Split key path and walk data path to set value, create non-existent items
 		j = self.data
@@ -59,8 +57,7 @@ class Node:
 	def remove(self):
 
 		# Load the data if the cache is uninitialised
-		if self.data == None:
-			self.load()
+		if self.data == None: self.load()
 
 	# Get the filesystem location of this node's data
 	def path(self):
