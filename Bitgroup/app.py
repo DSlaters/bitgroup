@@ -10,16 +10,18 @@ from group import *
 class App:
 	"""The main top-level class for all teh functionality of the Bitgroup application"""
 
+	name = None
 	messages = []
 	events = {}
 	groups = {}
 
 	def __init__(self, config):
 
+		self.name = 'Bitgroup'
 		self.version = '0.0.0'
 
 		# Set the location for application data and create the dir if it doesn't exist
-		self.datapath = os.getenv("HOME") + "/.Bitgroup"
+		self.datapath = os.getenv("HOME") + '/.Bitgroup'
 		if not os.path.exists(self.datapath):
 			os.mkdir(self.datapath)
 
@@ -40,7 +42,7 @@ class App:
 		self.getMessages()
 
 		# Set up a simple HTTP server to handle requests from the interface
-		srv = http.server('localhost', config.getint('interface', 'port'))
+		srv = http.server(self, 'localhost', config.getint('interface', 'port'))
 
 		return None
 
