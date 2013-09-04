@@ -37,7 +37,7 @@ class handler(asyncore.dispatcher_with_send):
 			uri = os.path.abspath(uri)
 			path = docroot + uri
 			if uri == '/':
-				content += "<title>" + group + " - " + app.name + "</title>\n"
+				content += "<title>" + ( group + " - " if group else '' ) + app.name + "</title>\n"
 				content += "<meta charset=\"UTF-8\" />\n"
 				content += "<meta name=\"generator\" content=\"" + server + "\" />\n"
 				content += "<script type=\"text/javascript\" src=\"/resources/jquery-1.10.2.min.js\"></script>\n"
