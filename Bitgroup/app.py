@@ -33,7 +33,7 @@ class App:
 		self.api = xmlrpclib.ServerProxy("http://"+username+":"+password+"@"+interface+":"+str(port)+"/")
 
 		# Initialise the current user (just using API password for encrypting user data for now)
-		self.user = User(config.get('bitmessage', 'addr'), password)
+		self.user = User(self, config.get('bitmessage', 'addr'), password)
 
 		# Initialise groups
 		self.groups = self.user.getGroups()

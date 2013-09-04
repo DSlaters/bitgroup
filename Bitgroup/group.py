@@ -4,7 +4,8 @@ from bminterface import *
 class Group(BitmessageAddress, Node):
 	"""This is the class that messages from the Bitmessage inbox are returned as if they're for our app"""
 
-	def __init__(self, addr, passwd):
+	def __init__(self, app, addr, passwd):
+		self.app = app
 
 		# Set the Bitmessage address for this user
 		self.addr = addr

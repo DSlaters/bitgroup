@@ -45,7 +45,12 @@ class handler(asyncore.dispatcher_with_send):
 				content += "<script type=\"text/javascript\" src=\"/resources/jquery.observehashchange.min.js\"></script>\n"
 				content += "<script type=\"text/javascript\" src=\"/main.js\"></script>\n"
 				content += "<script type=\"text/javascript\">window.app.group = '" + group + "'</script>\n"
-				content += "</head>\n<body>\nHello world!\n</body>\n</html>\n"
+				content += "</head>\n<body>\n</body>\n</html>\n"
+
+			# If this is a request for _data.json return the current group's node data
+			elif os.path.basename(uri) == '_data.json':
+				content = app.groups[group].json()
+				ctype = mimetypes.guess_type(uri)[0]
 
 			# Serve the requested file if it exists and isn't a directory
 			elif os.path.exists(path) and not os.path.isdir(path):

@@ -1,3 +1,5 @@
+import os
+import json
 import hashlib
 import pyelliptic
 import highlevelcrypto
@@ -61,7 +63,7 @@ class Node:
 
 	# Get the filesystem location of this node's data
 	def path(self):
-		return app.data + '/' + self.addr + '.json'
+		return self.app.datapath + '/' + self.addr + '.json'
 
 	# Load this node's data into the local cache
 	def load(self):
@@ -81,13 +83,20 @@ class Node:
 		h.write(self.encrypt(json.dumps(self.data), self.passwd));
 		h.close()
 
+	# Return the data as JSON for the interface
+	def json(self):
+		if self.data == None: self.load()
+		return json.dumps(self.data)
+
 	# Encrypt the passed data using a password
-	def encrypt(data, passwd):
+	def encrypt(self, data, passwd):
+		return data # no encryption while debgging
 		privKey = hashlib.sha512(passwd).digest()[:32]
 		pubKey = pointMult(privKey)
 		return highlevelcrypto.encrypt(data, pubKey.encode('hex'))
 
 	# Decrypt the passed encrypted data
-	def decrypt(data, passwd):
+	def decrypt(self, data, passwd):
+		return data # no encryption while debgging
 		privKey = hashlib.sha512(passwd).digest()[:32]
 		return highlevelcrypto.decrypt(data, privKey.encode('hex'))

@@ -1,10 +1,12 @@
 from node import *
 from bminterface import *
+from group import Group
 
 class User(BitmessageAddress, Node):
 	"""Class representing the current user"""
 
-	def __init__(self, addr, passwd):
+	def __init__(self, app, addr, passwd):
+		self.app = app
 
 		# Set the Bitmessage address for this user
 		self.addr = addr
@@ -16,4 +18,4 @@ class User(BitmessageAddress, Node):
 
 	# return a list of all the groups the user is a member of
 	def getGroups(self):
-		return ['Foo','Bar','Baz'];
+		return {'Foo': Group(self.app, 'BM-blablablabla','foobas!@#$')};

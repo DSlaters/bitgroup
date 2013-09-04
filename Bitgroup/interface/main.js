@@ -18,24 +18,44 @@
  */
 function App(){
 
+	// Call the app's initialise function after the document is ready
+	$(document).ready(function() { window.app.init.call(window.app) });
+
 	// Regiester hash changes with our handler
-	jQuery(window).hashchange(function() { this.app.onLocationChange.call(this.app) });
+	$(window).hashchange(function() { window.app.onLocationChange.call(window.app) });
+
 };
 
 // Hash change handler
 App.prototype.onLocationChange = function() {
-	alert(document.location.hash + '\n' + this.group);
+	alert('hash: ' + document.location.hash);
 };
 
-// Initialise the application
+// All dependencies are loaded, initialise the application
+App.prototype.init = function() {
+
+	// Load the node data for this request then run the application
+	var url = this.group;
+	if(url) url = '/' + url;
+	url += '/_data.json';
+	$.ajax({
+		type: 'GET',
+		url: url,
+		dataType: 'json',
+		context: this,
+		success: function(json) {
+			this.data = json
+			this.run()
+		}
+	});		
+};
+
+// All group data is loaded, initialise the selected skin and render the current node and view
 App.prototype.run = function() {
+	rows = '';
+	for( i in this.data ) rows += '<tr><th>' + i + ':</th><td>' + this.data[i] + '</td></tr>\n';
+	$('body').html('<table>' + rows + '</table>');
 };
-
 
 // Create a new instance of the application
 window.app = new App();
-
-// When the DOM is ready, run the application.
-$(function(){
-	window.app.run();
-});
