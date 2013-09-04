@@ -39,13 +39,13 @@ class App:
 		self.groups = self.user.getGroups()
 
 		# Initialise the messages list
-		self.getMessages()
+		#self.getMessages()
 
 		# Set up a simple HTTP server to handle requests from the interface
 		srv = http.server(self, 'localhost', config.getint('interface', 'port'))
 
 		return None
 
-	# Read the messages from Bitmessage abd store in local app list
+	# Read the messages from Bitmessage and store in local app list
 	def getMessages(self):
-		return []
+		self.messages = json.loads(self.api.getAllInboxMessages())

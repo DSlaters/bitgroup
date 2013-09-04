@@ -16,4 +16,26 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  * http://www.gnu.org/copyleft/gpl.html
  */
+function App(){
 
+	// Regiester hash changes with our handler
+	jQuery(window).hashchange(function() { this.app.onLocationChange.call(this.app) });
+};
+
+// Hash change handler
+App.prototype.onLocationChange = function() {
+	alert(document.location.hash + '\n' + this.group);
+};
+
+// Initialise the application
+App.prototype.run = function() {
+};
+
+
+// Create a new instance of the application
+window.app = new App();
+
+// When the DOM is ready, run the application.
+$(function(){
+	window.app.run();
+});

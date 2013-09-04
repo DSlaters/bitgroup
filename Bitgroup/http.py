@@ -14,24 +14,37 @@ class handler(asyncore.dispatcher_with_send):
 		data = self.recv(8192)
 		if data:
 			match = re.match(r'^GET (.+?) HTTP.+Host: (.+?)\s', data, re.S)
-			url = match.group(1)
+			uri = match.group(1)
 			host = match.group(2)
 			date = time.strftime("%a, %d %b %Y %H:%M:%S %Z")
 			server = app.name + "-" + app.version
 			status = "200 OK"
 			ctype = "text/html"
 			content = "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n"
-			group = 'Foo'
-			uri = os.path.abspath(url)
-			path = app.docroot + uri
+			docroot = app.docroot
+
+			# If the uri starts with a group name, set group and change path to group's files
+			m = re.match('/(.+?)($|/.*)', uri)
+			if m and m.group(1) in app.groups:
+				group = m.group(1)
+				if m.group(2) == '/' or m.group(2) == '': uri = '/'
+				else:
+					docroot = app.datapath
+					uri = '/' + group + '/files' + m.group(2)
+			else: group = ''
 
 			# Serve the main HTML document if its a root request
+			uri = os.path.abspath(uri)
+			path = docroot + uri
 			if uri == '/':
 				content += "<title>" + group + " - " + app.name + "</title>\n"
 				content += "<meta charset=\"UTF-8\" />\n"
 				content += "<meta name=\"generator\" content=\"" + server + "\" />\n"
 				content += "<script type=\"text/javascript\" src=\"/resources/jquery-1.10.2.min.js\"></script>\n"
+				content += "<script type=\"text/javascript\" src=\"/resources/jquery-ui-1.10.3/ui/jquery-ui.js\"></script>\n"
+				content += "<script type=\"text/javascript\" src=\"/resources/jquery.observehashchange.min.js\"></script>\n"
 				content += "<script type=\"text/javascript\" src=\"/main.js\"></script>\n"
+				content += "<script type=\"text/javascript\">window.app.group = '" + group + "'</script>\n"
 				content += "</head>\n<body>\nHello world!\n</body>\n</html>\n"
 
 			# Serve the requested file if it exists and isn't a directory

@@ -19,27 +19,7 @@ def _sendBroadcast(fromAddress, subject, body):
 	except:
 		return 0
 
-def _stripAddress(address):
-	if 'broadcast' in address.lower():
-		return 'broadcast'
-	orig = address
-	alphabet = '123456789abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ'
-	retstring = ''
-	while address:
-		if address[:3] == 'BM-':
-		 retstring = 'BM-'
-		 address = address[3:]
-		 while address[0] in alphabet:
-			retstring += address[0]
-			address = address[1:]
-		else:
-			address = address[1:]
-	print "converted address " + orig + " to " + retstring
-	return retstring
-
 def send(toAddress, fromAddress, subject, body):
-	toAddress = _stripAddress(toAddress)
-	fromAddress = _stripAddress(fromAddress)
 	subject = subject.encode('base64')
 	body = body.encode('base64')
 	if toAddress == 'broadcast':
