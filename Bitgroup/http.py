@@ -45,6 +45,7 @@ class handler(asyncore.dispatcher_with_send):
 				content += "<script type=\"text/javascript\" src=\"/resources/jquery.observehashchange.min.js\"></script>\n"
 				content += "<script type=\"text/javascript\" src=\"/main.js\"></script>\n"
 				content += "<script type=\"text/javascript\">window.app.group = '" + group + "'</script>\n"
+				content += "<script type=\"text/javascript\" src=\"/overview.js\"></script>\n" # TODO: this should dynamically loaded
 				content += "</head>\n<body>\n</body>\n</html>\n"
 
 			# If this is a request for _data.json return the current group's node data
