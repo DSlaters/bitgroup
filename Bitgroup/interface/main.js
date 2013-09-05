@@ -3,7 +3,7 @@
  */
 function App() {
 
-	this.views = []; // the availaber view classes - this first is the default if no view is specified by the current node
+	this.views = []; // the availabe view classes - this first is the default if no view is specified by the current node
 	this.group;      // the current group
 	this.node;       // the current node
 	this.view;       // the current view
@@ -74,6 +74,10 @@ App.prototype.run = function() {
 App.prototype.render = function() {
 	var page = '';
 
+	// Get the current view class, or the default one if none
+	var view = this.view;
+	if(view == false) view = this.views[0];
+
 	// Get the current skin and load it's styles
 	var skin = 'skin' in this.data ? this.data.skin : 'default';
 	this.loadStyleSheet('/skins/' + skin + '/style.css');
@@ -90,20 +94,18 @@ App.prototype.render = function() {
 		var name = views[i];
 
 		// Get the view class matching the name if any
-		var view = false;
-		for( var v in this.views ) if(view.constructor.name == name) view = v;
-		
+		var vi = false;
+		for( var j = 0; j < this.views.length; j++ ) if(this.views[j].constructor.name == name) vi = this.views[j];
+
 		// Add a menu item for this view (disabled if no class matched)
 		var c = ' class="disabled"';
-		if(view) c = name == this.view.constructure.name ? ' class="selected"' : '';
+		if(vi) c = name == view.constructor.name ? ' class="selected"' : '';
 		var id = 'view-' + name.replace(' ','').toLowerCase();
 		page += '<li' + c + ' id="' + id + '">' + name + '</li>\n';
 	}
 	page += '</ul>\n'
 
 	// Add an empty content area for the view to render into
-	var view = this.view;
-	if(view == false) view = this.views[0];
 	page += '<div id="content">';
 	page += '<div>\n';
 
@@ -115,7 +117,7 @@ App.prototype.render = function() {
 };
 
 /**
- * Load a CSS fro the passed URL
+ * Load a CSS from the passed URL
  */
 App.prototype.loadStyleSheet = function(url) {
 	if (document.createStyleSheet) document.createStyleSheet(url);
