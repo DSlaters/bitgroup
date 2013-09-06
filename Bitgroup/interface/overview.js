@@ -3,9 +3,8 @@
  */
 function Overview() {
 
-	// do any initisalisation of the view here such as loading dependencies etc
+	// do any initialisation of the view here such as loading dependencies etc
 
-	return this;
 }
 
 /**

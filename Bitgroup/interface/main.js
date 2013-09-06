@@ -7,6 +7,7 @@ function App() {
 	this.group;      // the current group
 	this.node;       // the current node
 	this.view;       // the current view
+	this.sep = '/';  // separator character used in hash fragment
 
 	// Call the app's initialise function after the document is ready
 	$(document).ready(function() { window.app.init.call(window.app) });
@@ -21,25 +22,30 @@ function App() {
  */
 App.prototype.onLocationChange = function() {
 	var hash = window.location.hash;
-	elements = hash.split('/', hash.substr(1));
+	elements = hash.substr(1).split(this.sep);
 	this.node = elements.length > 0 ? elements[0] : false;
 
 	// Check that the view is valid and convert to the class
+	var oldview = this.view
+	this.view = false;
 	if(elements.length > 1) {
-		for( var view in views ) {
-			if(view.constructor.name.toLower() == elements[1].toLower()) this.view = view;
+		for( i = 0; i < this.views.length; i++ ) {
+			var view = this.views[i];
+			if(view.constructor.name.toLowerCase() == elements[1].toLowerCase()) this.view = view;
 		}
-	} else this.view = false;
+	}
 
-	// TODO: view may want the additional elements
+	// If the view has changed, call the event handler for it
+	if(oldview != this.view) this.onViewChange();
+
+	// TODO: view may want the additional URI elements
+	
 };
 
 /**
- * All dependencies are loaded, initialise the application
+ * All dependencies are loaded, now load the data for this group, then run the application
  */
 App.prototype.init = function() {
-
-	// Load the node data for this request then run the application
 	var url = this.group;
 	if(url) url = '/' + url;
 	url += '/_data.json';
@@ -53,9 +59,6 @@ App.prototype.init = function() {
 			this.run()
 		}
 	});		
-
-	// Call the location change event to set the current node and view
-	this.onLocationChange();
 };
 
 /**
@@ -63,15 +66,18 @@ App.prototype.init = function() {
  */
 App.prototype.run = function() {
 
+	// Call the location change event to set the current node and view
+	this.onLocationChange();
+
 	// Render the page
-	this.render();
+	this.renderPage();
 
 };
 
 /**
  * Render the page
  */
-App.prototype.render = function() {
+App.prototype.renderPage = function() {
 	var page = '';
 
 	// Get the current view class, or the default one if none
@@ -86,7 +92,7 @@ App.prototype.render = function() {
 
 	// Get the list of view names used by this node + the default view
 	var views = [this.views[0].constructor.name];
-	if('views' in this.data) views += this.data.views;
+	if('views' in this.data) views = views.concat(this.data.views);
 
 	// Render the views menu
 	page += '<ul id="views">';
@@ -99,9 +105,13 @@ App.prototype.render = function() {
 
 		// Add a menu item for this view (disabled if no class matched)
 		var c = ' class="disabled"';
-		if(vi) c = name == view.constructor.name ? ' class="selected"' : '';
-		var id = 'view-' + name.replace(' ','').toLowerCase();
-		page += '<li' + c + ' id="' + id + '">' + name + '</li>\n';
+		var item = name;
+		if(vi) {
+			item = '<a href="#' + this.node + this.sep + item + '">' + item + '</a>';
+			c = name == view.constructor.name ? ' class="selected"' : '';
+		}
+		var id = 'view-' + this.getId(name);
+		page += '<li' + c + ' id="' + id + '">' + item + '</li>\n';
 	}
 	page += '</ul>\n'
 
@@ -117,11 +127,36 @@ App.prototype.render = function() {
 };
 
 /**
+ * When the view changes, update the views list classes and call the render method
+ */
+App.prototype.onViewChange = function() {
+	var view = this.view ? this.view : this.views[0];
+	$('#views li.selected').removeClass('selected');
+	$('#view-' + this.getId(view)).addClass('selected');
+	view.render(this);
+};
+
+/**
  * Load a CSS from the passed URL
  */
 App.prototype.loadStyleSheet = function(url) {
 	if (document.createStyleSheet) document.createStyleSheet(url);
 	else $('<link rel="stylesheet" type="text/css" href="' + url + '" />').appendTo('head'); 
+};
+
+/**
+ * Convert a name to a valid identifier
+ */
+App.prototype.getId = function(name) {
+	if(typeof name != 'string') name = name.constructor.name;
+	return name.replace(' ','').toLowerCase();
+};
+
+/**
+ * Message dialog and error logging
+ */
+App.prototype.error = function(msg,type = 'info') {
+	alert(type + ': ' + msg);
 };
 
 // Create a new instance of the application
