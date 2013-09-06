@@ -14,6 +14,9 @@ class User(BitmessageAddress, Node):
 		# Set the user's passpwd for encrypting stored data and messages
 		self.passwd = passwd
 
+		# TODO: lang pref
+		self.lang = 'en'
+
 		return None
 
 	# TODO: Return a list of all the groups the user is a member of

@@ -93,7 +93,7 @@ App.prototype.renderPage = function() {
 	this.loadStyleSheet('/skins/' + skin + '/style.css');
 
 	// Render the top bar
-	page += '<div id="personal"><ul id="personal-groups">\n';
+	page += '<div id="personal"><h1>' + this.msg('groups') + '</h1><ul id="personal-groups">\n';
 	var groups = this.user.groups;
 	for( var i = 0; i < groups.length; i++ ) {
 		var g = groups[i];
@@ -107,7 +107,7 @@ App.prototype.renderPage = function() {
 	if('views' in this.data) views = views.concat(this.data.views);
 
 	// Render the views menu
-	page += '<ul id="views">';
+	page += '<h1>' + this.msg('views') + '</h1><ul id="views">';
 	for( var i = 0; i < views.length; i++ ) {
 		var name = views[i];
 
@@ -169,6 +169,17 @@ App.prototype.getId = function(name) {
  */
 App.prototype.error = function(msg,type = 'info') {
 	alert(type + ': ' + msg);
+};
+
+/**
+ * Return message from key
+ */
+App.prototype.msg = function(key) {
+	// TODO: variable replacements in messages and lang code
+	var lang = this.user.lang;
+	if(lang in window.messages && key in window.messages[lang]) return window.messages[lang][key];
+	if(key in window.messages.en) return window.messages.en[key];
+	return '&lt;' + key + '&gt;';
 };
 
 // Create a new instance of the application

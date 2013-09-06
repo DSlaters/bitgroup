@@ -40,7 +40,7 @@ class handler(asyncore.dispatcher_with_send):
 			if uri == '/':
 
 				# Get the user data
-				user = {'groups': app.groups.keys()}
+				user = {'lang': app.user.lang, 'groups': app.groups.keys()}
 
 				# Get the group's extensions (plus default extensions)
 				extensions = '';
@@ -60,6 +60,7 @@ class handler(asyncore.dispatcher_with_send):
 				content += "<script type=\"text/javascript\" src=\"/resources/jquery-1.10.2.min.js\"></script>\n"
 				content += "<script type=\"text/javascript\" src=\"/resources/jquery-ui-1.10.3/ui/jquery-ui.js\"></script>\n"
 				content += "<script type=\"text/javascript\" src=\"/resources/jquery.observehashchange.min.js\"></script>\n"
+				content += "<script type=\"text/javascript\" src=\"/i18n.js\"></script>\n"
 				content += "<script type=\"text/javascript\" src=\"/main.js\"></script>\n"
 				content += "<script type=\"text/javascript\">window.app.user = " + json.dumps(user) + "</script>\n"
 				content += "<script type=\"text/javascript\">window.app.group = '" + group + "'</script>\n"
