@@ -16,6 +16,6 @@ class User(BitmessageAddress, Node):
 
 		return None
 
-	# return a list of all the groups the user is a member of
+	# TODO: Return a list of all the groups the user is a member of
 	def getGroups(self):
 		return {'Foo': Group(self.app, 'BM-blablablabla','foobas!@#$')};

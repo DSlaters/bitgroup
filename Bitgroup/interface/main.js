@@ -4,6 +4,7 @@
 function App() {
 
 	this.views = []; // the availabe view classes - this first is the default if no view is specified by the current node
+	this.user;       // the current user data
 	this.group;      // the current group name
 	this.node;       // the current node name
 	this.view;       // the current view instance
@@ -30,7 +31,7 @@ App.prototype.onLocationChange = function() {
 	var oldview = this.view
 	this.view = false;
 	if(elements.length > 1) {
-		for( i = 0; i < this.views.length; i++ ) {
+		for( var i = 0; i < this.views.length; i++ ) {
 			var view = this.views[i];
 			if(view.constructor.name.toLowerCase() == elements[1].toLowerCase()) this.view = view;
 		}
@@ -91,8 +92,15 @@ App.prototype.renderPage = function() {
 	var skin = 'skin' in this.data ? this.data.skin : 'default';
 	this.loadStyleSheet('/skins/' + skin + '/style.css');
 
-	// TODO: render the top bar
-	page += '<div id="personal">Personal links</div>\n';
+	// Render the top bar
+	page += '<div id="personal"><ul id="personal-groups">\n';
+	var groups = this.user.groups;
+	for( var i = 0; i < groups.length; i++ ) {
+		var g = groups[i];
+		var link = '<a href="/' + g + '">' + g +'</a>';
+		page += '<li id="personal-groups-' + this.getId(g) + '">' + link + '</li>\n';
+	}
+	page += '</ul></div>\n';
 
 	// Get the list of view names used by this node + the default view
 	var views = [this.views[0].constructor.name];
@@ -100,7 +108,7 @@ App.prototype.renderPage = function() {
 
 	// Render the views menu
 	page += '<ul id="views">';
-	for( i = 0; i < views.length; i++ ) {
+	for( var i = 0; i < views.length; i++ ) {
 		var name = views[i];
 
 		// Get the view class matching the name if any
