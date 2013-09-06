@@ -4,9 +4,10 @@
 function App() {
 
 	this.views = []; // the availabe view classes - this first is the default if no view is specified by the current node
-	this.group;      // the current group
-	this.node;       // the current node
-	this.view;       // the current view
+	this.group;      // the current group name
+	this.node;       // the current node name
+	this.view;       // the current view instance
+	this.data = {};  // the current group's data
 	this.sep = '/';  // separator character used in hash fragment
 
 	// Call the app's initialise function after the document is ready
@@ -46,19 +47,21 @@ App.prototype.onLocationChange = function() {
  * All dependencies are loaded, now load the data for this group, then run the application
  */
 App.prototype.init = function() {
-	var url = this.group;
-	if(url) url = '/' + url;
-	url += '/_data.json';
-	$.ajax({
-		type: 'GET',
-		url: url,
-		dataType: 'json',
-		context: this,
-		success: function(json) {
-			this.data = json
-			this.run()
-		}
-	});		
+	if(this.group) {
+		var url = this.group;
+		if(url) url = '/' + url;
+		url += '/_data.json';
+		$.ajax({
+			type: 'GET',
+			url: url,
+			dataType: 'json',
+			context: this,
+			success: function(json) {
+				this.data = json
+				this.run()
+			}
+		});
+	} else this.run(); // just run app now if no group selected as no data to load
 };
 
 /**
@@ -89,6 +92,7 @@ App.prototype.renderPage = function() {
 	this.loadStyleSheet('/skins/' + skin + '/style.css');
 
 	// TODO: render the top bar
+	page += '<div id="personal">Personal links</div>\n';
 
 	// Get the list of view names used by this node + the default view
 	var views = [this.views[0].constructor.name];

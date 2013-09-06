@@ -40,14 +40,14 @@ class handler(asyncore.dispatcher_with_send):
 
 				# Get the group's extensions (plus default extensions)
 				extensions = '';
+				extsrc = ['/overview.js']
 				if group in app.groups:
 					ext = app.groups[group].get('settings.extensions')
-					extsrc = ['/overview.js']
 					if ext:
 						for i in ext:
 							extsrc.append('/extensions/' + i + '.js');
-					for i in extsrc:
-						extensions += '<script type="text/javascript" src="' + i + '"></script>\n';
+				for i in extsrc:
+					extensions += '<script type="text/javascript" src="' + i + '"></script>\n';
 
 				# Build the page content
 				content += "<title>" + ( group + " - " if group else '' ) + app.name + "</title>\n"
