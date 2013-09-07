@@ -39,16 +39,16 @@ App.prototype.locationChange = function() {
 	}
 
 	// Allow extensions to hook in here
-	$.event.trigger({
-		type: "LocationChange",
+	var args = {
 		node: newnode,
 		view: newview,
-		path: elements
-	});		
+		path: elements,
+	};
+	$.event.trigger({type: "bgHashChange", app: this, args: args});
 
 	// Set the new data
-	this.node = newnode;
-	this.view = newview;
+	this.node = args.node;
+	this.view = args.view;
 
 	// If the node or the view has changed, call the event handler for it
 	if(oldnode != this.node) this.nodeChange();
@@ -169,7 +169,7 @@ App.prototype.renderViewsMenu = function() {
  */
 App.prototype.nodeChange = function() {
 	$('#views').html(this.renderViewsMenu());
-	this.onViewChange();
+	this.viewChange();
 };
 
 /**
