@@ -4,7 +4,6 @@
 function App() {
 
 	this.views = [];  // the availabe view classes - this first is the default if no view is specified by the current node
-	this.events = {}; // our event events and their list of handlers
 	this.user;        // the current user data
 	this.group;       // the current group name
 	this.data = {};   // the current group's data
@@ -16,14 +15,14 @@ function App() {
 	$(document).ready(function() { window.app.init.call(window.app) });
 
 	// Regiester hash changes with our handler
-	$(window).hashchange(function() { window.app.onLocationChange.call(window.app) });
+	$(window).hashchange(function() { window.app.locationChange.call(window.app) });
 
 };
 
 /**
  * Hash change handler - set the current node and view for the application from the hash fragment of the location
  */
-App.prototype.onLocationChange = function() {
+App.prototype.locationChange = function() {
 	var hash = window.location.hash;
 	elements = hash.substr(1).split(this.sep);
 	var oldnode = this.node;
@@ -40,15 +39,20 @@ App.prototype.onLocationChange = function() {
 	}
 
 	// Allow extensions to hook in here
-	//if(this.app.event('BeforeLocationChange', [newnode, newview, elements])){
+	$.event.trigger({
+		type: "LocationChange",
+		node: newnode,
+		view: newview,
+		path: elements
+	});		
 
 	// Set the new data
 	this.node = newnode;
 	this.view = newview;
 
 	// If the node or the view has changed, call the event handler for it
-	if(oldnode != this.node) this.onNodeChange();
-	else if(oldview != this.view) this.onViewChange();
+	if(oldnode != this.node) this.nodeChange();
+	else if(oldview != this.view) this.viewChange();
 
 	// TODO: view may want the additional URI elements
 	
@@ -81,7 +85,7 @@ App.prototype.init = function() {
 App.prototype.run = function() {
 
 	// Call the location change event to set the current node and view
-	this.onLocationChange();
+	this.locationChange();
 
 	// Render the page
 	this.renderPage();
@@ -163,7 +167,7 @@ App.prototype.renderViewsMenu = function() {
 /**
  * When the node changes, rebuild the views menu and update the view
  */
-App.prototype.onNodeChange = function() {
+App.prototype.nodeChange = function() {
 	$('#views').html(this.renderViewsMenu());
 	this.onViewChange();
 };
@@ -171,7 +175,7 @@ App.prototype.onNodeChange = function() {
 /**
  * When the view changes, update the views list classes and call the render method
  */
-App.prototype.onViewChange = function() {
+App.prototype.viewChange = function() {
 	var view = this.view ? this.view : this.views[0];
 	$('#views li.selected').removeClass('selected');
 	$('#view-' + this.getId(view)).addClass('selected');
