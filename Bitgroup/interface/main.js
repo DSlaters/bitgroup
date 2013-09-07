@@ -3,13 +3,14 @@
  */
 function App() {
 
-	this.views = []; // the availabe view classes - this first is the default if no view is specified by the current node
-	this.user;       // the current user data
-	this.group;      // the current group name
-	this.node;       // the current node name
-	this.view;       // the current view instance
-	this.data = {};  // the current group's data
-	this.sep = '/';  // separator character used in hash fragment
+	this.views = [];  // the availabe view classes - this first is the default if no view is specified by the current node
+	this.events = {}; // our event events and their list of handlers
+	this.user;        // the current user data
+	this.group;       // the current group name
+	this.data = {};   // the current group's data
+	this.node;        // the current node name
+	this.view;        // the current view instance
+	this.sep = '/';   // separator character used in hash fragment
 
 	// Call the app's initialise function after the document is ready
 	$(document).ready(function() { window.app.init.call(window.app) });
@@ -25,20 +26,29 @@ function App() {
 App.prototype.onLocationChange = function() {
 	var hash = window.location.hash;
 	elements = hash.substr(1).split(this.sep);
-	this.node = elements.length > 0 ? elements[0] : false;
+	var oldnode = this.node;
+	var newnode = elements.length > 0 ? elements[0] : false;
 
 	// Check that the view is valid and convert to the class
 	var oldview = this.view
-	this.view = false;
+	var newview = false;
 	if(elements.length > 1) {
 		for( var i = 0; i < this.views.length; i++ ) {
 			var view = this.views[i];
-			if(view.constructor.name.toLowerCase() == elements[1].toLowerCase()) this.view = view;
+			if(view.constructor.name.toLowerCase() == elements[1].toLowerCase()) newview = view;
 		}
 	}
 
-	// If the view has changed, call the event handler for it
-	if(oldview != this.view) this.onViewChange();
+	// Allow extensions to hook in here
+	//if(this.app.event('BeforeLocationChange', [newnode, newview, elements])){
+
+	// Set the new data
+	this.node = newnode;
+	this.view = newview;
+
+	// If the node or the view has changed, call the event handler for it
+	if(oldnode != this.node) this.onNodeChange();
+	else if(oldview != this.view) this.onViewChange();
 
 	// TODO: view may want the additional URI elements
 	
@@ -84,16 +94,14 @@ App.prototype.run = function() {
 App.prototype.renderPage = function() {
 	var page = '';
 
-	// Get the current view class, or the default one if none
-	var view = this.view;
-	if(view == false) view = this.views[0];
-
 	// Get the current skin and load it's styles
 	var skin = 'skin' in this.data ? this.data.skin : 'default';
 	this.loadStyleSheet('/skins/' + skin + '/style.css');
 
 	// Render the top bar
-	page += '<div id="personal"><h1>' + this.msg('groups') + '</h1><ul id="personal-groups">\n';
+	page += '<div id="personal">\n';
+	page += '<a id="user-page" href="/">' + this.msg('user-page') + '</a>\n';
+	page += '<h1>' + this.msg('groups').ucfirst() + '</h1><ul id="personal-groups">\n';
 	var groups = this.user.groups;
 	for( var i = 0; i < groups.length; i++ ) {
 		var g = groups[i];
@@ -102,12 +110,36 @@ App.prototype.renderPage = function() {
 	}
 	page += '</ul></div>\n';
 
+	// Render the views menu
+	page += '<h1>' + this.msg('views').ucfirst() + '</h1><ul id="views">' + this.renderViewsMenu() + '</ul>\n'
+
+	// Add an empty content area for the view to render into
+	page += '<div id="content">';
+	page += '<div>\n';
+
+	// Add the completed page structure to the HTML document body
+	$('body').html(page);
+
+	// Call the view's render method to populate the content area
+	this.view.render(this);
+};
+
+/**
+ * Render the views menu
+ */
+App.prototype.renderViewsMenu = function() {
+	var html = '';
+
+	// Get the current view class, or the default one if none
+	var view = this.view;
+	if(view == false) view = this.view = this.views[0];
+
 	// Get the list of view names used by this node + the default view
 	var views = [this.views[0].constructor.name];
-	if('views' in this.data) views = views.concat(this.data.views);
+	if(this.node && this.node in this.data && 'views' in this.data[this.node])
+		views = views.concat(this.data[this.node].views);
 
 	// Render the views menu
-	page += '<h1>' + this.msg('views') + '</h1><ul id="views">';
 	for( var i = 0; i < views.length; i++ ) {
 		var name = views[i];
 
@@ -119,23 +151,21 @@ App.prototype.renderPage = function() {
 		var c = ' class="disabled"';
 		var item = name;
 		if(vi) {
-			item = '<a href="#' + this.node + this.sep + item + '">' + item + '</a>';
+			item = '<a href="#' + this.node + this.sep + item + '">' + this.msg('view-'+ item.toLowerCase()) + '</a>';
 			c = name == view.constructor.name ? ' class="selected"' : '';
 		}
 		var id = 'view-' + this.getId(name);
-		page += '<li' + c + ' id="' + id + '">' + item + '</li>\n';
+		html += '<li' + c + ' id="' + id + '">' + item + '</li>\n';
 	}
-	page += '</ul>\n'
+	return html;
+};
 
-	// Add an empty content area for the view to render into
-	page += '<div id="content">';
-	page += '<div>\n';
-
-	// Add the completed page structure to the HTML document body
-	$('body').html(page);
-
-	// Call the view's render method to populate the content area
-	view.render(this);
+/**
+ * When the node changes, rebuild the views menu and update the view
+ */
+App.prototype.onNodeChange = function() {
+	$('#views').html(this.renderViewsMenu());
+	this.onViewChange();
 };
 
 /**
@@ -174,13 +204,35 @@ App.prototype.error = function(msg,type = 'info') {
 /**
  * Return message from key
  */
-App.prototype.msg = function(key) {
-	// TODO: variable replacements in messages and lang code
+App.prototype.msg = function(key, s1, s2, s3, s4, s5) {
 	var lang = this.user.lang;
-	if(lang in window.messages && key in window.messages[lang]) return window.messages[lang][key];
-	if(key in window.messages.en) return window.messages.en[key];
-	return '&lt;' + key + '&gt;';
+	var str;
+
+	// Get the string in the user's language if defined
+	if(lang in window.messages && key in window.messages[lang]) str = window.messages[lang][key];
+
+	// Fallback on the en version if not found
+	else if(key in window.messages.en) str = window.messages.en[key];
+
+	// Otherwise use the message key in angle brackets
+	else str = '&lt;' + key + '&gt;';
+
+	// Replace variables in the string
+	str = str.replace('$1', s1);
+	str = str.replace('$2', s2);
+	str = str.replace('$3', s3);
+	str = str.replace('$4', s4);
+	str = str.replace('$5', s5);
+
+	return str;
 };
+
+/**
+ * Add ucfirst method to strings
+ */
+String.prototype.ucfirst = function() {
+    return this.charAt(0).toUpperCase() + this.slice(1);
+}
 
 // Create a new instance of the application
 window.app = new App();

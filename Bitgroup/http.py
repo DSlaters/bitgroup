@@ -112,5 +112,4 @@ class server(asyncore.dispatcher):
 		pair = self.accept()
 		if pair is not None:
 			sock, addr = pair
-			print 'Incoming connection from %s' % repr(addr)
 			h = handler(sock)
