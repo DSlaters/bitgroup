@@ -94,7 +94,7 @@ App.prototype.run = function() {
 	// Initialise a poller for regular data transfers to and from the service
 	setInterval( function() {
 		$.event.trigger({type: "bgPoller"});
-		this.transferData();
+		window.app.transferData();
 	}, 1000 );
 };
 
@@ -182,10 +182,12 @@ App.prototype.nodeChange = function() {
  * When the view changes, update the views list classes and call the render method
  */
 App.prototype.viewChange = function() {
-	var view = this.view ? this.view : this.views[0];
-	$('#views li.selected').removeClass('selected');
-	$('#view-' + this.getId(view)).addClass('selected');
-	view.render(this);
+	if($('#views').length > 0) {
+		var view = this.view ? this.view : this.views[0];
+		$('#views li.selected').removeClass('selected');
+		$('#view-' + this.getId(view)).addClass('selected');
+		view.render(this);
+	}
 };
 
 /**
@@ -205,7 +207,8 @@ App.prototype.transferData = function() {
 			// Update the local data with any updates returned from the service
 			for( k in data ) {
 				var v = data[k];
-				eval( 'this.data.' + k + '=v' ); // TODO: do a set method like node.py
+				this.setData(k,v);
+				$.event.trigger({type: "bgDataChange-"+k, args: {val:v}});
 			}
 		}
 	});
@@ -213,6 +216,22 @@ App.prototype.transferData = function() {
 	// Clear the queue now that it's data's been sent
 	// TODO: only clear queue after acknowledgement of reception
 	this.queue = {};
+};
+
+/**
+ * Return the data for the passed key
+ * TODO: don't use eval for this, make a path walking function like node.py
+ */
+App.prototype.getData = function(key) {
+	return eval( 'this.data.' + key );
+};
+
+/**
+ * Set the data for the passed key to the passed value
+ * TODO: don't use eval for this, make a path walking function like node.py
+ */
+App.prototype.setData = function(key,val) {
+	eval( 'this.data.' + key + '=val' );
 };
 
 /**
@@ -262,6 +281,26 @@ App.prototype.msg = function(key, s1, s2, s3, s4, s5) {
 	str = str.replace('$5', s5);
 
 	return str;
+};
+
+/**
+ * Connect a DOM element to a data source
+ */
+App.prototype.connect = function(key, element) {
+	element.dataSource = key;
+
+	// Set the current value
+	$(element).val(this.getData(key));
+
+	// When the value changes from the server update the element
+	$(document).on( "bgDataChange-" + key, function(event) { $(element).val(event.args.val); });
+
+	// When the element value changes, queue the change for the server
+	$(element).change(function() {
+		var app = window.app;
+		app.queue[this.dataSource] = $(this).val();
+	});
+
 };
 
 /**

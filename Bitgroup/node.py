@@ -51,10 +51,11 @@ class Node:
 					return None
 				j[i] = {}
 				j = j[i]
+		oldval = val
 		j[leaf] = val
 
 		# Add the change to the transfer queue
-		if queue: self.queue[key] = val;
+		if queue and oldval != val: self.queue[key] = val;
 
 		# Save the updated data
 		self.save()
