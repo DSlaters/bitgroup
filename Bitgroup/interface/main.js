@@ -10,6 +10,7 @@ function App() {
 	this.node;        // the current node name
 	this.view;        // the current view instance
 	this.sep = '/';   // separator character used in hash fragment
+	this.queue = {};  // queue of data updates to send to the service
 
 	// Call the app's initialise function after the document is ready
 	$(document).ready(function() { window.app.init.call(window.app) });
@@ -44,7 +45,7 @@ App.prototype.locationChange = function() {
 		view: newview,
 		path: elements,
 	};
-	$.event.trigger({type: "bgHashChange", app: this, args: args});
+	$.event.trigger({type: "bgHashChange", args: args});
 
 	// Set the new data
 	this.node = args.node;
@@ -90,6 +91,11 @@ App.prototype.run = function() {
 	// Render the page
 	this.renderPage();
 
+	// Initialise a poller for regular data transfers to and from the service
+	setInterval( function() {
+		$.event.trigger({type: "bgPoller"});
+		this.transferData();
+	}, 1000 );
 };
 
 /**
@@ -180,6 +186,12 @@ App.prototype.viewChange = function() {
 	$('#views li.selected').removeClass('selected');
 	$('#view-' + this.getId(view)).addClass('selected');
 	view.render(this);
+};
+
+/**
+ * Called on a regular interval to send queued data to the service and receive any queued items
+ */
+App.prototype.transferData = function() {
 };
 
 /**

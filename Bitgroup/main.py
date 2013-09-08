@@ -35,6 +35,4 @@ if __name__ == '__main__':
 		asyncore.loop()
 	except KeyboardInterrupt:
 		print "Exiting..."
-		print "Sockets might get stuck open..."
-		print "Just wait a minute before restarting the program..."
 		pass

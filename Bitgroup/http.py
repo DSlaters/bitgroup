@@ -7,16 +7,19 @@ import time
 import re
 import mimetypes
 import json
+from urlparse import parse_qs
 
 class handler(asyncore.dispatcher_with_send):
 
 	def handle_read(self):
 		global app
 		data = self.recv(8192)
-		if data:
-			match = re.match(r'^GET (.+?) HTTP.+Host: (.+?)\s', data, re.S)
-			uri = match.group(1)
-			host = match.group(2)
+		match = re.match(r'^(GET|POST) (.+?) HTTP.+Host: (.+?)\s.+?\r\n\r\n(.+)', data, re.S)
+		if data and match:
+			method = match.group(1)
+			uri = match.group(2)
+			host = match.group(3)
+			data = match.group(4)
 			date = time.strftime("%a, %d %b %Y %H:%M:%S %Z")
 			server = app.name + "-" + app.version
 			status = "200 OK"
@@ -37,6 +40,7 @@ class handler(asyncore.dispatcher_with_send):
 			# Serve the main HTML document if its a root request
 			uri = os.path.abspath(uri)
 			path = docroot + uri
+			base = os.path.basename(uri)
 			if uri == '/':
 
 				# Get the user data
@@ -68,9 +72,23 @@ class handler(asyncore.dispatcher_with_send):
 				content += "</head>\n<body>\n</body>\n</html>\n"
 
 			# If this is a request for _data.json return the current group's node data
-			elif os.path.basename(uri) == '_data.json' and group in app.groups:
-				content = app.groups[group].json()
-				ctype = mimetypes.guess_type(uri)[0]
+			elif base == '_data.json':
+				if group in app.groups:
+					content = app.groups[group].json()
+					ctype = mimetypes.guess_type(base)[0]
+
+			# If this is a for _xfer.json merge the local and client change queues and return the changes
+			# TODO: merge with timestamps
+			# TODO: only delete local queue after acknowledgement of reception
+			elif base == '_xfer.json':
+				if group in app.groups:
+					g = app.groups[group]
+					cdata = parse_qs(data)
+					for k in cdata: g.queue[k] = cdata[k]
+					for k in g.queue: g.set(k, g.queue[k], False)
+					content = json.dumps(g.queue)
+					ctype = mimetypes.guess_type(base)[0]
+					g.queue = {}
 
 			# Serve the requested file if it exists and isn't a directory
 			elif os.path.exists(path) and not os.path.isdir(path):

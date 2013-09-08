@@ -13,6 +13,7 @@ class Node:
 	"""
 
 	data = None    # cache of this node's data
+	queue = {}     # queue of data changes to send to the client on its next connection
 	passwd = None  # used to ecrypt data and messages for this user or group
 
 	# Get a property in this nodes data structure
@@ -32,7 +33,7 @@ class Node:
 		return val
 
 	# Set a property in this nodes data structure
-	def set(self, key, val):
+	def set(self, key, val, queue = True):
 
 		# Load the data if the cache is uninitialised
 		if self.data == None: self.load()
@@ -51,6 +52,9 @@ class Node:
 				j[i] = {}
 				j = j[i]
 		j[leaf] = val
+
+		# Add the change to the transfer queue
+		if queue: self.queue[key] = val;
 
 		# Save the updated data
 		self.save()
