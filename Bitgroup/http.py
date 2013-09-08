@@ -14,7 +14,7 @@ class handler(asyncore.dispatcher_with_send):
 	def handle_read(self):
 		global app
 		data = self.recv(8192)
-		match = re.match(r'^(GET|POST) (.+?) HTTP.+Host: (.+?)\s.+?\r\n\r\n(.+)', data, re.S)
+		match = re.match(r'^(GET|POST) (.+?) HTTP.+Host: (.+?)\s.+?\r\n\r\n\s*(.+?)\s*$', data, re.S)
 		if data and match:
 			method = match.group(1)
 			uri = match.group(2)
@@ -83,8 +83,9 @@ class handler(asyncore.dispatcher_with_send):
 			elif base == '_xfer.json':
 				if group in app.groups:
 					g = app.groups[group]
-					cdata = parse_qs(data)
-					for k in cdata: g.queue[k] = cdata[k]
+					if cdata:
+						cdata = parse_qs(data)
+						for k in cdata: g.queue[k] = cdata[k]
 					for k in g.queue: g.set(k, g.queue[k], False)
 					content = json.dumps(g.queue)
 					ctype = mimetypes.guess_type(base)[0]

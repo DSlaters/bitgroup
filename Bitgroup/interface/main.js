@@ -192,6 +192,27 @@ App.prototype.viewChange = function() {
  * Called on a regular interval to send queued data to the service and receive any queued items
  */
 App.prototype.transferData = function() {
+	// TODO: use timestamps for updates to avoid conflicts
+
+	// Send queued data via ajax
+	$.ajax({
+		type: 'POST',
+		url: '/' + this.group + '/_xfer.json',
+		data: this.queue,
+		dataType: 'json',
+		success: function(data) {
+
+			// Update the local data with any updates returned from the service
+			for( k in data ) {
+				var v = data[k];
+				eval( 'this.data.' + k + '=v' ); // TODO: do a set method like node.py
+			}
+		}
+	});
+
+	// Clear the queue now that it's data's been sent
+	// TODO: only clear queue after acknowledgement of reception
+	this.queue = {};
 };
 
 /**
