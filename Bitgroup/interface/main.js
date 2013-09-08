@@ -3,21 +3,22 @@
  */
 function App() {
 
-	this.views = [];  // the availabe view classes - this first is the default if no view is specified by the current node
-	this.user;        // the current user data
-	this.group;       // the current group name
-	this.data = {};   // the current group's data
-	this.node;        // the current node name
-	this.view;        // the current view instance
-	this.sep = '/';   // separator character used in hash fragment
-	this.queue = {};  // queue of data updates to send to the service
+	this.views = [];   // the availabe view classes - this first is the default if no view is specified by the current node
+	this.user;         // the current user data
+	this.group;        // the current group name
+	this.data = {};    // the current group's data
+	this.node;         // the current node name
+	this.view;         // the current view instance
+	this.sep = '/';    // separator character used in hash fragment
+	this.queue = {};   // queue of data updates to send to the service
+	this.maxage;       // max lifetime in seconds of queue data
+	this.lastsync = 0; // unix timestamp of last data sync - if greater than maxage, all data will be loaded
 
 	// Call the app's initialise function after the document is ready
 	$(document).ready(function() { window.app.init.call(window.app) });
 
 	// Regiester hash changes with our handler
 	$(window).hashchange(function() { window.app.locationChange.call(window.app) });
-
 };
 
 /**
@@ -94,7 +95,7 @@ App.prototype.run = function() {
 	// Initialise a poller for regular data transfers to and from the service
 	setInterval( function() {
 		$.event.trigger({type: "bgPoller"});
-		window.app.transferData();
+		window.app.syncData();
 	}, 1000 );
 };
 
@@ -193,22 +194,28 @@ App.prototype.viewChange = function() {
 /**
  * Called on a regular interval to send queued data to the service and receive any queued items
  */
-App.prototype.transferData = function() {
-	// TODO: use timestamps for updates to avoid conflicts
-
-	// Send queued data via ajax
+App.prototype.syncData = function() {
+	var ts = this.unixtime();
 	$.ajax({
 		type: 'POST',
-		url: '/' + this.group + '/_xfer.json',
-		data: this.queue,
+		url: '/' + this.group + '/_sync.json',
+		data: JSON.stringify([ts,this.queue]),
+		contentType: "application/json; charset=utf-8",
 		dataType: 'json',
 		success: function(data) {
+			
+			// If the result is an object, then it's the whole data structure
+			if(data.length === 'undefined') {
+				this.data = json;
+				this.renderPage(); // just rebuild the page instead of raising events for all the changes
 
-			// Update the local data with any updates returned from the service
-			for( k in data ) {
-				var v = data[k];
-				this.setData(k,v);
-				$.event.trigger({type: "bgDataChange-"+k, args: {val:v}});
+			// A list of change events was returned, update the local data and trigger change events
+			else {
+				for( k in data ) {
+					var v = data[k];
+					this.setData(k,v);
+					$.event.trigger({type: "bgDataChange-"+k, args: {val:v}});
+				}
 			}
 		}
 	});
@@ -318,6 +325,28 @@ App.prototype.queueAdd = function(key, val) {
  */
 String.prototype.ucfirst = function() {
     return this.charAt(0).toUpperCase() + this.slice(1);
+}
+
+/**
+ * Add JSON support for older browsers that don't have it
+ */
+if (!window.JSON) {
+	window.JSON = {
+		parse: function (sJSON) { return eval("(" + sJSON + ")"); },
+		stringify: function (vContent) {
+			if (vContent instanceof Object) {
+				var sOutput = "";
+				if (vContent.constructor === Array) {
+					for (var nId = 0; nId < vContent.length; sOutput += this.stringify(vContent[nId]) + ",", nId++);
+					return "[" + sOutput.substr(0, sOutput.length - 1) + "]";
+				}
+				if (vContent.toString !== Object.prototype.toString) { return "\"" + vContent.toString().replace(/"/g, "\\$&") + "\""; }
+				for (var sProp in vContent) { sOutput += "\"" + sProp.replace(/"/g, "\\$&") + "\":" + this.stringify(vContent[sProp]) + ","; }
+				return "{" + sOutput.substr(0, sOutput.length - 1) + "}";
+			}
+			return typeof vContent === "string" ? "\"" + vContent.replace(/"/g, "\\$&") + "\"" : String(vContent);
+		}
+	};
 }
 
 // Create a new instance of the application

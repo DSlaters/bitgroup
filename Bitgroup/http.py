@@ -7,7 +7,6 @@ import time
 import re
 import mimetypes
 import json
-from urlparse import parse_qs
 
 class handler(asyncore.dispatcher_with_send):
 
@@ -83,16 +82,25 @@ class handler(asyncore.dispatcher_with_send):
 			# If this is a for _xfer.json merge the local and client change queues and return the changes
 			# TODO: merge with timestamps
 			# TODO: only delete local queue after acknowledgement of reception
-			elif base == '_xfer.json':
+			elif base == '_sync.json':
 				if group in app.groups:
+					ctype = mimetypes.guess_type(base)[0]
 					g = app.groups[group]
 					if data:
-						cdata = parse_qs(data)
-						for k in cdata: g.queue[k] = cdata[k]
-					for k in g.queue: g.set(k, g.queue[k])
-					content = json.dumps(g.queue)
-					ctype = mimetypes.guess_type(base)[0]
-					g.queue = {}
+						cdata = json.loads(data)
+						ts = cdata[0]
+						
+						# Last sync was more than maxage seconds ago, send all data
+						if ts > app.maxage:
+							content = app.groups[group].json()
+
+						# Otherwise send all changes since last sync
+						else:
+							# TODO
+							for k in cdata[1]: g.queue[k] = cdata[k]
+							for k in g.queue: g.set(k, g.queue[k])
+							content = json.dumps(g.queue)
+							g.queue = {}
 
 			# Serve the requested file if it exists and isn't a directory
 			elif os.path.exists(path) and not os.path.isdir(path):
