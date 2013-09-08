@@ -283,6 +283,10 @@ App.prototype.msg = function(key, s1, s2, s3, s4, s5) {
 	return str;
 };
 
+App.prototype.unixtime = function() {
+	return Math.round(new Date().getTime() / 1000);
+};
+
 /**
  * Connect a DOM element to a data source
  */
@@ -298,8 +302,14 @@ App.prototype.connect = function(key, element) {
 	// When the element value changes, queue the change for the server
 	$(element).change(function() {
 		var app = window.app;
-		app.queue[this.dataSource] = $(this).val();
+		app.queueAdd(this.dataSource, $(this).val());
 	});
+
+/**
+ * Queue a changed item for sending to the service
+ */
+App.prototype.queueAdd = function(key, val) {
+};
 
 };
 

@@ -14,6 +14,7 @@ class App:
 	messages = []
 	events = {}
 	groups = {}
+	maxage = 600
 
 	def __init__(self, config):
 

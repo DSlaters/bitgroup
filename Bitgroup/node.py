@@ -1,4 +1,5 @@
 import os
+import time
 import json
 import hashlib
 import pyelliptic
@@ -55,7 +56,7 @@ class Node:
 		j[leaf] = val
 
 		# Add the change to the transfer queue
-		if queue and oldval != val: self.queue[key] = val;
+		if queue and oldval != val: self.queueAdd(key,val);
 
 		# Save the updated data
 		self.save()
@@ -105,3 +106,12 @@ class Node:
 		return data # no encryption while debgging
 		privKey = hashlib.sha512(passwd).digest()[:32]
 		return highlevelcrypto.decrypt(data, privKey.encode('hex'))
+
+	# Add the new queue entry with a unix timestamp and chop items older than the max age
+	def queueAdd(self, key, val):
+		item = (key,time.strftime('%s'),val)
+		self.queue.push(item)
+		self.queue = filter(lambda f: f[1] < self.app.maxage, self.queue)
+
+	def queueMerge(self, queue2):
+		# TODO
