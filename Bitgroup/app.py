@@ -51,6 +51,6 @@ class App:
 	def getMessages(self):
 		self.messages = json.loads(self.api.getAllInboxMessages())
 
-	# Return a millisecond timestamp
+	# Return a millisecond timestamp - must match main.js's timestamp
 	def timestamp(self):
 		return (int(time.strftime('%s'))-1378723000)*1000 + int(datetime.datetime.now().microsecond/1000)

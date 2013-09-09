@@ -293,6 +293,9 @@ App.prototype.msg = function(key, s1, s2, s3, s4, s5) {
 	return str;
 };
 
+/**
+ * Return a millisecond timestamp - must mach app.py's timestamp
+ */
 App.prototype.timestamp = function() {
 	return new Date().getTime()-1378723000000;
 };
