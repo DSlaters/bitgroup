@@ -106,7 +106,7 @@ class handler(asyncore.dispatcher_with_send):
 							g.set(k, cdata[k])
 
 						# Last sync was more than maxage seconds ago, send all data
-						if ts - int(time.strftime('%s')) > app.maxage: content = app.groups[group].json()
+						if app.timestamp() - ts > app.maxage: content = app.groups[group].json()
 
 						# Otherwise send the recent k:v updates
 						# - no timestamp is fine since just storing without merge on client

@@ -14,7 +14,7 @@ class App:
 	messages = []
 	events = {}
 	groups = {}
-	maxage = 600
+	maxage = 600000 # Expiry time of queue items in milliseconds
 
 	def __init__(self, config):
 
@@ -50,3 +50,7 @@ class App:
 	# Read the messages from Bitmessage and store in local app list
 	def getMessages(self):
 		self.messages = json.loads(self.api.getAllInboxMessages())
+
+	# Return a millisecond timestamp
+	def timestamp(self):
+		return (int(time.strftime('%s'))-1378723000)*1000 + int(datetime.datetime.now().microsecond/1000)

@@ -110,7 +110,7 @@ class Node:
 	# Add the new queue entry with a unix timestamp and chop items older than the max age
 	# note - the queue is never cleared as there can be multiple clients, it's just chopped to maxage
 	def queueAdd(self, key, val):
-		ts = int(time.strftime('%s'))
+		ts = self.app.timestamp()
 		item = (key,ts,val)
 		self.queue.push(item)
 		self.queue = filter(lambda f: f[1] - ts < self.app.maxage, self.queue)

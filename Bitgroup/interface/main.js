@@ -195,7 +195,7 @@ App.prototype.viewChange = function() {
  * Called on a regular interval to send queued data to the service and receive any queued items
  */
 App.prototype.syncData = function() {
-	var ts = this.unixtime();
+	var ts = this.timestamp();
 	$.ajax({
 		type: 'POST',
 		url: '/' + this.group + '/_sync.json',
@@ -293,8 +293,8 @@ App.prototype.msg = function(key, s1, s2, s3, s4, s5) {
 	return str;
 };
 
-App.prototype.unixtime = function() {
-	return Math.round(new Date().getTime() / 1000);
+App.prototype.timestamp = function() {
+	return new Date().getTime()-1378723000000;
 };
 
 /**
@@ -320,7 +320,7 @@ App.prototype.connect = function(key, element) {
  * Queue a changed item for sending to the service
  */
 App.prototype.queueAdd = function(key, val) {
-	this.queue.push([key,this.unixtime(),val]);
+	this.queue.push([key,this.timestamp(),val]);
 };
 
 /**
