@@ -92,7 +92,7 @@ class handler(asyncore.dispatcher_with_send):
 						cdata = json.loads(data)
 						ts = cdata[0]
 						cdata = cdata[1]
-						print cdata
+
 						# Make a k:v list of the most recent of all changes for each key
 						# TODO: what about conflicts? local timestamps are only maxage... store ts with stored data?
 						sdata = {}
@@ -111,8 +111,8 @@ class handler(asyncore.dispatcher_with_send):
 						# Otherwise send the recent k:v updates
 						# - no timestamp is fine since just storing without merge on client
 						else:
-							content = json.dumps(cdata)
-							print content
+							content = '[' + json.dumps(cdata) + ']' # ugly hack to make it an array to differentiate changes from whole data set
+							if content != '[{}]': print content
 
 			# Serve the requested file if it exists and isn't a directory
 			elif os.path.exists(path) and not os.path.isdir(path):

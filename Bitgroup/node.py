@@ -13,7 +13,7 @@ class Node:
 	"""
 
 	data = None    # cache of this node's data
-	queue = {}     # queue of data changes to send to the client on its next connection
+	queue = []     # queue of data changes to send to the client on its next connection
 	passwd = None  # used to ecrypt data and messages for this user or group
 
 	# Get a property in this nodes data structure
@@ -51,7 +51,7 @@ class Node:
 					return None
 				j[i] = {}
 				j = j[i]
-		oldval = val
+		oldval = j[leaf]
 		j[leaf] = val
 
 		# Add the change to the transfer queue
@@ -111,9 +111,9 @@ class Node:
 	def queueAdd(self, key, val):
 		ts = self.app.timestamp()
 		item = (key,ts,val)
-		self.queue.push(item)
-		self.queue = filter(lambda f: f[1] - ts < self.app.maxage, self.queue)
-		print 'Change queued: ' + item
+		self.queue.append(item)
+		self.queue = filter(lambda f: ts - f[1] < self.app.maxage, self.queue)
+		print 'Change queued: ' + str(item)
 
 	# Get all the changes since the specified time
 	def queueGet(self, since = 0):

@@ -12,7 +12,7 @@ function App() {
 	this.sep = '/';    // separator character used in hash fragment
 	this.queue = [];   // queue of data updates to send to the service
 	this.maxage;       // max lifetime in seconds of queue data
-	this.lastsync = 0; // unix timestamp of last data sync - if greater than maxage, all data will be loaded
+	this.lastsync = 0; // timestamp of last data sync - if greater than maxage, all data will be loaded
 
 	// Call the app's initialise function after the document is ready
 	$(document).ready(function() { window.app.init.call(window.app) });
@@ -195,31 +195,34 @@ App.prototype.viewChange = function() {
  * Called on a regular interval to send queued data to the service and receive any queued items
  */
 App.prototype.syncData = function() {
-	var ts = this.timestamp();
 	$.ajax({
 		type: 'POST',
 		url: '/' + this.group + '/_sync.json',
-		data: JSON.stringify([ts,this.queue]),
+		data: JSON.stringify([this.lastsync,this.queue]), // Send the time of the last sync with the queued data
 		contentType: "application/json; charset=utf-8",
 		dataType: 'json',
 		context: this,
 		success: function(data) {
-			
+
 			// If the result is an object, then it's the whole data structure
-			if(data.length === 'undefined') {
-				this.data = json;
+			if(data.length === undefined) {
+				this.data = data;
 				this.renderPage(); // just rebuild the page instead of raising events for all the changes
 			}
 
 			// A list of changed keys was returned, update the local data and trigger change events
 			// - note these are just k:v with no timestamp since we're not merging with another queue
+			// - note2 the whole set is a single-element array to differentiate it from the whole data
 			else {
-				for( k in data ) {
-					var v = data[k];
+				for( k in data[0] ) {
+					var v = data[0][k];
 					this.setData(k,v);
 					$.event.trigger({type: "bgDataChange-"+k, args: {val:v}});
 				}
 			}
+
+			// Record the current time as the last sync time
+			this.lastsync = this.timestamp();
 		}
 	});
 
