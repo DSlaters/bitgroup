@@ -112,7 +112,7 @@ class handler(asyncore.dispatcher_with_send):
 						# - no timestamp is fine since just storing without merge on client
 						else:
 							content = json.dumps(cdata)
-							#print content
+							print content
 
 			# Serve the requested file if it exists and isn't a directory
 			elif os.path.exists(path) and not os.path.isdir(path):
