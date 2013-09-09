@@ -217,7 +217,7 @@ App.prototype.syncData = function() {
 				for( k in data[0] ) {
 					var v = data[0][k];
 					this.setData(k,v);
-					$.event.trigger({type: "bgDataChange-"+k, args: {val:v}});
+					$.event.trigger({type: "bgDataChange-"+k, args: {app:this,val:v}});
 				}
 			}
 
@@ -297,23 +297,83 @@ App.prototype.msg = function(key, s1, s2, s3, s4, s5) {
 };
 
 /**
- * Return a millisecond timestamp - must mach app.py's timestamp
+ * Return a millisecond timestamp - must match app.py's timestamp
  */
 App.prototype.timestamp = function() {
 	return new Date().getTime()-1378723000000;
 };
 
 /**
+ * Detect the general type of an input element used for getting and setting its value
+ */
+App.prototype.inputType = function(element) {
+	var type = false;
+	if($(element).attr('type') == 'checkbox') type = 'checkbox';
+	if(element.tagName == 'select') type = 'select';
+	if($(element).hasClass('checklist')) type = 'checklist';
+	else if($(element).hasAttr('value') || element.tagName == 'textarea') type = 'input';
+	return type;
+};
+
+/**
+ * Set the value of an input based on its general type
+ */
+App.prototype.inputSetValue = function(element, val, type = false) {
+	if(type == false) type = this.inputType(element);
+	if(type == 'checkbox') {
+		val ? $(element).attr('checked','1') : $(element).removeAttr('checked');
+	}
+	else if(type == 'select') {
+		$('option',element).removeAttr('selected');
+		if(typeof val != 'object') val = [val];
+		for( i = 0; i < val.length; i++ ) $("option[value='"+val[i]+"']",element).attr('selected','1');
+	}
+	else if(type == 'checklist') {
+		if(typeof val != 'object') val = [val];
+		$('input',element).each(function() {
+			val.indexOf($(this).next().text()) >= 0 ? $(this).attr('checked','1') : $(this).removeAttr('checked');
+		});
+	}
+	else if(type == 'val') $(element).val(val);
+};
+
+/**
+ * Get the value of an input based on its general type
+ */
+App.prototype.inputGetValue = function(element, val, type = false) {
+	var val = false;
+	if(type == false) type = this.inputType(element);
+	if(type == 'checkbox') {
+		val = $(element).hasAttr('checked');
+	}
+	else if(type == 'select') {
+		if($(element).hasAttr('multiple')) val = $('option[selected]',element).val();
+		else {
+			val = [];
+			$('option',element).hasAttr('selected').each(function() { val.push(this.val()) });
+		}
+	}
+	else if(type == 'checklist') {
+		var val = [];
+		$('input',element).hasAttr('checked').each(function() { val.push(this.next().text()); });
+	}
+	else if(type == 'val') val = $(element).val();
+};
+
+/**
  * Connect a DOM element to a data source
  */
 App.prototype.connect = function(key, element) {
+	var val = this.getData(key);
+
+	// Set the source for the element's value
 	element.dataSource = key;
 
-	// Set the current value
-	$(element).val(this.getData(key));
+	// Set the inputs value to the current data value
+	this.inputSetValue(element, val);
 
 	// When the value changes from the server update the element
-	$(document).on( "bgDataChange-" + key, function(event) { $(element).val(event.args.val); });
+	$(document).on( "bgDataChange-" + key, function(event) { event.app.inputSetValue(element, event.args.val); });
 
 	// When the element value changes, queue the change for the server
 	$(element).change(function() {
