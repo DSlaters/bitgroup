@@ -68,7 +68,7 @@ class handler(asyncore.dispatcher_with_send):
 				content += "<script type=\"text/javascript\">\n"
 				content += "window.app.user = " + json.dumps(user) + ";\n"
 				content += "window.app.group = '" + group + "';\n"
-				content += "window.app.maxage = " + app.maxage + ";\n"
+				content += "window.app.maxage = " + str(app.maxage) + ";\n"
 				content += "</script>\n"
 				content += extensions
 				content += "</head>\n<body>\n</body>\n</html>\n"
@@ -87,20 +87,32 @@ class handler(asyncore.dispatcher_with_send):
 					ctype = mimetypes.guess_type(base)[0]
 					g = app.groups[group]
 					if data:
+
+						# Get the timestamp of the last sync and the list of changes from the posted json data
 						cdata = json.loads(data)
 						ts = cdata[0]
-						
-						# Last sync was more than maxage seconds ago, send all data
-						if ts > app.maxage:
-							content = app.groups[group].json()
+						cdata = cdata[1]
+						print cdata
+						# Make a k:v list of the most recent of all changes for each key
+						# TODO: what about conflicts? local timestamps are only maxage... store ts with stored data?
+						sdata = {}
+						for (k,t,v) in cdata + g.queueGet(ts):
+							if not(k in sdata and t < sdata[k][0]): sdata[k] = (t,v)
 
-						# Otherwise send all changes since last sync
+						# Set the local data to the most recent values
+						cdata = {}
+						for k in sdata:
+							cdata[k] = sdata[k][1]
+							g.set(k, cdata[k])
+
+						# Last sync was more than maxage seconds ago, send all data
+						if ts - int(time.strftime('%s')) > app.maxage: content = app.groups[group].json()
+
+						# Otherwise send the recent k:v updates
+						# - no timestamp is fine since just storing without merge on client
 						else:
-							# TODO
-							for k in cdata[1]: g.queue[k] = cdata[k]
-							for k in g.queue: g.set(k, g.queue[k])
-							content = json.dumps(g.queue)
-							g.queue = {}
+							content = json.dumps(cdata)
+							#print content
 
 			# Serve the requested file if it exists and isn't a directory
 			elif os.path.exists(path) and not os.path.isdir(path):

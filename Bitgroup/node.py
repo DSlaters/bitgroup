@@ -108,10 +108,14 @@ class Node:
 		return highlevelcrypto.decrypt(data, privKey.encode('hex'))
 
 	# Add the new queue entry with a unix timestamp and chop items older than the max age
+	# note - the queue is never cleared as there can be multiple clients, it's just chopped to maxage
 	def queueAdd(self, key, val):
-		item = (key,time.strftime('%s'),val)
+		ts = int(time.strftime('%s'))
+		item = (key,ts,val)
 		self.queue.push(item)
-		self.queue = filter(lambda f: f[1] < self.app.maxage, self.queue)
+		self.queue = filter(lambda f: f[1] - ts < self.app.maxage, self.queue)
+		print 'Change queued: ' + item
 
-	def queueMerge(self, queue2):
-		# TODO
+	# Get all the changes since the specified time
+	def queueGet(self, since = 0):
+		return filter(lambda f: f[1] > since, self.queue)

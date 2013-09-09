@@ -10,7 +10,7 @@ function App() {
 	this.node;         // the current node name
 	this.view;         // the current view instance
 	this.sep = '/';    // separator character used in hash fragment
-	this.queue = {};   // queue of data updates to send to the service
+	this.queue = [];   // queue of data updates to send to the service
 	this.maxage;       // max lifetime in seconds of queue data
 	this.lastsync = 0; // unix timestamp of last data sync - if greater than maxage, all data will be loaded
 
@@ -202,14 +202,17 @@ App.prototype.syncData = function() {
 		data: JSON.stringify([ts,this.queue]),
 		contentType: "application/json; charset=utf-8",
 		dataType: 'json',
+		context: this,
 		success: function(data) {
 			
 			// If the result is an object, then it's the whole data structure
 			if(data.length === 'undefined') {
 				this.data = json;
 				this.renderPage(); // just rebuild the page instead of raising events for all the changes
+			}
 
-			// A list of change events was returned, update the local data and trigger change events
+			// A list of changed keys was returned, update the local data and trigger change events
+			// - note these are just k:v with no timestamp since we're not merging with another queue
 			else {
 				for( k in data ) {
 					var v = data[k];
@@ -222,7 +225,7 @@ App.prototype.syncData = function() {
 
 	// Clear the queue now that it's data's been sent
 	// TODO: only clear queue after acknowledgement of reception
-	this.queue = {};
+	this.queue = [];
 };
 
 /**
@@ -311,13 +314,13 @@ App.prototype.connect = function(key, element) {
 		var app = window.app;
 		app.queueAdd(this.dataSource, $(this).val());
 	});
+};
 
 /**
  * Queue a changed item for sending to the service
  */
 App.prototype.queueAdd = function(key, val) {
-};
-
+	this.queue.push([key,this.unixtime(),val]);
 };
 
 /**
@@ -330,18 +333,18 @@ String.prototype.ucfirst = function() {
 /**
  * Add JSON support for older browsers that don't have it
  */
-if (!window.JSON) {
+if(!window.JSON) {
 	window.JSON = {
 		parse: function (sJSON) { return eval("(" + sJSON + ")"); },
 		stringify: function (vContent) {
-			if (vContent instanceof Object) {
+			if(vContent instanceof Object) {
 				var sOutput = "";
-				if (vContent.constructor === Array) {
-					for (var nId = 0; nId < vContent.length; sOutput += this.stringify(vContent[nId]) + ",", nId++);
+				if(vContent.constructor === Array) {
+					for(var nId = 0; nId < vContent.length; sOutput += this.stringify(vContent[nId]) + ",", nId++);
 					return "[" + sOutput.substr(0, sOutput.length - 1) + "]";
 				}
-				if (vContent.toString !== Object.prototype.toString) { return "\"" + vContent.toString().replace(/"/g, "\\$&") + "\""; }
-				for (var sProp in vContent) { sOutput += "\"" + sProp.replace(/"/g, "\\$&") + "\":" + this.stringify(vContent[sProp]) + ","; }
+				if(vContent.toString !== Object.prototype.toString) { return "\"" + vContent.toString().replace(/"/g, "\\$&") + "\""; }
+				for(var sProp in vContent) { sOutput += "\"" + sProp.replace(/"/g, "\\$&") + "\":" + this.stringify(vContent[sProp]) + ","; }
 				return "{" + sOutput.substr(0, sOutput.length - 1) + "}";
 			}
 			return typeof vContent === "string" ? "\"" + vContent.replace(/"/g, "\\$&") + "\"" : String(vContent);
