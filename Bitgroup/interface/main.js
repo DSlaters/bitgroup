@@ -99,7 +99,7 @@ App.prototype.run = function() {
 	setInterval( function() {
 		$.event.trigger({type: "bgPoller"});
 		window.app.syncData();
-	}, 1000 );
+	}, 5000 );
 };
 
 /**
@@ -113,6 +113,7 @@ App.prototype.renderPage = function() {
 	this.loadStyleSheet('/skins/' + skin + '/style.css');
 
 	// Render the top bar
+	page += 'UUID: ' + this.id
 	page += '<div id="personal">\n';
 	page += '<a id="user-page" href="/">' + this.msg('user-page') + '</a>\n';
 	page += '<h1>' + this.msg('groups').ucfirst() + '</h1><ul id="personal-groups">\n';
@@ -198,10 +199,12 @@ App.prototype.viewChange = function() {
  * Called on a regular interval to send queued data to the service and receive any queued items
  */
 App.prototype.syncData = function() {
+	data = this.queue;
+	data.splice(0,0,this.lastsync);
 	$.ajax({
 		type: 'POST',
 		url: '/' + this.group + '/_sync.json',
-		data: JSON.stringify([this.lastsync,this.queue]), // Send the time of the last sync with the queued data
+		data: JSON.stringify(data), // Send the time of the last sync with the queued data
 		contentType: "application/json; charset=utf-8",
 		headers: { 'X-Bitgroup-ID': this.id },
 		dataType: 'json',
@@ -313,10 +316,11 @@ App.prototype.timestamp = function() {
  * Detect the general type of an input element used for getting and setting its value
  */
 App.prototype.inputType = function(element) {
+	element = $(element)[0];
 	var type = false;
 	if($(element).attr('type') == 'checkbox') type = 'checkbox';
-	if(element.tagName == 'select') type = 'select';
-	if($(element).hasClass('checklist')) type = 'checklist';
+	else if(element.tagName == 'SELECT') type = 'select';
+	else if($(element).hasClass('checklist')) type = 'checklist';
 	else if($(element).attr('value') != undefined || element.tagName == 'textarea') type = 'input';
 	return type;
 };
@@ -330,14 +334,17 @@ App.prototype.inputSetValue = function(element, val, type = false) {
 		$(element).attr('checked',val ? true : false);
 	}
 	else if(type == 'select') {
-		$('option',element).attr('selected', false);
+		//$('option',element).removeAttr('selected');
 		if(typeof val != 'object') val = [val];
-		for( i = 0; i < val.length; i++ ) $("option:contains('"+val[i]+"')",element).attr('selected', true);
+		//for( var i = 0; i < val.length; i++ ) $("option:contains('"+val[i]+"')",element).attr('selected', 'selected');
+		$('option',element).each(function() {
+			val.indexOf($(this).text()) >= 0 ? $(this).attr("selected", "selected") : $(this).removeAttr('selected');
+		});
 	}
 	else if(type == 'checklist') {
 		if(typeof val != 'object') val = [val];
 		$('input',element).each(function() {
-			val.indexOf($(this).next().text()) >= 0 ? $(this).attr("checked", "checked").is(':checked') : $(this).removeAttr('checked');
+			val.indexOf($(this).next().text()) >= 0 ? $(this).attr("checked", "checked") : $(this).removeAttr('checked');
 		});
 	}
 	else if(type == 'val') $(element).val(val);
@@ -353,10 +360,10 @@ App.prototype.inputGetValue = function(element, val, type = false) {
 		val = $(element).is(':checked');
 	}
 	else if(type == 'select') {
-		if($(element).attr('multiple') != undefined) val = $('option[selected]',element).text();
+		if($(element).attr('multiple') == undefined) val = $('option[selected]',element).text();
 		else {
 			val = [];
-			$('option',element).each(function() { if($(this).attr('selected') != undefined) val.push(this.text()) });
+			$('option',element).each(function() { if($(this).is(':selected')) val.push($(this).text()) });
 		}
 	}
 	else if(type == 'checklist') {
@@ -427,8 +434,10 @@ App.prototype.inputConnect = function(key, element) {
 	var i = type == 'checklist' ? $('input',element) : $(element);
 	i.change(function() {
 		var app = window.app;
-		alert(element.dataSource);
-		app.queueAdd(element.dataSource, app.inputGetValue(element));
+		var val = app.inputGetValue(element);
+		var key = element.dataSource;
+		app.setData(key, val);
+		app.queueAdd(key, val);
 	});
 };
 
@@ -436,7 +445,7 @@ App.prototype.inputConnect = function(key, element) {
  * Queue a changed item for sending to the service
  */
 App.prototype.queueAdd = function(key, val) {
-	this.queue.push([key,this.timestamp(),val]);
+	this.queue.push([key,val,this.timestamp()]);
 };
 
 /**

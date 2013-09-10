@@ -55,13 +55,13 @@ class Node:
 		# Anything changed?
 		oldval = j[leaf]
 		j[leaf] = val
-		change = json.dumps(oldval) != json.dumps(val)
+		changed = json.dumps(oldval) != json.dumps(val)
 
 		# Save the updated data if changed
 		if changed: self.save()
 
 		# Return state of change
-		return change
+		return changed
 
 	# TODO
 	def remove(self):
@@ -113,20 +113,20 @@ class Node:
 	# note - the queue is never cleared as there can be multiple clients, it's just chopped to maxage
 	def queueAdd(self, key, val, peer = ''):
 		ts = self.app.timestamp()
-		item = (key,ts,val,peer)
+		item = (key,val,ts,peer)
 		self.queue.append(item)
-		self.queue = filter(lambda f: ts - f[1] < self.app.maxage, self.queue)
+		self.queue = filter(lambda f: ts - f[2] < self.app.maxage, self.queue)
 		print 'Change queued: ' + str(item)
 
 	# Get all the changes since the specified time
 	def queueGet(self, since = 0):
-		return filter(lambda f: f[1] > since, self.queue)
+		return filter(lambda f: f[2] > since, self.queue)
 
 	# Merge the passed items with the queue
 	def queueMerge(self, cdata, ts):
 		sdata = {}
-		for (k,t,v,i) in cdata + self.queueGet(ts):
-			if not(k in sdata and t < sdata[k][0]): sdata[k] = (t,v,i)
+		for (k,v,t,i) in cdata + self.queueGet(ts):
+			if not(k in sdata and t < sdata[k][1]): sdata[k] = (v,t,i)
 		self.queue = []
 		for k in sdata:
 			item = (k,sdata[k][0],sdata[k][1],sdata[k][2])

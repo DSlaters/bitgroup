@@ -96,19 +96,18 @@ class handler(asyncore.dispatcher_with_send):
 					if data:
 
 						# Get the timestamp of the last sync and the list of changes from the posted json data
-						print data
 						cdata = json.loads(data)
 						ts = cdata[0]
-						cdata = cdata[1]
+						del cdata[0]
 
 						# Add peer ID to all change items from client
-						for item in cdata: item[3] = peer;
+						for item in cdata: item.append(peer);
 
 						# Reduce the queue to just the most recent change for each key
 						queue = g.queueMerge(cdata, ts)
 
 						# Set the local data to the most recent values
-						for item in queue: g.set(item[0],item[2])
+						for item in queue: g.set(item[0],item[1])
 
 						# Last sync was more than maxage seconds ago, send all data
 						if app.timestamp() - ts > app.maxage: content = app.groups[group].json()
@@ -119,7 +118,7 @@ class handler(asyncore.dispatcher_with_send):
 
 							# Get queue items that did not originate from this client and use only key and value
 							cdata = []
-							for item in filter(lambda f: f[3] != peer, queue): cdata.append([item[0], item[2]])
+							for item in filter(lambda f: f[3] != peer, queue): cdata.append([item[0], item[1]])
 							content = json.dumps(cdata)
 							if content != '[]': print peer + ': ' + content
 
