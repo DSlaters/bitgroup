@@ -3,6 +3,9 @@
  */
 function App() {
 
+	// An identity for this client connection - python socket seems to be missing the ability to identify the stream
+	this.id = Math.uuid(5)
+
 	this.views = [];   // the availabe view classes - this first is the default if no view is specified by the current node
 	this.user;         // the current user data
 	this.group;        // the current group name
@@ -200,6 +203,7 @@ App.prototype.syncData = function() {
 		url: '/' + this.group + '/_sync.json',
 		data: JSON.stringify([this.lastsync,this.queue]), // Send the time of the last sync with the queued data
 		contentType: "application/json; charset=utf-8",
+		headers: { 'X-Bitgroup-ID': this.id },
 		dataType: 'json',
 		context: this,
 		success: function(data) {
@@ -213,9 +217,11 @@ App.prototype.syncData = function() {
 			// A list of changed keys was returned, update the local data and trigger change events
 			// - note these are just k:v with no timestamp since we're not merging with another queue
 			// - note2 the whole set is a single-element array to differentiate it from the whole data
+			// - note3 if an item has also been updated locally, don't set it here
 			else {
-				for( k in data[0] ) {
-					var v = data[0][k];
+				for( var i = 0; i < data.length; i++ ) {
+					var k = data[i][0];
+					var v = data[i][1];
 					this.setData(k,v);
 					$.event.trigger({type: "bgDataChange-"+k, args: {app:this,val:v}});
 				}
@@ -311,7 +317,7 @@ App.prototype.inputType = function(element) {
 	if($(element).attr('type') == 'checkbox') type = 'checkbox';
 	if(element.tagName == 'select') type = 'select';
 	if($(element).hasClass('checklist')) type = 'checklist';
-	else if($(element).hasAttr('value') || element.tagName == 'textarea') type = 'input';
+	else if($(element).attr('value') != undefined || element.tagName == 'textarea') type = 'input';
 	return type;
 };
 
@@ -321,17 +327,17 @@ App.prototype.inputType = function(element) {
 App.prototype.inputSetValue = function(element, val, type = false) {
 	if(type == false) type = this.inputType(element);
 	if(type == 'checkbox') {
-		val ? $(element).attr('checked','1') : $(element).removeAttr('checked');
+		$(element).attr('checked',val ? true : false);
 	}
 	else if(type == 'select') {
-		$('option',element).removeAttr('selected');
+		$('option',element).attr('selected', false);
 		if(typeof val != 'object') val = [val];
-		for( i = 0; i < val.length; i++ ) $("option[value='"+val[i]+"']",element).attr('selected','1');
+		for( i = 0; i < val.length; i++ ) $("option:contains('"+val[i]+"')",element).attr('selected', true);
 	}
 	else if(type == 'checklist') {
 		if(typeof val != 'object') val = [val];
 		$('input',element).each(function() {
-			val.indexOf($(this).next().text()) >= 0 ? $(this).attr('checked','1') : $(this).removeAttr('checked');
+			val.indexOf($(this).next().text()) >= 0 ? $(this).attr("checked", "checked").is(':checked') : $(this).removeAttr('checked');
 		});
 	}
 	else if(type == 'val') $(element).val(val);
@@ -344,41 +350,85 @@ App.prototype.inputGetValue = function(element, val, type = false) {
 	var val = false;
 	if(type == false) type = this.inputType(element);
 	if(type == 'checkbox') {
-		val = $(element).hasAttr('checked');
+		val = $(element).is(':checked');
 	}
 	else if(type == 'select') {
-		if($(element).hasAttr('multiple')) val = $('option[selected]',element).val();
+		if($(element).attr('multiple') != undefined) val = $('option[selected]',element).text();
 		else {
 			val = [];
-			$('option',element).hasAttr('selected').each(function() { val.push(this.val()) });
+			$('option',element).each(function() { if($(this).attr('selected') != undefined) val.push(this.text()) });
 		}
 	}
 	else if(type == 'checklist') {
-		var val = [];
-		$('input',element).hasAttr('checked').each(function() { val.push(this.next().text()); });
+		val = [];
+		$('input',element).each(function() { if($(this).is(':checked')) val.push($(this).next().text()); });
 	}
 	else if(type == 'val') val = $(element).val();
+	return val;
+};
+
+/**
+ * General renderer for form inputs
+ */
+App.prototype.inputRender = function(type, data = false, atts = {}) {
+	html = '';
+	attstr = '';
+	for( k in atts ) attstr += ' '+k+'="'+atts[k]+'"';
+
+	// Checkbox
+	if(type == 'checkbox') {
+		html = '<input' + attstr + ' type="text" value="' + data + '" />';
+	}
+
+	// Select list
+	else if(type == 'select') {
+		html = '<select' + attstr + '>';
+		for(i = 0; i < data.length; i++) html += '<option>' + data[i] + '</option>';
+		html += '</select>';
+	}
+
+	// Checklist
+	else if(type == 'checklist') {
+		html = '<div' + attstr + ' class="checklist">';
+		for(i = 0; i < data.length; i++) html += '<input type="checkbox" /><span>' + data[i] + '</span><br />';
+		html += '</div>';
+	}
+
+	// Textarea
+	else if(type == 'textarea') {
+		html = '<textarea' + attstr + '>' + data + '</textarea>';
+	}
+
+	// Text input (default)
+	else html = '<input' + attstr + ' type="text" value="' + data + '" />';
+	return html;
 };
 
 /**
  * Connect a DOM element to a data source
  */
-App.prototype.connect = function(key, element) {
+App.prototype.inputConnect = function(key, element) {
 	var val = this.getData(key);
+	var type = this.inputType(element);
+
+	// Get the DOM form of the element whether it was passed as a DOM or jQuery object
+	element = $(element)[0];
 
 	// Set the source for the element's value
 	element.dataSource = key;
 
-	// Set the inputs value to the current data value
-	this.inputSetValue(element, val);
+	// Set the input's value to the current data value
+	this.inputSetValue(element, val, type);
 
-	// When the value changes from the server update the element
-	$(document).on( "bgDataChange-" + key, function(event) { event.app.inputSetValue(element, event.args.val); });
+	// When the value changes from the server, update the element
+	$(document).on( "bgDataChange-" + key, function(event) { event.args.app.inputSetValue(element, event.args.val); });
 
 	// When the element value changes, queue the change for the server
-	$(element).change(function() {
+	var i = type == 'checklist' ? $('input',element) : $(element);
+	i.change(function() {
 		var app = window.app;
-		app.queueAdd(this.dataSource, $(this).val());
+		alert(element.dataSource);
+		app.queueAdd(element.dataSource, app.inputGetValue(element));
 	});
 };
 

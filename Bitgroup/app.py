@@ -14,7 +14,6 @@ class App:
 
 	name = None
 	messages = []
-	events = {}
 	groups = {}
 	maxage = 600000 # Expiry time of queue items in milliseconds
 
@@ -56,3 +55,4 @@ class App:
 	# Return a millisecond timestamp - must match main.js's timestamp
 	def timestamp(self):
 		return (int(time.strftime('%s'))-1378723000)*1000 + int(datetime.datetime.now().microsecond/1000)
+

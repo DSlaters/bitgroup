@@ -13,18 +13,24 @@ class handler(asyncore.dispatcher_with_send):
 	def handle_read(self):
 		global app
 		data = self.recv(8192)
-		match = re.match(r'^(GET|POST) (.+?) HTTP.+Host: (.+?)\s.+?\r\n\r\n\s*(.*?)\s*$', data, re.S)
+		match = re.match(r'^(GET|POST) (.+?) HTTP.+Host: (.+?)\s(.+?)\r\n\r\n\s*(.*?)\s*$', data, re.S)
 		if data and match:
 			method = match.group(1)
 			uri = match.group(2)
 			host = match.group(3)
-			data = match.group(4)
+			head = match.group(4)
+			data = match.group(5)
 			date = time.strftime("%a, %d %b %Y %H:%M:%S %Z")
 			server = app.name + "-" + app.version
 			status = "200 OK"
 			ctype = "text/html"
 			content = "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n"
 			docroot = app.docroot
+
+			# Identify the client stream using a unique ID in the header
+			# TODO: There must be a proper way to identify client streams in Python
+			match = re.search(r'X-Bitgroup-ID: (.+?)\s', head)
+			peer = match.group(1) if match else ''
 
 			# If the uri starts with a group name, set group and change path to group's files
 			m = re.match('/(.+?)($|/.*)', uri)
@@ -63,6 +69,7 @@ class handler(asyncore.dispatcher_with_send):
 				content += "<script type=\"text/javascript\" src=\"/resources/jquery-1.10.2.min.js\"></script>\n"
 				content += "<script type=\"text/javascript\" src=\"/resources/jquery-ui-1.10.3/ui/jquery-ui.js\"></script>\n"
 				content += "<script type=\"text/javascript\" src=\"/resources/jquery.observehashchange.min.js\"></script>\n"
+				content += "<script type=\"text/javascript\" src=\"/resources/math.uuid.js\"></script>\n"
 				content += "<script type=\"text/javascript\" src=\"/i18n.js\"></script>\n"
 				content += "<script type=\"text/javascript\" src=\"/main.js\"></script>\n"
 				content += "<script type=\"text/javascript\">\n"
@@ -89,30 +96,32 @@ class handler(asyncore.dispatcher_with_send):
 					if data:
 
 						# Get the timestamp of the last sync and the list of changes from the posted json data
+						print data
 						cdata = json.loads(data)
 						ts = cdata[0]
 						cdata = cdata[1]
 
-						# Make a k:v list of the most recent of all changes for each key
-						# TODO: what about conflicts? local timestamps are only maxage... store ts with stored data?
-						sdata = {}
-						for (k,t,v) in cdata + g.queueGet(ts):
-							if not(k in sdata and t < sdata[k][0]): sdata[k] = (t,v)
+						# Add peer ID to all change items from client
+						for item in cdata: item[3] = peer;
+
+						# Reduce the queue to just the most recent change for each key
+						queue = g.queueMerge(cdata, ts)
 
 						# Set the local data to the most recent values
-						cdata = {}
-						for k in sdata:
-							cdata[k] = sdata[k][1]
-							g.set(k, cdata[k])
+						for item in queue: g.set(item[0],item[2])
 
 						# Last sync was more than maxage seconds ago, send all data
 						if app.timestamp() - ts > app.maxage: content = app.groups[group].json()
 
-						# Otherwise send the recent k:v updates
+						# Otherwise send the queue of changes
 						# - no timestamp is fine since just storing without merge on client
 						else:
-							content = '[' + json.dumps(cdata) + ']' # ugly hack to make it an array to differentiate changes from whole data set
-							if content != '[{}]': print content
+
+							# Get queue items that did not originate from this client and use only key and value
+							cdata = []
+							for item in filter(lambda f: f[3] != peer, queue): cdata.append([item[0], item[2]])
+							content = json.dumps(cdata)
+							if content != '[]': print peer + ': ' + content
 
 			# Serve the requested file if it exists and isn't a directory
 			elif os.path.exists(path) and not os.path.isdir(path):
@@ -134,7 +143,7 @@ class handler(asyncore.dispatcher_with_send):
 			header += "Date: " + date + "\r\n"
 			header += "Server: " + server + "\r\n"
 			header += "Content-Type: " + ctype + "\r\n"
-			header += "Connection: close\r\n"
+			header += "Connection: keep-alive\r\n"
 			header += "Content-Length: " + str(len(content)) + "\r\n\r\n"
 
 			self.send(header + content)

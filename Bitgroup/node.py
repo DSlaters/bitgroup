@@ -13,8 +13,8 @@ class Node:
 	"""
 
 	data = None    # cache of this node's data
-	queue = []     # queue of data changes to send to the client on its next connection
 	passwd = None  # used to ecrypt data and messages for this user or group
+	queue = []
 
 	# Get a property in this nodes data structure
 	def get(self, key):
@@ -33,7 +33,7 @@ class Node:
 		return val
 
 	# Set a property in this nodes data structure
-	def set(self, key, val, queue = True):
+	def set(self, key, val):
 
 		# Load the data if the cache is uninitialised
 		if self.data == None: self.load()
@@ -51,14 +51,17 @@ class Node:
 					return None
 				j[i] = {}
 				j = j[i]
+
+		# Anything changed?
 		oldval = j[leaf]
 		j[leaf] = val
+		change = json.dumps(oldval) != json.dumps(val)
 
-		# Add the change to the transfer queue
-		if queue and oldval != val: self.queueAdd(key,val);
+		# Save the updated data if changed
+		if changed: self.save()
 
-		# Save the updated data
-		self.save()
+		# Return state of change
+		return change
 
 	# TODO
 	def remove(self):
@@ -108,9 +111,9 @@ class Node:
 
 	# Add the new queue entry with a unix timestamp and chop items older than the max age
 	# note - the queue is never cleared as there can be multiple clients, it's just chopped to maxage
-	def queueAdd(self, key, val):
+	def queueAdd(self, key, val, peer = ''):
 		ts = self.app.timestamp()
-		item = (key,ts,val)
+		item = (key,ts,val,peer)
 		self.queue.append(item)
 		self.queue = filter(lambda f: ts - f[1] < self.app.maxage, self.queue)
 		print 'Change queued: ' + str(item)
@@ -118,3 +121,15 @@ class Node:
 	# Get all the changes since the specified time
 	def queueGet(self, since = 0):
 		return filter(lambda f: f[1] > since, self.queue)
+
+	# Merge the passed items with the queue
+	def queueMerge(self, cdata, ts):
+		sdata = {}
+		for (k,t,v,i) in cdata + self.queueGet(ts):
+			if not(k in sdata and t < sdata[k][0]): sdata[k] = (t,v,i)
+		self.queue = []
+		for k in sdata:
+			item = (k,sdata[k][0],sdata[k][1],sdata[k][2])
+			self.queue.append(item)
+		return self.queue
+		
