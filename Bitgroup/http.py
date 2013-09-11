@@ -8,6 +8,8 @@ import re
 import mimetypes
 import json
 
+syncTimes = {} # record of the last time each client connected
+
 class handler(asyncore.dispatcher_with_send):
 
 	def handle_read(self):
@@ -21,6 +23,7 @@ class handler(asyncore.dispatcher_with_send):
 			head = match.group(4)
 			data = match.group(5)
 			date = time.strftime("%a, %d %b %Y %H:%M:%S %Z")
+			now  = app.timestamp()
 			server = app.name + "-" + app.version
 			status = "200 OK"
 			ctype = "text/html"
@@ -30,7 +33,7 @@ class handler(asyncore.dispatcher_with_send):
 			# Identify the client stream using a unique ID in the header
 			# TODO: There must be a proper way to identify client streams in Python
 			match = re.search(r'X-Bitgroup-ID: (.+?)\s', head)
-			peer = match.group(1) if match else ''
+			client = match.group(1) if match else ''
 
 			# If the uri starts with a group name, set group and change path to group's files
 			m = re.match('/(.+?)($|/.*)', uri)
@@ -92,31 +95,29 @@ class handler(asyncore.dispatcher_with_send):
 				if group in app.groups:
 					ctype = mimetypes.guess_type(base)[0]
 					cdata = []
-					ts = 0
 					g = app.groups[group]
 
-					# If the client sent change data extract and prepare it for merging with the local queue
+					# Get the timestamp of the last time this client connected and update
+					if client in syncTimes: ts = syncTimes[client]
+					else: ts = 0
+					syncTimes[client] = now
+
+					# If the client sent change-data extract and add client ID to all items ready for merging with the local queue
 					if data:
-
-						# Get the timestamp of the last sync and the list of changes from the posted json data
 						cdata = json.loads(data)
-						ts = cdata[0]
-						del cdata[0]
-						print "Received from " + peer + " (last=" + str(ts) + "): " + str(cdata)
-
-						# Add peer ID to all change items from client
-						for item in cdata: item.append(peer);
+						print "Received from " + client + " (last=" + str(ts) + "): " + str(cdata)
+						for item in cdata: item.append(client);
 
 					# Reduce the queue to just the most recent change for each key merged with the client changes
-					queue = g.queueMerge(cdata, ts)
+					queue = g.queueMerge(cdata, ts - (now - ts))
 
-					print "Queue for " + peer + ": " + str(queue)
+					print "Queue for " + client + " from " + str(ts) + ' to ' + str(now) + ": " + str(queue)
 
 					# Set the local data to the most recent values
 					for item in queue: g.set(item[0],item[1])
 
 					# Last sync was more than maxage seconds ago, send all data
-					if app.timestamp() - ts > app.maxage: content = app.groups[group].json()
+					if now - ts > app.maxage: content = app.groups[group].json()
 
 					# Otherwise send the queue of changes
 					# - no timestamp is fine since just storing without merge on client
@@ -124,9 +125,9 @@ class handler(asyncore.dispatcher_with_send):
 
 						# Get queue items that did not originate from this client and use only key and value
 						cdata = []
-						for item in filter(lambda f: f[3] != peer, queue): cdata.append([item[0], item[1]])
+						for item in filter(lambda f: f[3] != client, queue): cdata.append([item[0], item[1]])
 						content = json.dumps(cdata)
-						print "Sending to " + peer + ': ' + content
+						print "Sending to " + client + ': ' + content
 
 			# Serve the requested file if it exists and isn't a directory
 			elif os.path.exists(path) and not os.path.isdir(path):

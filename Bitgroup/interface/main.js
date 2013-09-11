@@ -16,7 +16,6 @@ function App() {
 	this.queue = [];     // queue of data updates to send to the service
 	this.maxage;         // max lifetime in seconds of queue data
 	this.synctime = 5000 // milliseconds between each sync request
-	this.lastsync = this.synctime; // timestamp of last data sync - if greater than maxage, all data will be loaded
 
 	// Populate the properties thst were sent in the page
 	for( var i in window.tmp ) this[i] = window.tmp[i];
@@ -203,18 +202,10 @@ App.prototype.viewChange = function() {
  * Called on a regular interval to send queued data to the service and receive any queued items
  */
 App.prototype.syncData = function() {
-
-	// Data is time of the last sync with the queued data
-	data = this.queue;
-	data.splice(0,0,this.lastsync - this.synctime); // we need to cover twice the sync period or we miss changes
-	data = JSON.stringify(data);
-	this.lastsync = this.timestamp();
-
-	// Send the request
 	$.ajax({
 		type: 'POST',
 		url: '/' + this.group + '/_sync.json',
-		data: data, 
+		data: this.queue.length > 0 ? JSON.stringify(this.queue) : '', 
 		contentType: "application/json; charset=utf-8",
 		headers: { 'X-Bitgroup-ID': this.id },
 		dataType: 'json',
@@ -235,8 +226,8 @@ App.prototype.syncData = function() {
 				for( var i = 0; i < data.length; i++ ) {
 					var k = data[i][0];
 					var v = data[i][1];
-					this.setData(k,v);
-					$.event.trigger({type: "bgDataChange-"+k, args: {app:this,val:v}});
+					console.info('data received: ' + k + ' = "' + v + '"');
+					if(this.setData(k,v)) $.event.trigger({type: "bgDataChange-" + k.replace('.','-'), args: {app:this,val:v}});
 				}
 			}
 		}
@@ -260,7 +251,11 @@ App.prototype.getData = function(key) {
  * TODO: don't use eval for this, make a path walking function like node.py
  */
 App.prototype.setData = function(key,val) {
+	var oldval = this.getData(key);
+	if(oldval === val) return false;
 	eval( 'this.data.' + key + '=val' );
+	console.info(key + ' changed from "' + oldval + '" to "' + val + '"');
+	return true;
 };
 
 /**
@@ -385,9 +380,10 @@ App.prototype.inputGetValue = function(element, val, type) {
 App.prototype.inputRender = function(type, data, atts) {
 	if(data === undefined) data = '';
 	if(atts === undefined) atts = {};
+	if(!('id' in atts)) atts.id = Math.uuid(5);
 	html = '';
 	attstr = '';
-	for( k in atts ) attstr += ' '+k+'="'+atts[k]+'"';
+	for( k in atts ) attstr += ' ' + k + '="' + atts[k] + '"';
 
 	// Checkbox
 	if(type == 'checkbox') {
@@ -422,11 +418,9 @@ App.prototype.inputRender = function(type, data, atts) {
  * Connect a DOM element to a data source
  */
 App.prototype.inputConnect = function(key, element) {
+	element = $(element)[0];
 	var val = this.getData(key);
 	var type = this.inputType(element);
-
-	// Get the DOM form of the element whether it was passed as a DOM or jQuery object
-	element = $(element)[0];
 
 	// Set the source for the element's value
 	element.dataSource = key;
@@ -435,7 +429,19 @@ App.prototype.inputConnect = function(key, element) {
 	this.inputSetValue(element, val, type);
 
 	// When the value changes from the server, update the element
-	$(document).on( "bgDataChange-" + key, function(event) { event.args.app.inputSetValue(element, event.args.val); });
+	console.info('Connecting input "' + element.id + '" to ' + key);
+	var handler = function(event) {
+
+		// If the element is no longer attached to the DOM, remove the event
+		if(element.parentNode == null || element.parentNode.parentNode == null) {
+			console.info('Element "' + element.id + '" gone, removing event');
+			$(document).off(event.type, null, handler);
+		}
+
+		// Otherwise set the element's value
+		else event.args.app.inputSetValue(element, event.args.val);
+	};
+	$(document).on("bgDataChange-" + key.replace('.','-'), handler);
 
 	// When the element value changes, queue the change for the server
 	var i = type == 'checklist' ? $('input',element) : $(element);
