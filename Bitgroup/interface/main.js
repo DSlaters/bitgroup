@@ -331,7 +331,7 @@ App.prototype.inputType = function(element) {
 	if($(element).attr('type') == 'checkbox') type = 'checkbox';
 	else if(element.tagName == 'SELECT') type = 'select';
 	else if($(element).hasClass('checklist')) type = 'checklist';
-	else if($(element).attr('value') != undefined || element.tagName == 'textarea') type = 'input';
+	else if($(element).attr('value') !== undefined || element.tagName == 'textarea') type = 'input';
 	return type;
 };
 
@@ -339,7 +339,7 @@ App.prototype.inputType = function(element) {
  * Set the value of an input based on its general type
  */
 App.prototype.inputSetValue = function(element, val, type) {
-	if(type == undefined) type = this.inputType(element);
+	if(type === undefined) type = this.inputType(element);
 	if(type == 'checkbox') {
 		$(element).attr('checked',val ? true : false);
 	}
@@ -365,12 +365,12 @@ App.prototype.inputSetValue = function(element, val, type) {
  */
 App.prototype.inputGetValue = function(element, val, type) {
 	var val = false;
-	if(type == undefined) type = this.inputType(element);
+	if(type === undefined) type = this.inputType(element);
 	if(type == 'checkbox') {
 		val = $(element).is(':checked');
 	}
 	else if(type == 'select') {
-		if($(element).attr('multiple') == undefined) val = $('option[selected]',element).text();
+		if($(element).attr('multiple') === undefined) val = $('option[selected]',element).text();
 		else {
 			val = [];
 			$('option',element).each(function() { if($(this).is(':selected')) val.push($(this).text()) });
@@ -388,8 +388,8 @@ App.prototype.inputGetValue = function(element, val, type) {
  * General renderer for form inputs
  */
 App.prototype.inputRender = function(type, data, atts) {
-	if(data == undefined) data = '';
-	if(atts == undefined) atts = {};
+	if(data === undefined) data = '';
+	if(atts === undefined) atts = {};
 	html = '';
 	attstr = '';
 	for( k in atts ) attstr += ' '+k+'="'+atts[k]+'"';
