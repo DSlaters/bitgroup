@@ -6,16 +6,17 @@ function App() {
 	// An identity for this client connection - python socket seems to be missing the ability to identify the stream
 	this.id = Math.uuid(5)
 
-	this.views = [];   // the availabe view classes - this first is the default if no view is specified by the current node
-	this.user;         // the current user data
-	this.group;        // the current group name
-	this.data = {};    // the current group's data
-	this.node;         // the current node name
-	this.view;         // the current view instance
-	this.sep = '/';    // separator character used in hash fragment
-	this.queue = [];   // queue of data updates to send to the service
-	this.maxage;       // max lifetime in seconds of queue data
-	this.lastsync = 0; // timestamp of last data sync - if greater than maxage, all data will be loaded
+	this.views = [];     // the availabe view classes - this first is the default if no view is specified by the current node
+	this.user;           // the current user data
+	this.group;          // the current group name
+	this.data = {};      // the current group's data
+	this.node;           // the current node name
+	this.view;           // the current view instance
+	this.sep = '/';      // separator character used in hash fragment
+	this.queue = [];     // queue of data updates to send to the service
+	this.maxage;         // max lifetime in seconds of queue data
+	this.synctime = 5000 // milliseconds between each sync request
+	this.lastsync = this.synctime; // timestamp of last data sync - if greater than maxage, all data will be loaded
 
 	// Populate the properties thst were sent in the page
 	for( var i in window.tmp ) this[i] = window.tmp[i];
@@ -102,7 +103,7 @@ App.prototype.run = function() {
 	setInterval( function() {
 		$.event.trigger({type: "bgPoller"});
 		window.app.syncData();
-	}, 5000 );
+	}, this.synctime );
 };
 
 /**
@@ -204,11 +205,10 @@ App.prototype.viewChange = function() {
 App.prototype.syncData = function() {
 
 	// Data is time of the last sync with the queued data
-	if(this.queue.length > 0) {
-		data = this.queue;
-		data.splice(0,0,this.lastsync);
-		data = JSON.stringify(data);
-	} else data = '';
+	data = this.queue;
+	data.splice(0,0,this.lastsync - this.synctime); // we need to cover twice the sync period or we miss changes
+	data = JSON.stringify(data);
+	this.lastsync = this.timestamp();
 
 	// Send the request
 	$.ajax({
@@ -239,9 +239,6 @@ App.prototype.syncData = function() {
 					$.event.trigger({type: "bgDataChange-"+k, args: {app:this,val:v}});
 				}
 			}
-
-			// Record the current time as the last sync time
-			this.lastsync = this.timestamp();
 		}
 	});
 
@@ -344,9 +341,7 @@ App.prototype.inputSetValue = function(element, val, type) {
 		$(element).attr('checked',val ? true : false);
 	}
 	else if(type == 'select') {
-		//$('option',element).removeAttr('selected');
 		if(typeof val != 'object') val = [val];
-		//for( var i = 0; i < val.length; i++ ) $("option:contains('"+val[i]+"')",element).attr('selected', 'selected');
 		$('option',element).each(function() {
 			val.indexOf($(this).text()) >= 0 ? $(this).attr("selected", "selected") : $(this).removeAttr('selected');
 		});

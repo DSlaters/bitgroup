@@ -81,49 +81,52 @@ class handler(asyncore.dispatcher_with_send):
 				content += extensions
 				content += "</head>\n<body>\n</body>\n</html>\n"
 
-			# If this is a request for _data.json return the current group's node data
+			# If this is a request for _data.json return all of the current group's node data
 			elif base == '_data.json':
 				if group in app.groups:
 					content = app.groups[group].json()
 					ctype = mimetypes.guess_type(base)[0]
 
-			# If this is a for _xfer.json merge the local and client change queues and return the changes
-			# TODO: merge with timestamps
-			# TODO: only delete local queue after acknowledgement of reception
+			# If this is a for _sync.json merge the local and client change queues and return the changes
 			elif base == '_sync.json':
 				if group in app.groups:
 					ctype = mimetypes.guess_type(base)[0]
+					cdata = []
+					ts = 0
 					g = app.groups[group]
+
+					# If the client sent change data extract and prepare it for merging with the local queue
 					if data:
 
 						# Get the timestamp of the last sync and the list of changes from the posted json data
-						print data
 						cdata = json.loads(data)
 						ts = cdata[0]
 						del cdata[0]
-						print "Received (last= " + str(ts) + "): " + str(cdata)
+						print "Received from " + peer + " (last=" + str(ts) + "): " + str(cdata)
 
 						# Add peer ID to all change items from client
 						for item in cdata: item.append(peer);
 
-						# Reduce the queue to just the most recent change for each key
-						queue = g.queueMerge(cdata, ts)
+					# Reduce the queue to just the most recent change for each key merged with the client changes
+					queue = g.queueMerge(cdata, ts)
 
-						# Set the local data to the most recent values
-						for item in queue: g.set(item[0],item[1])
+					print "Queue for " + peer + ": " + str(queue)
 
-						# Last sync was more than maxage seconds ago, send all data
-						if app.timestamp() - ts > app.maxage: content = app.groups[group].json()
+					# Set the local data to the most recent values
+					for item in queue: g.set(item[0],item[1])
 
-						# Otherwise send the queue of changes
-						# - no timestamp is fine since just storing without merge on client
-						else:
+					# Last sync was more than maxage seconds ago, send all data
+					if app.timestamp() - ts > app.maxage: content = app.groups[group].json()
 
-							# Get queue items that did not originate from this client and use only key and value
-							cdata = []
-							for item in filter(lambda f: f[3] != peer, queue): cdata.append([item[0], item[1]])
-							content = json.dumps(cdata)
-							if content != '[]': print "Sending to " + peer + ': ' + content
+					# Otherwise send the queue of changes
+					# - no timestamp is fine since just storing without merge on client
+					else:
+
+						# Get queue items that did not originate from this client and use only key and value
+						cdata = []
+						for item in filter(lambda f: f[3] != peer, queue): cdata.append([item[0], item[1]])
+						content = json.dumps(cdata)
+						print "Sending to " + peer + ': ' + content
 
 			# Serve the requested file if it exists and isn't a directory
 			elif os.path.exists(path) and not os.path.isdir(path):
