@@ -17,6 +17,9 @@ function App() {
 	this.maxage;       // max lifetime in seconds of queue data
 	this.lastsync = 0; // timestamp of last data sync - if greater than maxage, all data will be loaded
 
+	// Populate the properties thst were sent in the page
+	for( var i in window.tmp ) this[i] = window.tmp[i];
+
 	// Call the app's initialise function after the document is ready
 	$(document).ready(function() { window.app.init.call(window.app) });
 
@@ -199,12 +202,19 @@ App.prototype.viewChange = function() {
  * Called on a regular interval to send queued data to the service and receive any queued items
  */
 App.prototype.syncData = function() {
-	data = this.queue;
-	data.splice(0,0,this.lastsync);
+
+	// Data is time of the last sync with the queued data
+	if(this.queue.length > 0) {
+		data = this.queue;
+		data.splice(0,0,this.lastsync);
+		data = JSON.stringify(data);
+	} else data = '';
+
+	// Send the request
 	$.ajax({
 		type: 'POST',
 		url: '/' + this.group + '/_sync.json',
-		data: JSON.stringify(data), // Send the time of the last sync with the queued data
+		data: data, 
 		contentType: "application/json; charset=utf-8",
 		headers: { 'X-Bitgroup-ID': this.id },
 		dataType: 'json',
@@ -275,7 +285,7 @@ App.prototype.getId = function(name) {
 /**
  * Message dialog and error logging
  */
-App.prototype.error = function(msg,type = 'info') {
+App.prototype.error = function(msg, type) {
 	alert(type + ': ' + msg);
 };
 
@@ -328,8 +338,8 @@ App.prototype.inputType = function(element) {
 /**
  * Set the value of an input based on its general type
  */
-App.prototype.inputSetValue = function(element, val, type = false) {
-	if(type == false) type = this.inputType(element);
+App.prototype.inputSetValue = function(element, val, type) {
+	if(type == undefined) type = this.inputType(element);
 	if(type == 'checkbox') {
 		$(element).attr('checked',val ? true : false);
 	}
@@ -353,9 +363,9 @@ App.prototype.inputSetValue = function(element, val, type = false) {
 /**
  * Get the value of an input based on its general type
  */
-App.prototype.inputGetValue = function(element, val, type = false) {
+App.prototype.inputGetValue = function(element, val, type) {
 	var val = false;
-	if(type == false) type = this.inputType(element);
+	if(type == undefined) type = this.inputType(element);
 	if(type == 'checkbox') {
 		val = $(element).is(':checked');
 	}
@@ -377,7 +387,9 @@ App.prototype.inputGetValue = function(element, val, type = false) {
 /**
  * General renderer for form inputs
  */
-App.prototype.inputRender = function(type, data = false, atts = {}) {
+App.prototype.inputRender = function(type, data, atts) {
+	if(data == undefined) data = '';
+	if(atts == undefined) atts = {};
 	html = '';
 	attstr = '';
 	for( k in atts ) attstr += ' '+k+'="'+atts[k]+'"';
@@ -479,3 +491,4 @@ if(!window.JSON) {
 
 // Create a new instance of the application
 window.app = new App();
+

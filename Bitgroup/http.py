@@ -66,17 +66,18 @@ class handler(asyncore.dispatcher_with_send):
 				content += "<title>" + ( group + " - " if group else '' ) + app.name + "</title>\n"
 				content += "<meta charset=\"UTF-8\" />\n"
 				content += "<meta name=\"generator\" content=\"" + server + "\" />\n"
+				content += "<script type=\"text/javascript\">\n"
+				content += "window.tmp = {};\n"
+				content += "window.tmp.user = " + json.dumps(user) + ";\n"
+				content += "window.tmp.group = '" + group + "';\n"
+				content += "window.tmp.maxage = " + str(app.maxage) + ";\n"
+				content += "</script>\n"
 				content += "<script type=\"text/javascript\" src=\"/resources/jquery-1.10.2.min.js\"></script>\n"
 				content += "<script type=\"text/javascript\" src=\"/resources/jquery-ui-1.10.3/ui/jquery-ui.js\"></script>\n"
 				content += "<script type=\"text/javascript\" src=\"/resources/jquery.observehashchange.min.js\"></script>\n"
 				content += "<script type=\"text/javascript\" src=\"/resources/math.uuid.js\"></script>\n"
 				content += "<script type=\"text/javascript\" src=\"/i18n.js\"></script>\n"
 				content += "<script type=\"text/javascript\" src=\"/main.js\"></script>\n"
-				content += "<script type=\"text/javascript\">\n"
-				content += "window.app.user = " + json.dumps(user) + ";\n"
-				content += "window.app.group = '" + group + "';\n"
-				content += "window.app.maxage = " + str(app.maxage) + ";\n"
-				content += "</script>\n"
 				content += extensions
 				content += "</head>\n<body>\n</body>\n</html>\n"
 
@@ -96,9 +97,11 @@ class handler(asyncore.dispatcher_with_send):
 					if data:
 
 						# Get the timestamp of the last sync and the list of changes from the posted json data
+						print data
 						cdata = json.loads(data)
 						ts = cdata[0]
 						del cdata[0]
+						print "Received (last= " + str(ts) + "): " + str(cdata)
 
 						# Add peer ID to all change items from client
 						for item in cdata: item.append(peer);
@@ -120,7 +123,7 @@ class handler(asyncore.dispatcher_with_send):
 							cdata = []
 							for item in filter(lambda f: f[3] != peer, queue): cdata.append([item[0], item[1]])
 							content = json.dumps(cdata)
-							if content != '[]': print peer + ': ' + content
+							if content != '[]': print "Sending to " + peer + ': ' + content
 
 			# Serve the requested file if it exists and isn't a directory
 			elif os.path.exists(path) and not os.path.isdir(path):
