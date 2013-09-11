@@ -225,15 +225,15 @@ App.prototype.syncData = function() {
 			}
 
 			// A list of changed keys was returned, update the local data and trigger change events
-			// - note these are just k:v with no timestamp since we're not merging with another queue
-			// - note2 the whole set is a single-element array to differentiate it from the whole data
-			// - note3 if an item has also been updated locally, don't set it here
+			// - note these have no timestamp since we're not merging with another queue
+			// - note2 the data is set with queue set to false
 			else {
 				for( var i = 0; i < data.length; i++ ) {
 					var k = data[i][0];
 					var v = data[i][1];
 					console.info('data received: ' + k + ' = "' + v + '"');
-					if(this.setData(k,v,false)) $.event.trigger({type: "bgDataChange-" + k.replace('.','-'), args: {app:this,val:v}});
+					if(this.setData(k, v, false))
+						$.event.trigger({type: "bgDataChange-" + k.replace('.', '-'), args: {app:this, val:v}});
 				}
 			}
 		}
@@ -256,7 +256,7 @@ App.prototype.getData = function(key) {
  * Set the data for the passed key to the passed value
  * TODO: don't use eval for this, make a path walking function like node.py
  */
-App.prototype.setData = function(key,val, queue) {
+App.prototype.setData = function(key, val, queue) {
 	var oldval = this.getData(key);
 	if(JSON.stringify(oldval) == JSON.stringify(val)) return false;
 	eval( 'this.data.' + key + '=val' );
@@ -450,7 +450,7 @@ App.prototype.inputConnect = function(key, element) {
 	};
 	$(document).on("bgDataChange-" + key.replace('.','-'), handler);
 
-	// When the element value changes, queue the change for the server
+	// When the element value changes, update the local data structure and queue the change for the next sync request
 	var i = type == 'checklist' ? $('input',element) : $(element);
 	i.change(function() {
 		var app = window.app;
