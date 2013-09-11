@@ -13,7 +13,7 @@ function App() {
 	this.node;           // the current node name
 	this.view;           // the current view instance
 	this.sep = '/';      // separator character used in hash fragment
-	this.queue = [];     // queue of data updates to send to the service
+	this.queue = {};     // queue of data updates to send to the service
 	this.maxage;         // max lifetime in seconds of queue data
 	this.synctime = 5000 // milliseconds between each sync request
 
@@ -202,10 +202,16 @@ App.prototype.viewChange = function() {
  * Called on a regular interval to send queued data to the service and receive any queued items
  */
 App.prototype.syncData = function() {
+
+	// Convert the queue from a hash into a list
+	var data = [];
+	for( var k in this.queue ) data.push([k, this.queue[k][0], this.queue[k][1]]);
+
+	// Send the sync request
 	$.ajax({
 		type: 'POST',
 		url: '/' + this.group + '/_sync.json',
-		data: this.queue.length > 0 ? JSON.stringify(this.queue) : '', 
+		data: data.length > 0 ? JSON.stringify(data) : '', 
 		contentType: "application/json; charset=utf-8",
 		headers: { 'X-Bitgroup-ID': this.id },
 		dataType: 'json',
@@ -235,7 +241,7 @@ App.prototype.syncData = function() {
 
 	// Clear the queue now that it's data's been sent
 	// TODO: only clear queue after acknowledgement of reception
-	this.queue = [];
+	this.queue = {};
 };
 
 /**
@@ -252,7 +258,7 @@ App.prototype.getData = function(key) {
  */
 App.prototype.setData = function(key,val) {
 	var oldval = this.getData(key);
-	if(oldval === val) return false;
+	if(JSON.stringify(oldval) == JSON.stringify(val)) return false;
 	eval( 'this.data.' + key + '=val' );
 	console.info(key + ' changed from "' + oldval + '" to "' + val + '"');
 	return true;
@@ -458,7 +464,7 @@ App.prototype.inputConnect = function(key, element) {
  * Queue a changed item for sending to the service
  */
 App.prototype.queueAdd = function(key, val) {
-	this.queue.push([key,val,this.timestamp()]);
+	this.queue[key] = [val,this.timestamp()];
 };
 
 /**
