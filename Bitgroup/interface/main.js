@@ -233,7 +233,7 @@ App.prototype.syncData = function() {
 					var k = data[i][0];
 					var v = data[i][1];
 					console.info('data received: ' + k + ' = "' + v + '"');
-					if(this.setData(k,v)) $.event.trigger({type: "bgDataChange-" + k.replace('.','-'), args: {app:this,val:v}});
+					if(this.setData(k,v,false)) $.event.trigger({type: "bgDataChange-" + k.replace('.','-'), args: {app:this,val:v}});
 				}
 			}
 		}
@@ -256,11 +256,12 @@ App.prototype.getData = function(key) {
  * Set the data for the passed key to the passed value
  * TODO: don't use eval for this, make a path walking function like node.py
  */
-App.prototype.setData = function(key,val) {
+App.prototype.setData = function(key,val, queue) {
 	var oldval = this.getData(key);
 	if(JSON.stringify(oldval) == JSON.stringify(val)) return false;
 	eval( 'this.data.' + key + '=val' );
 	console.info(key + ' changed from "' + oldval + '" to "' + val + '"');
+	if(queue) app.queueAdd(key, val);
 	return true;
 };
 
@@ -455,8 +456,7 @@ App.prototype.inputConnect = function(key, element) {
 		var app = window.app;
 		var val = app.inputGetValue(element);
 		var key = element.dataSource;
-		app.setData(key, val);
-		app.queueAdd(key, val);
+		app.setData(key, val, true);
 	});
 };
 
@@ -464,6 +464,7 @@ App.prototype.inputConnect = function(key, element) {
  * Queue a changed item for sending to the service
  */
 App.prototype.queueAdd = function(key, val) {
+	console.info('Change queued: ' + key + ' = "' + val + '"');
 	this.queue[key] = [val,this.timestamp()];
 };
 
