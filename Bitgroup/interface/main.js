@@ -6,16 +6,20 @@ function App() {
 	// An identity for this client connection - python socket seems to be missing the ability to identify the stream
 	this.id = Math.uuid(5)
 
-	this.views = [];     // the availabe view classes - this first is the default if no view is specified by the current node
-	this.user;           // the current user data
-	this.group;          // the current group name
-	this.data = {};      // the current group's data
-	this.node;           // the current node name
-	this.view;           // the current view instance
-	this.sep = '/';      // separator character used in hash fragment
-	this.queue = {};     // queue of data updates to send to the service
-	this.maxage;         // max lifetime in seconds of queue data
-	this.synctime = 5000 // milliseconds between each sync request
+	this.views = [];       // the availabe view classes - this first is the default if no view is specified by the current node
+	this.user;             // the current user data
+	this.group;            // the current group name
+	this.node;             // the current node name
+	this.view;             // the current view instance
+	this.sep = '/';        // separator character used in hash fragment
+
+	this.data = {};        // the current group's data
+	this.queue = {};       // queue of data updates to send to the service
+	this.changeTimes = {}; // keep a record of timestamps associated with each key's value
+	this.maxage;           // max lifetime in seconds of queue data
+	this.syncTime = 5000;  // milliseconds between each sync request
+	
+	
 
 	// Populate the properties thst were sent in the page
 	for( var i in window.tmp ) this[i] = window.tmp[i];
@@ -102,7 +106,7 @@ App.prototype.run = function() {
 	setInterval( function() {
 		$.event.trigger({type: "bgPoller"});
 		window.app.syncData();
-	}, this.synctime );
+	}, this.syncTime );
 };
 
 /**
@@ -231,8 +235,9 @@ App.prototype.syncData = function() {
 				for( var i = 0; i < data.length; i++ ) {
 					var k = data[i][0];
 					var v = data[i][1];
-					console.info('data received: ' + k + ' = "' + v + '"');
-					if(this.setData(k, v, false))
+					var ts = data[i][2];
+					console.info('data received (@' + ts + '): ' + k + ' = "' + v + '"');
+					if(this.setData(k, v, ts, false))
 						$.event.trigger({type: "bgDataChange-" + k.replace('.', '-'), args: {app:this, val:v}});
 				}
 			}
@@ -249,19 +254,34 @@ App.prototype.syncData = function() {
  * TODO: don't use eval for this, make a path walking function like node.py
  */
 App.prototype.getData = function(key) {
-	return eval( 'this.data.' + key );
+	return eval('this.data.' + key);
 };
 
 /**
  * Set the data for the passed key to the passed value
  * TODO: don't use eval for this, make a path walking function like node.py
  */
-App.prototype.setData = function(key, val, queue) {
+App.prototype.setData = function(key, val, ts, queue) {
+
+	// Check if anything will change and return now if not
 	var oldval = this.getData(key);
 	if(JSON.stringify(oldval) == JSON.stringify(val)) return false;
-	eval( 'this.data.' + key + '=val' );
-	console.info(key + ' changed from "' + oldval + '" to "' + val + '"');
-	if(queue) app.queueAdd(key, val);
+
+	// Update the timestamp for this key's data, or bail if there's a current timestamp that's greater
+	if(ts === null) ts = this.timestamp();
+	else if(!queue && key in this.changeTimes && this.changeTimes[key] > ts) {
+		console.info('The local version of ' + key + ' is more recent (@' + this.changeTimes[key] + ') than the passed version (@' + ts +')');
+		return false;
+	}
+	this.changeTimes[key] = ts;
+
+	// Update the value
+	eval('this.data.' + key + '=val');
+
+	// Add the change to the outgoing sync queue (if it didn't come from the incoming queue)
+	if(queue) this.queue[key] = [val,ts];
+
+	console.info(key + ' changed from "' + oldval + '" to "' + val + '" (@' + ts + ')' + (queue ? ' - queued' : ''));
 	return true;
 };
 
@@ -458,14 +478,6 @@ App.prototype.inputConnect = function(key, element) {
 		var key = element.dataSource;
 		app.setData(key, val, true);
 	});
-};
-
-/**
- * Queue a changed item for sending to the service
- */
-App.prototype.queueAdd = function(key, val) {
-	console.info('Change queued: ' + key + ' = "' + val + '"');
-	this.queue[key] = [val,this.timestamp()];
 };
 
 /**

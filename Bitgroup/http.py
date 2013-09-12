@@ -120,12 +120,11 @@ class handler(asyncore.dispatcher_with_send):
 					if now - ts > app.maxage: content = app.groups[group].json()
 
 					# Otherwise send the queue of changes
-					# - no timestamp is fine since just storing without merge on client
 					else:
 
-						# Get queue items that did not originate from this client and use only key and value
+						# Send queue items that did not originate from this client
 						cdata = []
-						for item in filter(lambda f: f[3] != client, queue): cdata.append([item[0], item[1]])
+						for item in filter(lambda f: f[3] != client, queue): cdata.append([item[0], item[1], item[2]])
 						content = json.dumps(cdata)
 						print "Sending to " + client + ': ' + content
 
@@ -164,6 +163,8 @@ class server(asyncore.dispatcher):
 		self.set_reuse_addr()
 		self.bind((host, port))
 		self.listen(5)
+		
+		app.groups['Foo'].set('x.y.z','foo')
 
 	def handle_accept(self):
 		pair = self.accept()

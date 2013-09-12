@@ -16,8 +16,8 @@ class Node:
 	passwd = None  # used to ecrypt data and messages for this user or group
 	queue = []
 
-	# Get a property in this nodes data structure
-	def get(self, key):
+	# Get a property in this nodes data structure (with its timestamo if ts set)
+	def get(self, key, ts = False):
 
 		# Load the data if the cache is uninitialised
 		if self.data == None: self.load()
@@ -25,15 +25,14 @@ class Node:
 		# Split key path and walk data path to get value
 		val = self.data
 		for i in key.split('.'):
-			if type(val) == dict and i in val:
-				val = val[i]
-			else:
-				return None
+			if type(val) == dict and i in val: val = val[i]
+			else: return None
 
-		return val
+		return val if ts else val[0]
 
 	# Set a property in this nodes data structure
-	def set(self, key, val):
+	def set(self, key, val, ts = None):
+		if ts == None: ts = self.app.timestamp()
 
 		# Load the data if the cache is uninitialised
 		if self.data == None: self.load()
@@ -43,8 +42,7 @@ class Node:
 		path = key.split('.')
 		leaf = path.pop()
 		for i in path:
-			if type(j) == dict and i in j:
-				j = j[i]
+			if type(j) == dict and i in j: j = j[i]
 			else:
 				if not type(j) == dict:
 					print "Failed to set " + key + " as a value already exists at path element '" + i + "'"
@@ -52,13 +50,15 @@ class Node:
 				j[i] = {}
 				j = j[i]
 
-		# Anything changed?
-		oldval = j[leaf]
-		j[leaf] = val
-		changed = json.dumps(oldval) != json.dumps(val)
-
-		# Save the updated data if changed
-		if changed: self.save()
+		# If the value already exists get the current value and timestamp and store only if more recent
+		changed = False
+		if leaf in j:
+			(oldval, oldts) = j[leaf]
+			if ts > oldts:
+				changed = json.dumps(oldval) != json.dumps(val)
+				if changed:
+					j[leaf] = [val, ts]
+					self.save()	
 
 		# Return state of change
 		return changed
@@ -80,8 +80,7 @@ class Node:
 			h = open(f, "rb")
 			self.data = self.decrypt(json.loads(h.read()), self.passwd)
 			h.close()
-		else:
-			self.data = {}
+		else: self.data = {}
 
 	# Save the local cache to the data file
 	# TODO: data changes should queue and save periodically, not on every property change
