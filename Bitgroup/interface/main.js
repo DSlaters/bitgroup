@@ -237,8 +237,7 @@ App.prototype.syncData = function() {
 					var v = data[i][1];
 					var ts = data[i][2];
 					console.info('data received (@' + ts + '): ' + k + ' = "' + v + '"');
-					if(this.setData(k, v, false, ts))
-						$.event.trigger({type: "bgDataChange-" + k.replace('.', '-'), args: {app:this, val:v}});
+					this.setData(k, v, false, ts);
 				}
 			}
 		}
@@ -256,6 +255,7 @@ App.prototype.syncData = function() {
  */
 App.prototype.getData = function(key, ts) {
 	var val = eval('this.data.' + key);
+	if(val === undefined) console.info( 'undefined value for ' + key );
 	return ts === true ? val : val[0];
 };
 
@@ -279,6 +279,9 @@ App.prototype.setData = function(key, val, queue, ts) {
 		console.info('The local version of ' + key + ' is more recent (@' + oldts + ') than the passed version (@' + ts +')');
 		return false;
 	}
+
+	// Trigger the data changed event
+	$.event.trigger({type: "bgDataChange-" + key.replace('.', '-'), args: {app:this, val:val}});
 
 	// Update the value with the timestamp
 	val = [val, ts];
@@ -395,7 +398,7 @@ App.prototype.componentGet = function(element, val, type) {
 	var val = false;
 	if(type === undefined) type = this.componentType(element);
 	if(type == 'div' || type == 'span') val = $(element).html();
-	else if(type == 'input' || type='textarea') val = $(element).val();
+	else if(type == 'input' || type == 'textarea') val = $(element).val();
 	else if(type == 'checkbox') val = $(element).is(':checked');
 	else if(type == 'select') {
 		if($(element).attr('multiple') === undefined) val = $('option[selected]',element).text();
@@ -471,7 +474,7 @@ App.prototype.componentConnect = function(key, element) {
 	this.componentSet(element, val, type);
 
 	// When the value changes from the server, update the element
-	console.info('Connecting input "' + element.id + '" to ' + key);
+	console.info('Connecting component "' + element.id + '" to ' + key);
 	var handler = function(event) { event.args.app.componentSet(element, event.args.val) };
 	var event = "bgDataChange-" + key.replace('.','-');
 	$(document).on(event, handler);
@@ -480,10 +483,12 @@ App.prototype.componentConnect = function(key, element) {
 	var newList = [[element, event, handler]];
 	for(var i = 0; i < this.comEvents.length; i++) {
 		var e = this.comEvents[i][0];
-		if(e.parentNode == null || e.parentNode.parentNode == null) {
-			console.info('Element "' + e.id + '" gone, removing event');
-			$(document).off(e[1], null, e[2]);
-		} else newList.push(e);
+		if(e) {
+			if(e.parentNode == null || e.parentNode.parentNode == null) {
+				console.info('Component "' + e.id + '" gone, removing event');
+				$(document).off(e[1], null, e[2]);
+			} else newList.push(e);
+		}
 	}
 	this.comEvents = newList;
 
