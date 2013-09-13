@@ -210,6 +210,7 @@ App.prototype.syncData = function() {
 	// Convert the queue from a hash into a list
 	var data = [];
 	for( var k in this.queue ) data.push([k, this.queue[k][0], this.queue[k][1]]);
+	var lastSync = this.timestamp();
 
 	// Send the sync request
 	$.ajax({
@@ -240,12 +241,13 @@ App.prototype.syncData = function() {
 					this.setData(k, v, false, ts);
 				}
 			}
+
+			// Remove all items queued before the sync request was made
+			var tmp = {};
+			for( var k in this.queue ) if(this.queue[k][1] > lastSync) tmp[k] = this.queue[k];
+			this.queue = tmp;
 		}
 	});
-
-	// Clear the queue now that it's data's been sent
-	// TODO: only clear queue after acknowledgement of reception
-	this.queue = {};
 };
 
 /**
