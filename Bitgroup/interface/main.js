@@ -370,15 +370,11 @@ App.prototype.inputSetValue = function(element, val, type) {
 	}
 	else if(type == 'select') {
 		if(typeof val != 'object') val = [val];
-		$('option',element).each(function() {
-			val.indexOf($(this).text()) >= 0 ? $(this).attr("selected", "selected") : $(this).removeAttr('selected');
-		});
+		$('option',element).each(function() { this.selected = val.indexOf($(this).text()) >= 0 });
 	}
 	else if(type == 'checklist') {
 		if(typeof val != 'object') val = [val];
-		$('input',element).each(function() {
-			val.indexOf($(this).next().text()) >= 0 ? $(this).attr("checked", "checked") : $(this).removeAttr('checked');
-		});
+		$('input',element).each(function() { this.checked = val.indexOf($(this).next().text()) >= 0 });
 	}
 	else if(type == 'val') $(element).val(val);
 };
