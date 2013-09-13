@@ -12,6 +12,7 @@ function App() {
 	this.node;             // the current node name
 	this.view;             // the current view instance
 	this.sep = '/';        // separator character used in hash fragment
+	this.inputEvents = []; // list of input elements and their handlers so we can remove them if the elements disappear
 
 	this.data = {};        // the current group's data
 	this.queue = {};       // queue of data updates to send to the background service in the form key : [val, timestamp]
@@ -459,18 +460,23 @@ App.prototype.inputConnect = function(key, element) {
 
 	// When the value changes from the server, update the element
 	console.info('Connecting input "' + element.id + '" to ' + key);
-	var handler = function(event) {
+	var handler = function(event) { event.args.app.inputSetValue(element, event.args.val) };
+	var event = "bgDataChange-" + key.replace('.','-');
+	$(document).on(event, handler);
 
-		// If the element is no longer attached to the DOM, remove the event
-		if(element.parentNode == null || element.parentNode.parentNode == null) {
-			console.info('Element "' + element.id + '" gone, removing event');
-			$(document).off(event.type, null, handler);
-		}
+	// Add new element to inputEvents list and remove any that are no longer in the DOM
+	var newList = [[element, event, handler]];
+	for( var i = 0; i < this.inputEvents.length; i++ ) {
+		var e = this.inputEvents[i][0];
+		if(e.parentNode == null || e.parentNode.parentNode == null) {
+			console.info('Element "' + e.id + '" gone, removing event');
+			$(document).off(e[1], null, e[2]);
+		} else newList.push(e);
+	}
+	this.inputEvents = newList;
 
-		// Otherwise set the element's value
-		else event.args.app.inputSetValue(element, event.args.val);
-	};
-	$(document).on("bgDataChange-" + key.replace('.','-'), handler);
+	// Add the new element and its handler and event type to the list
+	this.inputEvents.push();
 
 	// When the element value changes, update the local data structure and queue the change for the next sync request
 	var i = type == 'checklist' ? $('input',element) : $(element);
