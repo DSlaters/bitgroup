@@ -14,7 +14,7 @@ class Node:
 
 	data = None    # cache of this node's data
 	passwd = None  # used to ecrypt data and messages for this user or group
-	queue = []
+	queue = {}     # cache of key : [val, ts, client] for sending changes to clients on sync requests
 
 	# Get a property in this nodes data structure (with its timestamo if ts set)
 	def get(self, key, ts = False):
@@ -31,7 +31,7 @@ class Node:
 		return val if ts else val[0]
 
 	# Set a property in this nodes data structure
-	def set(self, key, val, ts = None):
+	def set(self, key, val, ts = None, client = ''):
 		if ts == None: ts = self.app.timestamp()
 
 		# Load the data if the cache is uninitialised
@@ -51,14 +51,17 @@ class Node:
 				j = j[i]
 
 		# If the value already exists get the current value and timestamp and store only if more recent
-		changed = False
 		if leaf in j:
 			(oldval, oldts) = j[leaf]
-			if ts > oldts:
-				changed = json.dumps(oldval) != json.dumps(val)
-				if changed:
-					j[leaf] = [val, ts]
-					self.save()	
+			if ts > oldts: changed = json.dumps(oldval) != json.dumps(val)
+			else: changed = False
+		else: changed = True
+
+		# If the data should change, store the new value in the local cache, update the persistent data and update the client-queue
+		if changed:
+			j[leaf] = [val, ts]
+			self.save()
+			self.queue[key] = [val, ts, client]
 
 		# Return state of change
 		return changed
@@ -108,27 +111,9 @@ class Node:
 		privKey = hashlib.sha512(passwd).digest()[:32]
 		return highlevelcrypto.decrypt(data, privKey.encode('hex'))
 
-	# Add the new queue entry with a unix timestamp and chop items older than the max age
-	# note - the queue is never cleared as there can be multiple clients, it's just chopped to maxage
-	def queueAdd(self, key, val, peer = ''):
-		ts = self.app.timestamp()
-		item = (key,val,ts,peer)
-		self.queue.append(item)
-		self.queue = filter(lambda f: ts - f[2] < self.app.maxage, self.queue)
-		print 'Change queued: ' + str(item)
-
-	# Get all the changes since the specified time
-	def queueGet(self, since = 0):
-		return filter(lambda f: f[2] > since, self.queue)
-
-	# Merge the passed items with the queue
-	def queueMerge(self, cdata, ts):
-		sdata = {}
-		for (k,v,t,i) in cdata + self.queueGet(ts):
-			if not(k in sdata and t < sdata[k][1]): sdata[k] = (v,t,i)
-		self.queue = []
-		for k in sdata:
-			item = (k,sdata[k][0],sdata[k][1],sdata[k][2])
-			self.queue.append(item)
-		return self.queue
-		
+	# Return a list of changes since a specified time that did not originate from the specified client
+	def changesForClient(self, client, since):
+		changes = []
+		for k in filter(lambda f: self.queue[f][1] > since and self.queue[f][2] != client, self.queue):
+			changes.append([k, self.queue[k][0], self.queue[k][1]])
+		return changes

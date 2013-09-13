@@ -102,30 +102,18 @@ class handler(asyncore.dispatcher_with_send):
 					else: ts = 0
 					syncTimes[client] = now
 
-					# If the client sent change-data extract and add client ID to all items ready for merging with the local queue
+					# If the client sent change-data merge into the local data
 					if data:
 						cdata = json.loads(data)
+						for item in cdata: g.set(item[0], item[1], item[2], client)
 						print "Received from " + client + " (last=" + str(ts) + "): " + str(cdata)
-						for item in cdata: item.append(client);
-
-					# Reduce the queue to just the most recent change for each key merged with the client changes
-					queue = g.queueMerge(cdata, ts - (now - ts))
-
-					print "Queue for " + client + " from " + str(ts) + ' to ' + str(now) + ": " + str(queue)
-
-					# Set the local data to the most recent values
-					for item in queue: g.set(item[0],item[1])
 
 					# Last sync was more than maxage seconds ago, send all data
 					if now - ts > app.maxage: content = app.groups[group].json()
 
-					# Otherwise send the queue of changes
+					# Otherwise send the queue of changes that have occurred since the client's last sync request
 					else:
-
-						# Send queue items that did not originate from this client
-						cdata = []
-						for item in filter(lambda f: f[3] != client, queue): cdata.append([item[0], item[1], item[2]])
-						content = json.dumps(cdata)
+						content = json.dumps(g.changesForClient(client, ts - (now-ts))) # TODO: messy doubling of period
 						print "Sending to " + client + ': ' + content
 
 			# Serve the requested file if it exists and isn't a directory

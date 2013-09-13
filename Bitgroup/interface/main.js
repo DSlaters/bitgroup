@@ -14,8 +14,7 @@ function App() {
 	this.sep = '/';        // separator character used in hash fragment
 
 	this.data = {};        // the current group's data
-	this.queue = {};       // queue of data updates to send to the service
-	this.changeTimes = {}; // keep a record of timestamps associated with each key's value
+	this.queue = {};       // queue of data updates to send to the background service in the form key : [val, timestamp]
 	this.maxage;           // max lifetime in seconds of queue data
 	this.syncTime = 5000;  // milliseconds between each sync request
 	
@@ -159,7 +158,7 @@ App.prototype.renderViewsMenu = function() {
 	// Get the list of view names used by this node + the default view
 	var views = [this.views[0].constructor.name];
 	if(this.node && this.node in this.data && 'views' in this.data[this.node])
-		views = views.concat(this.data[this.node].views);
+		views = views.concat(this.data[this.node].views[0]);
 
 	// Render the views menu
 	for( var i = 0; i < views.length; i++ ) {
@@ -237,7 +236,7 @@ App.prototype.syncData = function() {
 					var v = data[i][1];
 					var ts = data[i][2];
 					console.info('data received (@' + ts + '): ' + k + ' = "' + v + '"');
-					if(this.setData(k, v, ts, false))
+					if(this.setData(k, v, false, ts))
 						$.event.trigger({type: "bgDataChange-" + k.replace('.', '-'), args: {app:this, val:v}});
 				}
 			}
@@ -251,37 +250,44 @@ App.prototype.syncData = function() {
 
 /**
  * Return the data for the passed key
+ * - return the timestamp to if ts set
  * TODO: don't use eval for this, make a path walking function like node.py
  */
-App.prototype.getData = function(key) {
-	return eval('this.data.' + key);
+App.prototype.getData = function(key, ts) {
+	var val = eval('this.data.' + key);
+	return ts === true ? val : val[0];
 };
 
 /**
  * Set the data for the passed key to the passed value
  * TODO: don't use eval for this, make a path walking function like node.py
  */
-App.prototype.setData = function(key, val, ts, queue) {
+App.prototype.setData = function(key, val, queue, ts) {
 
-	// Check if anything will change and return now if not
-	var oldval = this.getData(key);
+	// Get the current value and timestamp
+	var oldval = this.getData(key, true);
+	var oldts = oldval[1];
+	oldval = oldval[0]
+
+	// Bail now if the value hasn't changed
 	if(JSON.stringify(oldval) == JSON.stringify(val)) return false;
 
-	// Update the timestamp for this key's data, or bail if there's a current timestamp that's greater
-	if(ts === null) ts = this.timestamp();
-	else if(!queue && key in this.changeTimes && this.changeTimes[key] > ts) {
-		console.info('The local version of ' + key + ' is more recent (@' + this.changeTimes[key] + ') than the passed version (@' + ts +')');
+	// Bail if the new data is older than the current data
+	if(ts === undefined) ts = this.timestamp();
+	else if(oldts > ts) {
+		console.info('The local version of ' + key + ' is more recent (@' + oldts + ') than the passed version (@' + ts +')');
 		return false;
 	}
-	this.changeTimes[key] = ts;
 
-	// Update the value
+	// Update the value with the timestamp
+	val = [val, ts];
 	eval('this.data.' + key + '=val');
 
 	// Add the change to the outgoing sync queue (if it didn't come from the incoming queue)
-	if(queue) this.queue[key] = [val,ts];
+	if(queue === undefined) queue = true;
+	if(queue) this.queue[key] = val;
 
-	console.info(key + ' changed from "' + oldval + '" to "' + val + '" (@' + ts + ')' + (queue ? ' - queued' : ''));
+	console.info(key + ' changed from "' + oldval + '" to "' + val[0] + '" (@' + ts + ')' + (queue ? ' - queued' : ''));
 	return true;
 };
 
@@ -476,7 +482,7 @@ App.prototype.inputConnect = function(key, element) {
 		var app = window.app;
 		var val = app.inputGetValue(element);
 		var key = element.dataSource;
-		app.setData(key, val, true);
+		app.setData(key, val);
 	});
 };
 

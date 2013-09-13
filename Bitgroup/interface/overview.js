@@ -42,9 +42,9 @@ Overview.prototype.render = function(app) {
 	if(data) {
 		var rows = '';
 		for( i in data ) {
-			var v = data[i];
+			var v = '0' in data[i] ? data[i][0] : data[i];
 			if(typeof v == 'object' && 'type' in v) {
-				v = v.type;
+				v = v.type[0];
 				i = '<a href="#' + i + '">' + i + '</a>';
 			}
 			rows += '<tr><th>' + i + '</th><td>' + v + '</td></tr>\n';
