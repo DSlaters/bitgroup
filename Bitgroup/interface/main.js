@@ -475,9 +475,6 @@ App.prototype.inputConnect = function(key, element) {
 	}
 	this.inputEvents = newList;
 
-	// Add the new element and its handler and event type to the list
-	this.inputEvents.push();
-
 	// When the element value changes, update the local data structure and queue the change for the next sync request
 	var i = type == 'checklist' ? $('input',element) : $(element);
 	i.change(function() {
