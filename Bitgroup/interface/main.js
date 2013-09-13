@@ -12,7 +12,7 @@ function App() {
 	this.node;             // the current node name
 	this.view;             // the current view instance
 	this.sep = '/';        // separator character used in hash fragment
-	this.inputEvents = []; // list of input elements and their handlers so we can remove them if the elements disappear
+	this.comEvents = [];   // list of input elements and their handlers so we can remove them if the elements disappear (bug#2)
 
 	this.data = {};        // the current group's data
 	this.queue = {};       // queue of data updates to send to the background service in the form key : [val, timestamp]
@@ -345,30 +345,39 @@ App.prototype.msg = function(key, s1, s2, s3, s4, s5) {
  * Return a millisecond timestamp - must match app.py's timestamp
  */
 App.prototype.timestamp = function() {
-	return new Date().getTime()-1378723000000;
+	return new Date().getTime() - 1378723000000;
 };
 
 /**
- * Detect the general type of an input element used for getting and setting its value
+ * Detect the general type of an interface component based on its DOM attributes
  */
-App.prototype.inputType = function(element) {
+App.prototype.componentType = function(element) {
 	element = $(element)[0];
 	var type = false;
 	if($(element).attr('type') == 'checkbox') type = 'checkbox';
 	else if(element.tagName == 'SELECT') type = 'select';
 	else if($(element).hasClass('checklist')) type = 'checklist';
 	else if($(element).attr('value') !== undefined || element.tagName == 'textarea') type = 'input';
+	else if(element.tagName == 'DIV') type = 'div';
+	else if(element.tagName == 'SPAN') type = 'span';
 	return type;
 };
 
 /**
- * Set the value of an input based on its general type
+ * Return whether the passed component type allows user input
  */
-App.prototype.inputSetValue = function(element, val, type) {
-	if(type === undefined) type = this.inputType(element);
-	if(type == 'checkbox') {
-		$(element).attr('checked',val ? true : false);
-	}
+App.prototype.componentIsInput = function(type) {
+	return type == 'input' || type == 'checkbox' || type == 'select' || type == 'checklist' || type == 'textarea';
+};
+
+/**
+ * Set the value of an interface component based on its general type
+ */
+App.prototype.componentSet = function(element, val, type) {
+	if(type === undefined) type = this.componentType(element);
+	if(type == 'div' || type == 'span') $(element).html(val);
+	else if(type == 'input' || type == 'textarea') $(element).val(val);
+	else if(type == 'checkbox') $(element).attr('checked',val ? true : false);
 	else if(type == 'select') {
 		if(typeof val != 'object') val = [val];
 		$('option',element).each(function() { this.selected = val.indexOf($(this).text()) >= 0 });
@@ -377,18 +386,17 @@ App.prototype.inputSetValue = function(element, val, type) {
 		if(typeof val != 'object') val = [val];
 		$('input',element).each(function() { this.checked = val.indexOf($(this).next().text()) >= 0 });
 	}
-	else if(type == 'val') $(element).val(val);
 };
 
 /**
- * Get the value of an input based on its general type
+ * Get the value of an interface component based on its general type
  */
-App.prototype.inputGetValue = function(element, val, type) {
+App.prototype.componentGet = function(element, val, type) {
 	var val = false;
-	if(type === undefined) type = this.inputType(element);
-	if(type == 'checkbox') {
-		val = $(element).is(':checked');
-	}
+	if(type === undefined) type = this.componentType(element);
+	if(type == 'div' || type == 'span') val = $(element).html();
+	else if(type == 'input' || type='textarea') val = $(element).val();
+	else if(type == 'checkbox') val = $(element).is(':checked');
 	else if(type == 'select') {
 		if($(element).attr('multiple') === undefined) val = $('option[selected]',element).text();
 		else {
@@ -400,25 +408,28 @@ App.prototype.inputGetValue = function(element, val, type) {
 		val = [];
 		$('input',element).each(function() { if($(this).is(':checked')) val.push($(this).next().text()); });
 	}
-	else if(type == 'val') val = $(element).val();
 	return val;
 };
 
 /**
- * General renderer for form inputs
+ * General renderer for interface components
  */
-App.prototype.inputRender = function(type, data, atts) {
+App.prototype.componentRender = function(type, data, atts) {
 	if(data === undefined) data = '';
 	if(atts === undefined) atts = {};
 	if(!('id' in atts)) atts.id = Math.uuid(5);
 	html = '';
 	attstr = '';
-	for( k in atts ) attstr += ' ' + k + '="' + atts[k] + '"';
+	for(k in atts) attstr += ' ' + k + '="' + atts[k] + '"';
+
+	// HTML
+	if(type == 'div' || type == 'span') html = '<' + type + attstr + '>' + data + '</' + type + '>';
+
+	// Text input
+	else if(type == 'input') html = '<input' + attstr + ' type="text" value="' + data + '" />';
 
 	// Checkbox
-	if(type == 'checkbox') {
-		html = '<input' + attstr + ' type="text" value="' + data + '" />';
-	}
+	else if(type == 'checkbox') html = '<input' + attstr + ' type="text" value="' + data + '" />';
 
 	// Select list
 	else if(type == 'select') {
@@ -439,50 +450,53 @@ App.prototype.inputRender = function(type, data, atts) {
 		html = '<textarea' + attstr + '>' + data + '</textarea>';
 	}
 
-	// Text input (default)
-	else html = '<input' + attstr + ' type="text" value="' + data + '" />';
+	// Unknown type
+	else html = '<div' + attstr + '>' + app.msg( 'err-nosuchcomponent', type) + '</div>';
+
 	return html;
 };
 
 /**
- * Connect a DOM element to a data source
+ * Connect an interface component to a data source
  */
-App.prototype.inputConnect = function(key, element) {
+App.prototype.componentConnect = function(key, element) {
 	element = $(element)[0];
 	var val = this.getData(key);
-	var type = this.inputType(element);
+	var type = this.componentType(element);
 
 	// Set the source for the element's value
 	element.dataSource = key;
 
 	// Set the input's value to the current data value
-	this.inputSetValue(element, val, type);
+	this.componentSet(element, val, type);
 
 	// When the value changes from the server, update the element
 	console.info('Connecting input "' + element.id + '" to ' + key);
-	var handler = function(event) { event.args.app.inputSetValue(element, event.args.val) };
+	var handler = function(event) { event.args.app.componentSet(element, event.args.val) };
 	var event = "bgDataChange-" + key.replace('.','-');
 	$(document).on(event, handler);
 
-	// Add new element to inputEvents list and remove any that are no longer in the DOM
+	// Add new element to comEvents list and remove any that are no longer in the DOM (solution to bug#2)
 	var newList = [[element, event, handler]];
-	for( var i = 0; i < this.inputEvents.length; i++ ) {
-		var e = this.inputEvents[i][0];
+	for(var i = 0; i < this.comEvents.length; i++) {
+		var e = this.comEvents[i][0];
 		if(e.parentNode == null || e.parentNode.parentNode == null) {
 			console.info('Element "' + e.id + '" gone, removing event');
 			$(document).off(e[1], null, e[2]);
 		} else newList.push(e);
 	}
-	this.inputEvents = newList;
+	this.comEvents = newList;
 
-	// When the element value changes, update the local data structure and queue the change for the next sync request
-	var i = type == 'checklist' ? $('input',element) : $(element);
-	i.change(function() {
-		var app = window.app;
-		var val = app.inputGetValue(element);
-		var key = element.dataSource;
-		app.setData(key, val);
-	});
+	// When the element value changes (if an input), update the local data structure and queue the change for the next sync request
+	if(this.componentIsInput(type)) {
+		var i = type == 'checklist' ? $('input',element) : $(element);
+		i.change(function() {
+			var app = window.app;
+			var val = app.componentGet(element);
+			var key = element.dataSource;
+			app.setData(key, val);
+		});
+	}
 };
 
 /**

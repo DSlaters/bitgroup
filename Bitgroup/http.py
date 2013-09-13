@@ -113,7 +113,7 @@ class handler(asyncore.dispatcher_with_send):
 
 					# Otherwise send the queue of changes that have occurred since the client's last sync request
 					else:
-						content = json.dumps(g.changesForClient(client, ts - (now-ts))) # TODO: messy doubling of period
+						content = json.dumps(g.changesForClient(client, ts - (now-ts))) # TODO: messy doubling of period (bug#3)
 						print "Sending to " + client + ': ' + content
 
 			# Serve the requested file if it exists and isn't a directory

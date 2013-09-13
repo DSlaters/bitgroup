@@ -14,5 +14,7 @@ window.messages = {
 
 		"node": "node",
 		"node-notfound": "Node \"$1\" not found",
+		
+		"err-nosuchcomponent": "No such component type: \"$1\".",
 	}
 }
