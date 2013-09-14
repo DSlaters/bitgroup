@@ -477,22 +477,15 @@ App.prototype.componentConnect = function(key, element) {
 
 	// When the value changes from the server, update the element
 	console.info('Connecting component "' + element.id + '" to ' + key);
-	var handler = function(event) { event.args.app.componentSet(element, event.args.val) };
+	var handler = function(event) {
+		if($(element).parents().filter('body').length > 0) event.args.app.componentSet(element, event.args.val)
+		else {
+			console.info('Component "' + element.id + '" gone, removing event');
+			$(document).off(element, null, handler);
+		}
+	};
 	var event = "bgDataChange-" + key.replace('.','-');
 	$(document).on(event, handler);
-
-	// Add new element to comEvents list and remove any that are no longer in the DOM (solution to bug#2)
-	var newList = [[element, event, handler]];
-	for(var i = 0; i < this.comEvents.length; i++) {
-		var e = this.comEvents[i][0];
-		if(e) {
-			if(e.parentNode == null || e.parentNode.parentNode == null) {
-				console.info('Component "' + e.id + '" gone, removing event');
-				$(document).off(e[1], null, e[2]);
-			} else newList.push(e);
-		}
-	}
-	this.comEvents = newList;
 
 	// When the element value changes (if an input), update the local data structure and queue the change for the next sync request
 	if(this.componentIsInput(type)) {
