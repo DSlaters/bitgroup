@@ -12,14 +12,11 @@ function App() {
 	this.node;             // the current node name
 	this.view;             // the current view instance
 	this.sep = '/';        // separator character used in hash fragment
-	this.comEvents = [];   // list of input elements and their handlers so we can remove them if the elements disappear (bug#2)
 
 	this.data = {};        // the current group's data
 	this.queue = {};       // queue of data updates to send to the background service in the form key : [val, timestamp]
 	this.maxage;           // max lifetime in seconds of queue data
 	this.syncTime = 5000;  // milliseconds between each sync request
-	
-	
 
 	// Populate the properties thst were sent in the page
 	for( var i in window.tmp ) this[i] = window.tmp[i];
