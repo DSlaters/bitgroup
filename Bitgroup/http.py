@@ -73,7 +73,6 @@ class handler(asyncore.dispatcher_with_send):
 				content += "window.tmp = {};\n"
 				content += "window.tmp.user = " + json.dumps(user) + ";\n"
 				content += "window.tmp.group = '" + group + "';\n"
-				content += "window.tmp.maxage = " + str(app.maxage) + ";\n"
 				content += "</script>\n"
 				content += "<script type=\"text/javascript\" src=\"/resources/jquery-1.10.2.min.js\"></script>\n"
 				content += "<script type=\"text/javascript\" src=\"/resources/jquery-ui-1.10.3/ui/jquery-ui.js\"></script>\n"
