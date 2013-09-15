@@ -6,19 +6,18 @@ function App() {
 	// An identity for this client connection - python socket seems to be missing the ability to identify the stream
 	this.id = Math.uuid(5)
 
-	this.views = [];       // the availabe view classes - this first is the default if no view is specified by the current node
 	this.user;             // the current user data
 	this.group;            // the current group name
-	this.node;             // the current node name
+	this.views = [];       // the availabe view classes - this first is the default if no view is specified by the current node
 	this.view;             // the current view instance
+	this.node;             // the current node name
 	this.sep = '/';        // separator character used in hash fragment
 
 	this.data = {};        // the current group's data
-	this.queue = {};       // queue of data updates to send to the background service in the form key : [val, timestamp]
-	this.maxage;           // max lifetime in seconds of queue data
+	this.queue = {};       // queue of data updates to send to the background service in the form keypath : [val, timestamp]
 	this.syncTime = 5000;  // milliseconds between each sync request
 
-	// Populate the properties thst were sent in the page
+	// Populate the properties that were sent in the page
 	for( var i in window.tmp ) this[i] = window.tmp[i];
 
 	// Call the app's initialise function after the document is ready
