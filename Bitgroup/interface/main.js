@@ -15,7 +15,12 @@ function App() {
 
 	this.data = {};        // the current group's data
 	this.queue = {};       // queue of data updates to send to the background service in the form keypath : [val, timestamp]
-	this.syncTime = 5000;  // milliseconds between each sync request
+	this.syncTime = 1000;  // milliseconds between each sync request
+
+	// Dynamic application state data
+	this.state = {
+		bm: false          // Whether Bitmessage is connected or not
+	}
 
 	// Populate the properties that were sent in the page
 	for( var i in window.tmp ) this[i] = window.tmp[i];
@@ -119,6 +124,7 @@ App.prototype.renderPage = function() {
 	page += 'UUID: ' + this.id
 	page += '<div id="personal">\n';
 	page += '<a id="user-page" href="/">' + this.msg('user-page') + '</a>\n';
+	page += '<h1>Bitmessage</h1>\n<div id="state-bm"></div>\n'
 	page += '<h1>' + this.msg('groups').ucfirst() + '</h1><ul id="personal-groups">\n';
 	var groups = this.user.groups;
 	for( var i = 0; i < groups.length; i++ ) {
@@ -137,6 +143,9 @@ App.prototype.renderPage = function() {
 
 	// Add the completed page structure to the HTML document body
 	$('body').html(page);
+
+	// Connect the dynamic application data elements
+	this.componentConnect('_bm', $('#state-bm'));
 
 	// Call the view's render method to populate the content area
 	this.view.render(this);
@@ -229,6 +238,12 @@ App.prototype.syncData = function() {
 			// - note these have no timestamp since we're not merging with another queue
 			// - note2 the data is set with queue set to false
 			else {
+
+				// The last item is an object contain application information
+				var state = data.pop();
+				for( var i in state ) this.setState(i, state[i]);
+
+				// The rest of the list is the change data
 				for( var i = 0; i < data.length; i++ ) {
 					var k = data[i][0];
 					var v = data[i][1];
@@ -247,11 +262,23 @@ App.prototype.syncData = function() {
 };
 
 /**
+ * Set the dynamic application state data returned from the server side on the last sync if it's changed
+ * - this raises a normal change event so that components can connect to state values using a preceding underscore on the key
+ */
+App.prototype.setState = function(key, val) {
+	if(val != this[key]) {
+		this[key] = val;
+		$.event.trigger({type: "bgDataChange-_" + key, args: {app:this, val:val}});
+	}	
+};
+
+/**
  * Return the data for the passed key
  * - return the timestamp to if ts set
  * TODO: don't use eval for this, make a path walking function like node.py
  */
 App.prototype.getData = function(key, ts) {
+	if(key.substr(0,1) == '_') return this[key.substr(1)]; // if the key starts with an underscore, it's an application state value
 	var val = eval('this.data.' + key);
 	if(val === undefined) console.info( 'undefined value for ' + key );
 	return ts === true ? val : val[0];
@@ -468,7 +495,7 @@ App.prototype.componentConnect = function(key, element) {
 	// Set the source for the element's value
 	element.dataSource = key;
 
-	// Set the input's value to the current data value
+	// Set the component's value to the current data value
 	this.componentSet(element, val, type);
 
 	// When the value changes from the server, update the element

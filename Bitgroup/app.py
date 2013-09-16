@@ -17,6 +17,9 @@ class App:
 	groups = {}
 	maxage = 600000 # Expiry time of queue items in milliseconds
 
+	state = {}      # Dynamic application state information
+	stateAge = 0    # Last time the dynsmic application state data was updated
+
 	def __init__(self, config):
 
 		self.name = 'Bitgroup'
@@ -56,3 +59,23 @@ class App:
 	def timestamp(self):
 		return (int(time.strftime('%s'))-1378723000)*1000 + int(datetime.datetime.now().microsecond/1000)
 
+	# Return data about the dynamic state of the application
+	def getStateData(self):
+
+		# If the state data is older than one second, rebuild it
+		ts = self.timestamp()
+		if ts - self.stateAge > 1000:
+			
+			# Is Bitmessage available?
+			try:
+				self.state['bm'] = self.api.add(2,3)
+				if self.state['bm'] == 5: self.state['bm'] = 'Connected'
+				else: self.state['bm'] = 'Error: ' + self.state['bm']
+			except:
+				self.state['bm'] = 'Not running'
+
+			# Do we have net access?
+			
+			self.stateAge = ts
+
+		return self.state

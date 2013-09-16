@@ -112,8 +112,15 @@ class handler(asyncore.dispatcher_with_send):
 
 					# Otherwise send the queue of changes that have occurred since the client's last sync request
 					else:
-						content = json.dumps(g.changesForClient(client, ts - (now-ts))) # TODO: messy doubling of period (bug#3)
-						if content != '[]': print "Sending to " + client + ': ' + content
+						content = g.changesForClient(client, ts - (now-ts)) # TODO: messy doubling of period (bug#3)
+						#if len(content) > 0: print "Sending to " + client + ': ' + content
+
+						# Put an object on the end of the list containing the application state data
+						content.append(app.getStateData())
+
+						# Convert the content to JSON ready for sending to the client
+						content = json.dumps(content)
+						print "Sending to " + client + ': ' + content
 
 			# Serve the requested file if it exists and isn't a directory
 			elif os.path.exists(path) and not os.path.isdir(path):
