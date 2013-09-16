@@ -102,7 +102,7 @@ App.prototype.renderPage = function() {
 	page += '<div id="page">\n';
 
 	// Render the views menu
-	page += '<div id="views"><h1>' + this.msg('views').ucfirst() + '</h1><ul>' + this.renderViewsMenu() + '</ul></div>\n'
+	page += '<div id="views"><h1>' + this.msg('views').ucfirst() + '</h1>' + this.renderViewsMenu() + '</div>\n'
 
 	// Add an empty content area for the view to render into
 	page += '<div id="content"></div>';
@@ -190,7 +190,7 @@ App.prototype.renderViewsMenu = function() {
 		var id = 'view-' + this.getId(name);
 		html += '<li' + c + ' id="' + id + '">' + item + '</li>\n';
 	}
-	return html;
+	return '<ul>' + html + '</ul>';
 };
 
 /**
