@@ -7,6 +7,7 @@ import time
 import re
 import mimetypes
 import json
+import struct
 
 syncTimes = {} # record of the last time each client connected
 
@@ -15,13 +16,13 @@ class handler(asyncore.dispatcher_with_send):
 	def handle_read(self):
 		global app
 		data = self.recv(8192)
-		match = re.match(r'^(GET|POST) (.+?) HTTP.+Host: (.+?)\s(.+?)\r\n\r\n\s*(.*?)\s*$', data, re.S)
+		match = re.match(r'^(GET|POST) (.+?)(\?.+?)? HTTP.+Host: (.+?)\s(.+?)\r\n\r\n\s*(.*?)\s*$', data, re.S)
 		if data and match:
 			method = match.group(1)
 			uri = match.group(2)
-			host = match.group(3)
-			head = match.group(4)
-			data = match.group(5)
+			host = match.group(4)
+			head = match.group(5)
+			data = match.group(6)
 			date = time.strftime("%a, %d %b %Y %H:%M:%S %Z")
 			now  = app.timestamp()
 			server = app.name + "-" + app.version
@@ -75,6 +76,7 @@ class handler(asyncore.dispatcher_with_send):
 				content += "window.tmp.group = '" + group + "';\n"
 				content += "</script>\n"
 				content += "<script type=\"text/javascript\" src=\"/resources/jquery-1.10.2.min.js\"></script>\n"
+				content += "<link rel=\"stylesheet\" href=\"/resources/jquery-ui-1.10.3/themes/base/jquery-ui.css\" />\n"
 				content += "<script type=\"text/javascript\" src=\"/resources/jquery-ui-1.10.3/ui/jquery-ui.js\"></script>\n"
 				content += "<script type=\"text/javascript\" src=\"/resources/jquery.observehashchange.min.js\"></script>\n"
 				content += "<script type=\"text/javascript\" src=\"/resources/math.uuid.js\"></script>\n"
@@ -107,14 +109,13 @@ class handler(asyncore.dispatcher_with_send):
 					# Otherwise send the queue of changes that have occurred since the client's last sync request
 					else:
 						content = g.changesForClient(client, ts - (now-ts)) # TODO: messy doubling of period (bug#3)
-						#if len(content) > 0: print "Sending to " + client + ': ' + content
+						if len(content) > 0: print "Sending to " + client + ': ' + json.dumps(content)
 
 						# Put an object on the end of the list containing the application state data
 						content.append(app.getStateData())
 
 						# Convert the content to JSON ready for sending to the client
 						content = json.dumps(content)
-						print "Sending to " + client + ': ' + content
 
 			# Serve the requested file if it exists and isn't a directory
 			elif os.path.exists(path) and not os.path.isdir(path):
@@ -139,7 +140,10 @@ class handler(asyncore.dispatcher_with_send):
 			header += "Connection: keep-alive\r\n"
 			header += "Content-Length: " + str(len(content)) + "\r\n\r\n"
 
-			self.send(header + content)
+			self.send(header)
+			try:
+				self.send(content)
+			except: print uri
 
 class server(asyncore.dispatcher):
 

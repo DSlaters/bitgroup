@@ -99,23 +99,37 @@ App.prototype.renderPage = function() {
 
 	// Render the top bar
 	page += '<div id="personal"><h1>' + this.msg('personal').ucfirst() + '</h1>' + this.renderPersonal() + '</div>\n';
+	page += '<div id="page">\n';
 
 	// Render the views menu
 	page += '<div id="views"><h1>' + this.msg('views').ucfirst() + '</h1><ul>' + this.renderViewsMenu() + '</ul></div>\n'
 
 	// Add an empty content area for the view to render into
-	page += '<div id="content">';
-	page += '<div>\n';
+	page += '<div id="content"></div>';
+	page += '</div>\n';
 
 	// Add the completed page structure to the HTML document body
 	$('body').html(page);
+	$( "#personal ul" ).menu({position: {at: "left bottom"}});
 
-	// Connect the dynamic application data elements
-	this.componentConnect('_bg', $('#state-bg-data'));
-	this.componentConnect('_bm', $('#state-bm-data'));
+	// Load and exceute skin script if present
+	var afterSkin = function() {
 
-	// Call the view's render method to populate the content area
-	this.view.render(this);
+		// Connect the dynamic application data elements
+		this.componentConnect('_bg', $('#state-bg-data'));
+		this.componentConnect('_bm', $('#state-bm-data'));
+
+		// Call the view's render method to populate the content area
+		this.view.render(this);
+
+	};
+	$.ajax({
+		url: '/skins/' + skin + '/' + skin + '.js',
+		dataType: "script",
+		context: this,
+		success: afterSkin,
+		error: afterSkin
+	});
 };
 
 /**
@@ -123,17 +137,23 @@ App.prototype.renderPage = function() {
  */
 App.prototype.renderPersonal = function() {
 	html = '<span id="uuid">UUID: ' + this.id + '</span>\n';
-	html += '<a id="user-page" href="/">' + this.msg('user-page') + '</a>\n';
-	html += '<div id="state-bg"><h2>Bitgroup</h2>\n<div id="state-bg-data"></div></div>\n'
-	html += '<div id="state-bm"><h2>Bitmessage</h2>\n<div id="state-bm-data"></div></div>\n'
-	html += '<div id="groups"><h2>' + this.msg('groups').ucfirst() + '</h2><ul id="personal-groups">\n';
+	html += '<ul id="personal-menu">';
+	html += '<li id="bitgroup"><a>Bitgroup</a><ul>\n'
+	html += '<li><a href="/">' + this.msg('about') + '</a></li>\n';
+	html += '<li><a href="http://www.bitgroup.org">bitgroup.org</a></li>\n';
+	html += '<li><a href="/http://www.organicdesign.co.nz/bitgroup">' + this.msg('documentation') + '</a></li>\n</ul></li>';
+	html += '<li id="profile"><a id="user-page" href="/">' + this.msg('user-page') + '</a></li>\n';
+	html += '<li id="groups"><a>' + this.msg('groups') + '</a><ul id="personal-groups">\n';
 	var groups = this.user.groups;
 	for( var i = 0; i < groups.length; i++ ) {
 		var g = groups[i];
 		var link = '<a href="/' + g + '">' + g +'</a>';
 		html += '<li id="personal-groups-' + this.getId(g) + '">' + link + '</li>\n';
 	}
-	html += '</ul></div>\n';
+	html += '</ul></li>\n';
+	html += '<li id="state-bg"><a id="state-bg-data"></a></li>\n'
+	html += '<li id="state-bm"><a id="state-bm-data"></a></li>\n'
+	html += '</ul>\n';
 	return html;
 };
 
@@ -218,7 +238,6 @@ App.prototype.syncData = function() {
 			if(data.length === undefined) {
 				this.data = data;
 				this.renderPage(); // just rebuild the page instead of raising events for all the changes
-				alert('rebuilt' + JSON.stringify(data));
 			}
 
 			// A list of changed keys was returned, update the local data and trigger change events
@@ -380,6 +399,7 @@ App.prototype.componentType = function(element) {
 	else if($(element).attr('value') !== undefined || element.tagName == 'textarea') type = 'input';
 	else if(element.tagName == 'DIV') type = 'div';
 	else if(element.tagName == 'SPAN') type = 'span';
+	else if(element.tagName == 'A') type = 'a';
 	return type;
 };
 
@@ -395,7 +415,7 @@ App.prototype.componentIsInput = function(type) {
  */
 App.prototype.componentSet = function(element, val, type) {
 	if(type === undefined) type = this.componentType(element);
-	if(type == 'div' || type == 'span') $(element).html(val);
+	if(type == 'div' || type == 'span' || type == 'a') $(element).html(val);
 	else if(type == 'input' || type == 'textarea') $(element).val(val);
 	else if(type == 'checkbox') $(element).attr('checked',val ? true : false);
 	else if(type == 'select') {
@@ -414,7 +434,7 @@ App.prototype.componentSet = function(element, val, type) {
 App.prototype.componentGet = function(element, val, type) {
 	var val = false;
 	if(type === undefined) type = this.componentType(element);
-	if(type == 'div' || type == 'span') val = $(element).html();
+	if(type == 'div' || type == 'span' || type == 'a') val = $(element).html();
 	else if(type == 'input' || type == 'textarea') val = $(element).val();
 	else if(type == 'checkbox') val = $(element).is(':checked');
 	else if(type == 'select') {
@@ -443,7 +463,7 @@ App.prototype.componentRender = function(type, data, atts) {
 	for(k in atts) attstr += ' ' + k + '="' + atts[k] + '"';
 
 	// HTML
-	if(type == 'div' || type == 'span') html = '<' + type + attstr + '>' + data + '</' + type + '>';
+	if(type == 'div' || type == 'span' || type == 'a') html = '<' + type + attstr + '>' + data + '</' + type + '>';
 
 	// Text input
 	else if(type == 'input') html = '<input' + attstr + ' type="text" value="' + data + '" />';

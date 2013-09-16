@@ -4,9 +4,11 @@ window.messages = {
 		"user-page": "User profile",
 		"user-info": "User information",
 		"personal": "personal",
+		"about": "About Bitgroup",
+		"documentation": "Documentation",
 
 		"group": "group",
-		"groups": "groups",
+		"groups": "My groups",
 
 		"view": "view",
 		"views": "views",
