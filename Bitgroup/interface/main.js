@@ -98,11 +98,15 @@ App.prototype.renderPage = function() {
 	this.loadStyleSheet('/skins/' + skin + '/style.css');
 
 	// Render the top bar
-	page += '<div id="personal"><h1>' + this.msg('personal').ucfirst() + '</h1>' + this.renderPersonal() + '</div>\n';
+	page += '<div id="personal"><h3>' + this.msg('personal').ucfirst() + '</h3>' + this.renderPersonal() + '</div>\n';
 	page += '<div id="page">\n';
 
+	// Add a page title and sub-title holders to be filled dynamically
+	page += '<h1 id="page-title"><a href="/' + this.group + '#"></a></h1>\n';
+	page += '<h2 id="sub-title"></h2>\n';
+
 	// Render the views menu
-	page += '<div id="views"><h1>' + this.msg('views').ucfirst() + '</h1>' + this.renderViewsMenu() + '</div>\n'
+	page += '<div id="views"><h3>' + this.msg('views').ucfirst() + '</h3>' + this.renderViewsMenu() + '</div>\n'
 
 	// Add an empty content area for the view to render into
 	page += '<div id="content"></div>';
@@ -110,10 +114,12 @@ App.prototype.renderPage = function() {
 
 	// Add the completed page structure to the HTML document body
 	$('body').html(page);
-	$( "#personal ul" ).menu({position: {at: "left bottom"}});
 
-	// Load and exceute skin script if present
+	// Define a function to connect dynamic components and render the content after the skin script has finished
 	var afterSkin = function() {
+
+		// Set the page title
+		this.pageTitle();
 
 		// Connect the dynamic application data elements
 		this.componentConnect('_bg', $('#state-bg-data'));
@@ -123,12 +129,14 @@ App.prototype.renderPage = function() {
 		this.view.render(this);
 
 	};
+
+	// Load and run the skin script
 	$.ajax({
 		url: '/skins/' + skin + '/' + skin + '.js',
 		dataType: "script",
 		context: this,
-		success: afterSkin,
-		error: afterSkin
+		success: afterSkin, // Execute the after skin function after the script has loaded and run
+		error: afterSkin    // or execute it right now if no script was run
 	});
 };
 
@@ -155,6 +163,16 @@ App.prototype.renderPersonal = function() {
 	html += '<li id="state-bm"><a id="state-bm-data"></a></li>\n'
 	html += '</ul>\n';
 	return html;
+};
+
+/**
+ * Update the page title
+ */
+App.prototype.pageTitle = function() {
+	$('#page-title a').html(this.group);
+	var view = this.view.constructor.name;
+	var msg = 'title-' + view.toLowerCase();
+	$('#sub-title').html(this.msgExists(msg) ? this.msg(msg, this.node) : this.node);
 };
 
 /**
@@ -210,6 +228,7 @@ App.prototype.viewChange = function() {
 		$('#views li.selected').removeClass('selected');
 		$('#view-' + this.getId(view)).addClass('selected');
 		view.render(this);
+		this.pageTitle();
 	}
 };
 
@@ -378,6 +397,24 @@ App.prototype.msg = function(key, s1, s2, s3, s4, s5) {
 	str = str.replace('$5', s5);
 
 	return str;
+};
+
+/**
+ * Return true if a message for the key in the user's lang or in en is found
+ */
+App.prototype.msgExists = function(key) {
+	var lang = this.user.lang;
+	if(lang in window.messages && key in window.messages[lang]) return true;
+	if(key in window.messages.en) return true;
+	return false;
+};
+
+/**
+ * Allow extensions to add ther own messages
+ * TODO: extensions should be in their own dirs and have an i18n.js file for messages
+ */
+App.prototype.msgSet = function(lang, key, val) {
+	window.messages[lang][key] = val;
 };
 
 /**

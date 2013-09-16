@@ -21,4 +21,4 @@ class User(BitmessageAddress, Node):
 
 	# TODO: Return a list of all the groups the user is a member of
 	def getGroups(self):
-		return {'Foo': Group(self.app, 'BM-blablablabla','foobas!@#$')};
+		return {'Organic Design': Group(self.app, 'BM-blablablabla','foobas!@#$')};

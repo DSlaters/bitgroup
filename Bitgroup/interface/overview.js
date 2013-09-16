@@ -20,21 +20,21 @@ Overview.prototype.render = function(app) {
 		// A node in the group is selected
 		if(app.node) {
 			if(app.node in app.data) {
-				content += '<h1>' + app.msg('node').ucfirst() + ' "' + app.node + '" [' + app.group + ']</h1>\n';
+				content += '<h3>' + app.msg('node').ucfirst() + ' "' + app.node + '" [' + app.group + ']</h3>\n';
 				data = app.data[app.node];
-			} else content += '<h1>' + app.msg('node-notfound', app.node) + '</h1>\n';
+			} else content += '<h3>' + app.msg('node-notfound', app.node) + '</h3>\n';
 		}
 
 		// No node is selected
 		else {
-			content += '<h1>' + app.msg('group').ucfirst() + ' "' + app.group + '"</h1>\n';
+			content += '<h3>' + app.msg('group').ucfirst() + ' "' + app.group + '"</h3>\n';
 			data = app.data;
 		}
 	}
 
 	// No group is selected
 	else {
-		content += '<h1>' + app.msg('user-info') + '</h1>\n'
+		content += '<h3>' + app.msg('user-info') + '</h3>\n'
 		data = app.user;
 	}
 

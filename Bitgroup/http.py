@@ -8,6 +8,7 @@ import re
 import mimetypes
 import json
 import struct
+import urllib
 
 syncTimes = {} # record of the last time each client connected
 
@@ -19,7 +20,7 @@ class handler(asyncore.dispatcher_with_send):
 		match = re.match(r'^(GET|POST) (.+?)(\?.+?)? HTTP.+Host: (.+?)\s(.+?)\r\n\r\n\s*(.*?)\s*$', data, re.S)
 		if data and match:
 			method = match.group(1)
-			uri = match.group(2)
+			uri = urllib.unquote(match.group(2)).decode('utf8') 
 			host = match.group(4)
 			head = match.group(5)
 			data = match.group(6)
@@ -158,8 +159,6 @@ class server(asyncore.dispatcher):
 		self.set_reuse_addr()
 		self.bind((host, port))
 		self.listen(5)
-		
-		app.groups['Foo'].set('x.y.z','foo')
 
 	def handle_accept(self):
 		pair = self.accept()
