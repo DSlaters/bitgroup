@@ -141,7 +141,7 @@ App.prototype.renderPersonal = function() {
 	html += '<li id="bitgroup"><a>Bitgroup</a><ul>\n'
 	html += '<li><a href="/">' + this.msg('about') + '</a></li>\n';
 	html += '<li><a href="http://www.bitgroup.org">bitgroup.org</a></li>\n';
-	html += '<li><a href="/http://www.organicdesign.co.nz/bitgroup">' + this.msg('documentation') + '</a></li>\n</ul></li>';
+	html += '<li><a href="http://www.organicdesign.co.nz/bitgroup">' + this.msg('documentation') + '</a></li>\n</ul></li>';
 	html += '<li id="profile"><a id="user-page" href="/">' + this.msg('user-page') + '</a></li>\n';
 	html += '<li id="groups"><a>' + this.msg('groups') + '</a><ul id="personal-groups">\n';
 	var groups = this.user.groups;

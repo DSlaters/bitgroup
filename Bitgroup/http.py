@@ -119,11 +119,18 @@ class handler(asyncore.dispatcher_with_send):
 
 			# Serve the requested file if it exists and isn't a directory
 			elif os.path.exists(path) and not os.path.isdir(path):
-				h = open(path, "rb")
-				content = h.read()
-				h.close()
 				ctype = mimetypes.guess_type(uri)[0]
 				if ctype == None: ctype = 'text/plain'
+				header = "HTTP/1.0 " + status + "\r\n"
+				header += "Date: " + date + "\r\n"
+				header += "Server: " + server + "\r\n"
+				header += "Content-Type: " + ctype + "\r\n"
+				header += "Connection: keep-alive\r\n"
+				header += "Content-Length: " + str(os.path.getsize(path)) + "\r\n\r\n"
+				self.send(header)
+				try: self.send(open(path, "rb").read())
+				except: print uri
+				return
 
 			# Return a 404 for everything else
 			else:
@@ -139,11 +146,7 @@ class handler(asyncore.dispatcher_with_send):
 			header += "Content-Type: " + ctype + "\r\n"
 			header += "Connection: keep-alive\r\n"
 			header += "Content-Length: " + str(len(content)) + "\r\n\r\n"
-
-			self.send(header)
-			try:
-				self.send(content)
-			except: print uri
+			self.send(header + content)
 
 class server(asyncore.dispatcher):
 
