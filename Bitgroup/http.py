@@ -83,12 +83,6 @@ class handler(asyncore.dispatcher_with_send):
 				content += extensions
 				content += "</head>\n<body>\n</body>\n</html>\n"
 
-			# If this is a request for _data.json return all of the current group's node data
-			elif base == '_data.json':
-				if group in app.groups:
-					content = app.groups[group].json()
-					ctype = mimetypes.guess_type(base)[0]
-
 			# If this is a for _sync.json merge the local and client change queues and return the changes
 			elif base == '_sync.json':
 				if group in app.groups:

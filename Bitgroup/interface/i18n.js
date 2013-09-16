@@ -3,6 +3,7 @@ window.messages = {
 		"user": "user",
 		"user-page": "User profile",
 		"user-info": "User information",
+		"personal": "personal",
 
 		"group": "group",
 		"groups": "groups",

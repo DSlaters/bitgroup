@@ -19,14 +19,15 @@ function App() {
 
 	// Dynamic application state data
 	this.state = {
-		bm: false          // Whether Bitmessage is connected or not
+		bg: 'Connected',   // State of connection to Bitgroup service
+		bm: false          // State of connection to Bitmessage daemon
 	}
 
 	// Populate the properties that were sent in the page
 	for( var i in window.tmp ) this[i] = window.tmp[i];
 
-	// Call the app's initialise function after the document is ready
-	$(document).ready(function() { window.app.init.call(window.app) });
+	// Run the app after the document is ready
+	$(document).ready(function() { window.app.run.call(window.app) });
 
 	// Regiester hash changes with our handler
 	$(window).hashchange(function() { window.app.locationChange.call(window.app) });
@@ -72,36 +73,12 @@ App.prototype.locationChange = function() {
 };
 
 /**
- * All dependencies are loaded, now load the data for this group, then run the application
- */
-App.prototype.init = function() {
-	if(this.group) {
-		var url = this.group;
-		if(url) url = '/' + url;
-		url += '/_data.json';
-		$.ajax({
-			type: 'GET',
-			url: url,
-			dataType: 'json',
-			context: this,
-			success: function(json) {
-				this.data = json
-				this.run()
-			}
-		});
-	} else this.run(); // just run app now if no group selected as no data to load
-};
-
-/**
- * All group data is loaded, initialise the selected skin and render the current node and view
+ * Initialise the selected skin and render the current node and view
  */
 App.prototype.run = function() {
 
 	// Call the location change event to set the current node and view
 	this.locationChange();
-
-	// Render the page
-	this.renderPage();
 
 	// Initialise a poller for regular data transfers to and from the service
 	setInterval( function() {
@@ -121,21 +98,10 @@ App.prototype.renderPage = function() {
 	this.loadStyleSheet('/skins/' + skin + '/style.css');
 
 	// Render the top bar
-	page += 'UUID: ' + this.id
-	page += '<div id="personal">\n';
-	page += '<a id="user-page" href="/">' + this.msg('user-page') + '</a>\n';
-	page += '<h1>Bitmessage</h1>\n<div id="state-bm"></div>\n'
-	page += '<h1>' + this.msg('groups').ucfirst() + '</h1><ul id="personal-groups">\n';
-	var groups = this.user.groups;
-	for( var i = 0; i < groups.length; i++ ) {
-		var g = groups[i];
-		var link = '<a href="/' + g + '">' + g +'</a>';
-		page += '<li id="personal-groups-' + this.getId(g) + '">' + link + '</li>\n';
-	}
-	page += '</ul></div>\n';
+	page += '<div id="personal"><h1>' + this.msg('personal').ucfirst() + '</h1>' + this.renderPersonal() + '</div>\n';
 
 	// Render the views menu
-	page += '<h1>' + this.msg('views').ucfirst() + '</h1><ul id="views">' + this.renderViewsMenu() + '</ul>\n'
+	page += '<div id="views"><h1>' + this.msg('views').ucfirst() + '</h1><ul>' + this.renderViewsMenu() + '</ul></div>\n'
 
 	// Add an empty content area for the view to render into
 	page += '<div id="content">';
@@ -145,10 +111,30 @@ App.prototype.renderPage = function() {
 	$('body').html(page);
 
 	// Connect the dynamic application data elements
-	this.componentConnect('_bm', $('#state-bm'));
+	this.componentConnect('_bg', $('#state-bg-data'));
+	this.componentConnect('_bm', $('#state-bm-data'));
 
 	// Call the view's render method to populate the content area
 	this.view.render(this);
+};
+
+/**
+ * Render the personal top bar
+ */
+App.prototype.renderPersonal = function() {
+	html = '<span id="uuid">UUID: ' + this.id + '</span>\n';
+	html += '<a id="user-page" href="/">' + this.msg('user-page') + '</a>\n';
+	html += '<div id="state-bg"><h2>Bitgroup</h2>\n<div id="state-bg-data"></div></div>\n'
+	html += '<div id="state-bm"><h2>Bitmessage</h2>\n<div id="state-bm-data"></div></div>\n'
+	html += '<div id="groups"><h2>' + this.msg('groups').ucfirst() + '</h2><ul id="personal-groups">\n';
+	var groups = this.user.groups;
+	for( var i = 0; i < groups.length; i++ ) {
+		var g = groups[i];
+		var link = '<a href="/' + g + '">' + g +'</a>';
+		html += '<li id="personal-groups-' + this.getId(g) + '">' + link + '</li>\n';
+	}
+	html += '</ul></div>\n';
+	return html;
 };
 
 /**
@@ -232,6 +218,7 @@ App.prototype.syncData = function() {
 			if(data.length === undefined) {
 				this.data = data;
 				this.renderPage(); // just rebuild the page instead of raising events for all the changes
+				alert('rebuilt' + JSON.stringify(data));
 			}
 
 			// A list of changed keys was returned, update the local data and trigger change events
@@ -242,6 +229,7 @@ App.prototype.syncData = function() {
 				// The last item is an object contain application information
 				var state = data.pop();
 				for( var i in state ) this.setState(i, state[i]);
+				this.setState('bg', 'Connected');
 
 				// The rest of the list is the change data
 				for( var i = 0; i < data.length; i++ ) {
@@ -257,6 +245,10 @@ App.prototype.syncData = function() {
 			var tmp = {};
 			for( var k in this.queue ) if(this.queue[k][1] > lastSync) tmp[k] = this.queue[k];
 			this.queue = tmp;
+		},
+		error: function() {
+			this.setState('bg', 'Disconnected');
+			this.setState('bm', 'Unknown');
 		}
 	});
 };
