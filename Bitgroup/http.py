@@ -58,7 +58,7 @@ class handler(asyncore.dispatcher_with_send):
 
 				# Get the group's extensions (plus default extensions)
 				extensions = '';
-				extsrc = ['/overview.js']
+				extsrc = ['/overview.js','/newgroup.js']
 				if group in app.groups:
 					ext = app.groups[group].get('settings.extensions')
 					if ext:
