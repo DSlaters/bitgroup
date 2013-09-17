@@ -8,7 +8,10 @@
 		"documentation": "Documentation",
 
 		"group": "group",
+		"newgroup": "New group",
+		"title-newgroup": "Create a new group",
 		"groups": "My groups",
+		"newgroup-info": "First enter a name for your new group, then the group's private and public Bitmessage addresses will be created and you will be redirected to the new group's home page to begin adding content and inviting members and subscribers.",
 
 		"view": "view",
 		"views": "views",

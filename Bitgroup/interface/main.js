@@ -138,6 +138,11 @@ App.prototype.renderPage = function() {
 	// Add the completed page structure to the HTML document body
 	$('body').html(page);
 
+	// Add body classes for CSS rules
+	$('body').addClass('view-' + this.view.constructor.name.toLowerCase().replace(' ',''));
+	if(this.node) $('body').addClass('node-' + this.node.toLowerCase().replace(' ',''));
+	if(this.group) $('body').addClass('group-' + this.group.toLowerCase().replace(' ',''));
+
 	// Define a function to connect dynamic components and render the content after the skin script has finished
 	var afterSkin = function() {
 
@@ -175,6 +180,7 @@ App.prototype.renderPersonal = function() {
 	html += '<li><a href="http://www.organicdesign.co.nz/bitgroup">' + this.msg('documentation') + '</a></li>\n</ul></li>';
 	html += '<li id="profile"><a id="user-page" href="/">' + this.msg('user-page') + '</a></li>\n';
 	html += '<li id="groups"><a>' + this.msg('groups') + '</a><ul id="personal-groups">\n';
+	html += '<li id="newgroup-link"><a href="/#/NewGroup">' + this.msg('newgroup') + '...</a></li>\n';
 	var groups = this.user.groups;
 	for( var i = 0; i < groups.length; i++ ) {
 		var g = groups[i];

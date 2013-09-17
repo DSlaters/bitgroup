@@ -1,3 +1,40 @@
+@charset "utf-8";
+/* CSS Document */
+
+/* 
+	Using a customized version of Eric Meyer's CSS Reset to give us an even, cross-browser playing field. More info:
+	http://meyerweb.com/eric/thoughts/2007/05/01/reset-reloaded/
+*/
+
+html, body, div, span, applet, object, iframe,
+h1, h2, h3, h4, h5, h6, p, blockquote, pre,
+a, abbr, acronym, address, big, cite, code,
+del, dfn, em, font, img, ins, kbd, q, s, samp,
+small, strike, strong, sub, sup, tt, var,
+b, u, i, center,
+dl, dt, dd, ol, ul, li,
+fieldset, form, label, legend,
+table, caption, tbody, tfoot, thead, tr, th, td {
+	background: transparent;
+	border: 0;
+	font-size:;
+	margin: 0;
+	outline: 0;
+	padding: 0;
+	vertical-align: baseline;
+	text-decoration:none
+}
+body {
+	line-height: 1.2;
+	font-family:Arial, Helvetica, sans-serif
+}
+ol, ul {}
+:focus {
+	outline: 0px #c0c dotted;
+}
+.clear {clear:both}
+
+
 body {
 	margin: 0;
 	background: #f4f4f4;
@@ -75,8 +112,31 @@ h2#sub-title { font-size: 30px; font-weight: normal; margin-top: -10px;}
 	color: #999;
 }
 
-
-
+/*
+ * Info/warning/error boxes
+ */
+.info, .error, .warning, .success {
+	color: black;
+	font: 12px sans-serif;
+	font-weight: bold;
+	border: 1px solid black;
+	-moz-border-radius: 10px;
+	-webkit-border-radius: 10px;
+	-khtml-border-radius: 10px;
+	border-radius: 10px;
+	padding: 15px 20px 15px 72px;
+	margin: 0 100px;
+	line-height: 18px;
+	overflow: hidden;
+	clear: none;
+}
+.info {
+	background: #FFFED1 url(/skins/default/icons/info.png) 12px center no-repeat;
+	font-weight: normal;
+}
+.warning {
+	background: #FFFED1 url(/skins/default/icons/warning.png) 12px center no-repeat;
+}
 
 
 table {

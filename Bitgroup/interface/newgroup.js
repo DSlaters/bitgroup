@@ -12,7 +12,7 @@ function NewGroup() {
  */
 NewGroup.prototype.render = function(app) {
 
-	$('#content').html('set up a new group...');
+	$('#content').html('<div class="info">' + app.msg('newgroup-info') + '</div>');
 
 };
 
