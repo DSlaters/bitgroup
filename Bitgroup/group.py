@@ -46,6 +46,8 @@ template = {
 		'Name': ''
 	},
 	'settings': {
-		'extensions': []
+		'extensions': [],
+		'tags': [],
+		'skin': 'default',
 	}
 }
