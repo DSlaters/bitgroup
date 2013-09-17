@@ -14,8 +14,10 @@ class App:
 
 	name = None
 	messages = []
+	user = {}
 	groups = {}
 	maxage = 600000 # Expiry time of queue items in milliseconds
+	i18n = {}       # i18n interface messages loaded from interface/i18n.json
 
 	state = {}      # Dynamic application state information
 	stateAge = 0    # Last time the dynsmic application state data was updated
@@ -79,3 +81,32 @@ class App:
 			self.stateAge = ts
 
 		return self.state
+
+	# Load the i18n messages
+	def loadI18n(self):
+		h = open(self.docroot + '/i18n.json', "r")
+		self.i18n = json.loads(h.read())
+		h.close()
+
+	# Return message from key
+	def msg(self, key, s1 = False, s2 = False, s3 = False, s4 = False, s5 = False):
+		lang = self.user.lang
+
+		# Get the string in the user's language if defined
+		if lang in self.i18n and key in self.i18n[lang]: str = self.i18n[lang][key]
+
+		# Fallback on the en version if not found
+		elif key in self.i18n.en: str = self.i18n['en'][key]
+
+		# Otherwise use the message key in angle brackets
+		else: str = '<' + key + '>';
+
+		# Replace variables in the string
+		if s1: str = str.replace('$1', s1);
+		if s2: str = str.replace('$2', s2);
+		if s3: str = str.replace('$3', s3);
+		if s4: str = str.replace('$4', s4);
+		if s5: str = str.replace('$5', s5);
+
+		return str;
+

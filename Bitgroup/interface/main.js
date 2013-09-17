@@ -12,6 +12,7 @@ function App() {
 	this.view;             // the current view instance
 	this.node;             // the current node name
 	this.sep = '/';        // separator character used in hash fragment
+	this.i18n = {};        // i18n messages loaded from /interface/i18n.json
 
 	this.data = {};        // the current group's data
 	this.queue = {};       // queue of data updates to send to the background service in the form keypath : [val, timestamp]
@@ -26,11 +27,30 @@ function App() {
 	// Populate the properties that were sent in the page
 	for( var i in window.tmp ) this[i] = window.tmp[i];
 
-	// Run the app after the document is ready
-	$(document).ready(function() { window.app.run.call(window.app) });
+	// Run the app after the document is ready, load the i18n message and then run the app
+	$(document).ready(function() {
+		$.ajax({
+			url: '/i18n.json',
+			dataType: "json",
+			context: window.app,
+			success: function(i18n) {
 
-	// Regiester hash changes with our handler
-	$(window).hashchange(function() { window.app.locationChange.call(window.app) });
+				// Store the i18n messages
+				window.i18n = i18n;
+
+				// Load the extension scripts for this group
+				for( i in this.ext ) $.getScript('/extensions/' + this.ext[i] + '.js');
+
+				// Run the application
+				this.run();
+
+				// Regiester hash changes with our handler
+				$(window).hashchange(function() { window.app.locationChange.call(window.app) });
+			}
+		});
+		
+	});
+
 };
 
 /**
@@ -393,20 +413,20 @@ App.prototype.msg = function(key, s1, s2, s3, s4, s5) {
 	var str;
 
 	// Get the string in the user's language if defined
-	if(lang in window.messages && key in window.messages[lang]) str = window.messages[lang][key];
+	if(lang in window.i18n && key in window.i18n[lang]) str = window.i18n[lang][key];
 
 	// Fallback on the en version if not found
-	else if(key in window.messages.en) str = window.messages.en[key];
+	else if(key in window.i18n.en) str = window.i18n.en[key];
 
 	// Otherwise use the message key in angle brackets
 	else str = '&lt;' + key + '&gt;';
 
 	// Replace variables in the string
-	str = str.replace('$1', s1);
-	str = str.replace('$2', s2);
-	str = str.replace('$3', s3);
-	str = str.replace('$4', s4);
-	str = str.replace('$5', s5);
+	if(s1) str = str.replace('$1', s1);
+	if(s2) str = str.replace('$2', s2);
+	if(s3) str = str.replace('$3', s3);
+	if(s4) str = str.replace('$4', s4);
+	if(s5) str = str.replace('$5', s5);
 
 	return str;
 };
@@ -416,17 +436,17 @@ App.prototype.msg = function(key, s1, s2, s3, s4, s5) {
  */
 App.prototype.msgExists = function(key) {
 	var lang = this.user.lang;
-	if(lang in window.messages && key in window.messages[lang]) return true;
-	if(key in window.messages.en) return true;
+	if(lang in window.i18n && key in window.i18n[lang]) return true;
+	if(key in window.i18n.en) return true;
 	return false;
 };
 
 /**
- * Allow extensions to add ther own messages
+ * Allow extensions to add ther own i18n messages
  * TODO: extensions should be in their own dirs and have an i18n.js file for messages
  */
 App.prototype.msgSet = function(lang, key, val) {
-	window.messages[lang][key] = val;
+	window.i18n[lang][key] = val;
 };
 
 /**

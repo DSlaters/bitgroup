@@ -56,16 +56,9 @@ class handler(asyncore.dispatcher_with_send):
 				# Get the user data
 				user = {'lang': app.user.lang, 'groups': app.groups.keys()}
 
-				# Get the group's extensions (plus default extensions)
-				extensions = '';
-				extsrc = ['/overview.js','/newgroup.js']
-				if group in app.groups:
-					ext = app.groups[group].get('settings.extensions')
-					if ext:
-						for i in ext:
-							extsrc.append('/extensions/' + i + '.js');
-				for i in extsrc:
-					extensions += '<script type="text/javascript" src="' + i + '"></script>\n';
+				# Get the group's extensions
+				if group in app.groups: ext = app.groups[group].get('settings.extensions')
+				else: ext = []
 
 				# Build the page content
 				content += "<title>" + ( group + " - " if group else '' ) + app.name + "</title>\n"
@@ -73,6 +66,7 @@ class handler(asyncore.dispatcher_with_send):
 				content += "<meta name=\"generator\" content=\"" + server + "\" />\n"
 				content += "<script type=\"text/javascript\">\n"
 				content += "window.tmp = {};\n"
+				content += "window.tmp.ext = " + json.dumps(ext) + ";\n"
 				content += "window.tmp.user = " + json.dumps(user) + ";\n"
 				content += "window.tmp.group = '" + group + "';\n"
 				content += "</script>\n"
@@ -81,9 +75,9 @@ class handler(asyncore.dispatcher_with_send):
 				content += "<script type=\"text/javascript\" src=\"/resources/jquery-ui-1.10.3/ui/jquery-ui.js\"></script>\n"
 				content += "<script type=\"text/javascript\" src=\"/resources/jquery.observehashchange.min.js\"></script>\n"
 				content += "<script type=\"text/javascript\" src=\"/resources/math.uuid.js\"></script>\n"
-				content += "<script type=\"text/javascript\" src=\"/i18n.js\"></script>\n"
 				content += "<script type=\"text/javascript\" src=\"/main.js\"></script>\n"
-				content += extensions
+				content += "<script type=\"text/javascript\" src=\"/overview.js\"></script>\n"
+				content += "<script type=\"text/javascript\" src=\"/newgroup.js\"></script>\n"
 				content += "</head>\n<body>\n</body>\n</html>\n"
 
 			# If this is a for _sync.json merge the local and client change queues and return the changes

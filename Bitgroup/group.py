@@ -16,3 +16,36 @@ class Group(BitmessageAddress, Node):
 		# TODO: get the group's private address from the properties
 
 		return None
+
+# Data structure of a newly created group
+template = {
+	'Contact': {
+		'type': 'Node',
+		'views': ['Properties'],
+		'template': True,
+		'title': 'Nickname',
+		'Nickname': '',
+		'First name': '',
+		'Surname': '',
+		'Email': '',
+		'Bitmessage': '',
+		'Phone': ''
+	},
+	'Page': {
+		'type': 'Node',
+		'views': ['Edit','Properties','Attachments'],
+		'template': True,
+		'title': 'Name',
+		'Name': ''
+	},
+	'Blog': {
+		'type': 'Node',
+		'views': ['Post','Properties'],
+		'template': True,
+		'title': 'Name',
+		'Name': ''
+	},
+	'settings': {
+		'extensions': []
+	}
+}
