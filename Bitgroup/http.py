@@ -118,6 +118,8 @@ class handler(asyncore.dispatcher_with_send):
 						# Convert the content to JSON ready for sending to the client
 						content = json.dumps(content)
 
+				else: content = json.dumps([app.getStateData()])
+
 			# Serve the requested file if it exists and isn't a directory
 			elif os.path.exists(path) and not os.path.isdir(path):
 				ctype = mimetypes.guess_type(uri)[0]

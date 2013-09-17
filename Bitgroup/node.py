@@ -84,6 +84,7 @@ class Node:
 			self.data = self.decrypt(json.loads(h.read()), self.passwd)
 			h.close()
 		else: self.data = {}
+		return self.data;
 
 	# Save the local cache to the data file
 	# TODO: data changes should queue and save periodically, not on every property change

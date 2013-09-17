@@ -13,6 +13,7 @@ window.messages = {
 		"view": "view",
 		"views": "views",
 		"view-overview": "Overview",
+		"view-newgroup": "New group",
 		"view-properties": "Properties",
 
 		"node": "node",

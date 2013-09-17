@@ -80,6 +80,9 @@ App.prototype.run = function() {
 	// Call the location change event to set the current node and view
 	this.locationChange();
 
+	// If there's no group, render the page now, otherwise wait for the group data from the first sync
+	if(this.group == '') this.renderPage();
+
 	// Initialise a poller for regular data transfers to and from the service
 	setInterval( function() {
 		$.event.trigger({type: "bgPoller"});
@@ -169,7 +172,7 @@ App.prototype.renderPersonal = function() {
  * Update the page title
  */
 App.prototype.pageTitle = function() {
-	$('#page-title a').html(this.group);
+	$('#page-title a').html(this.group ? this.group : this.msg('user-page'));
 	var view = this.view.constructor.name;
 	var msg = 'title-' + view.toLowerCase();
 	$('#sub-title').html(this.msgExists(msg) ? this.msg(msg, this.node) : this.node);
@@ -189,6 +192,15 @@ App.prototype.renderViewsMenu = function() {
 	var views = [this.views[0].constructor.name];
 	if(this.node && this.node in this.data && 'views' in this.data[this.node])
 		views = views.concat(this.data[this.node].views[0]);
+
+	// If no group is selected, add the new group node
+	if(this.group == '') {
+		for( var j = 0; j < this.views.length; j++ ) {
+			console.info(this.views[j].constructor.name);
+			if(this.views[j].constructor.name == 'NewGroup')
+				views.push(this.views[j].constructor.name);
+		}
+	}
 
 	// Render the views menu
 	for( var i = 0; i < views.length; i++ ) {
@@ -245,7 +257,7 @@ App.prototype.syncData = function() {
 	// Send the sync request
 	$.ajax({
 		type: 'POST',
-		url: '/' + this.group + '/_sync.json',
+		url: (this.group ? '/' + this.group : '' ) + '/_sync.json',
 		data: data.length > 0 ? JSON.stringify(data) : '', 
 		contentType: "application/json; charset=utf-8",
 		headers: { 'X-Bitgroup-ID': this.id },
@@ -284,7 +296,7 @@ App.prototype.syncData = function() {
 			for( var k in this.queue ) if(this.queue[k][1] > lastSync) tmp[k] = this.queue[k];
 			this.queue = tmp;
 		},
-		error: function() {
+		error: function(a,b,c) {
 			this.setState('bg', 'Disconnected');
 			this.setState('bm', 'Unknown');
 		}
