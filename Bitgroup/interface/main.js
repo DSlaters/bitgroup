@@ -122,6 +122,10 @@ App.prototype.renderPage = function() {
 
 	// Render the top bar
 	page += '<div id="personal"><h3>' + this.msg('personal').ucfirst() + '</h3>' + this.renderPersonal() + '</div>\n';
+
+	// Add an area for site messages to render
+	page += '<div id="notify"></div>\n';
+
 	page += '<div id="page">\n';
 
 	// Add a page title and sub-title holders to be filled dynamically
@@ -175,9 +179,10 @@ App.prototype.renderPersonal = function() {
 	html = '<span id="uuid">UUID: ' + this.id + '</span>\n';
 	html += '<ul id="personal-menu">';
 	html += '<li id="bitgroup"><a>Bitgroup</a><ul>\n'
-	html += '<li><a href="/">' + this.msg('about') + '</a></li>\n';
+	html += '<li><a href="/">' + this.msg('about', 'Bitgroup') + '</a></li>\n';
+	html += '<li><a href="https://bitmessage.org">' + this.msg('about', 'Bitmessage') + '</a></li>\n';
 	html += '<li><a href="http://www.bitgroup.org">bitgroup.org</a></li>\n';
-	html += '<li><a href="http://www.organicdesign.co.nz/bitgroup">' + this.msg('documentation') + '</a></li>\n</ul></li>';
+	html += '<li><a href="http://www.organicdesign.co.nz/bitgroup">' + this.msg('documentation') + '</a></li>\n</ul></li>\n';
 	html += '<li id="profile"><a id="user-page" href="/">' + this.msg('user-page') + '</a></li>\n';
 	html += '<li id="groups"><a>' + this.msg('groups') + '</a><ul id="personal-groups">\n';
 	html += '<li id="newgroup-link"><a href="/#/NewGroup">' + this.msg('newgroup') + '...</a></li>\n';
@@ -202,6 +207,13 @@ App.prototype.pageTitle = function() {
 	var view = this.view.constructor.name;
 	var msg = 'title-' + view.toLowerCase();
 	$('#sub-title').html(this.msgExists(msg) ? this.msg(msg, this.node) : this.node);
+
+	// If this is a newly created group, add a message and remove the newgroup propertyu
+	if(this.group && this.getData('newgroup')) {
+		//this.setData('newgroup',false);
+		$('#notify').html(this.notify(this.msg('groupcreated'),'success'));
+	}
+
 };
 
 /**
@@ -222,7 +234,6 @@ App.prototype.renderViewsMenu = function() {
 	// If no group is selected, add the new group node
 	if(this.group == '') {
 		for( var j = 0; j < this.views.length; j++ ) {
-			console.info(this.views[j].constructor.name);
 			if(this.views[j].constructor.name == 'NewGroup')
 				views.push(this.views[j].constructor.name);
 		}
@@ -265,6 +276,10 @@ App.prototype.viewChange = function() {
 		var view = this.view ? this.view : this.views[0];
 		$('#views li.selected').removeClass('selected');
 		$('#view-' + this.getId(view)).addClass('selected');
+
+		// Remove any notification that may have been on the page
+		$('#notify').html('');
+
 		view.render(this);
 		this.pageTitle();
 	}
@@ -334,8 +349,8 @@ App.prototype.syncData = function() {
  * - this raises a normal change event so that components can connect to state values using a preceding underscore on the key
  */
 App.prototype.setState = function(key, val) {
-	if(val != this[key]) {
-		this[key] = val;
+	if(val != this.state[key]) {
+		this.state[key] = val;
 		$.event.trigger({type: "bgDataChange-_" + key, args: {app:this, val:val}});
 	}	
 };
@@ -346,7 +361,7 @@ App.prototype.setState = function(key, val) {
  * TODO: don't use eval for this, make a path walking function like node.py
  */
 App.prototype.getData = function(key, ts) {
-	if(key.substr(0,1) == '_') return this[key.substr(1)]; // if the key starts with an underscore, it's an application state value
+	if(key.substr(0,1) == '_') return this.state[key.substr(1)]; // if the key starts with an underscore, it's an application state value
 	var val = eval('this.data.' + key);
 	if(val === undefined) console.info( 'undefined value for ' + key );
 	return ts === true ? val : val[0];
@@ -453,6 +468,13 @@ App.prototype.msgExists = function(key) {
  */
 App.prototype.msgSet = function(lang, key, val) {
 	window.i18n[lang][key] = val;
+};
+
+/**
+ * Create a notification div
+ */
+App.prototype.notify = function(content, type) {
+	return '<div class="' + type + '">' + content + '</div>';
 };
 
 /**
@@ -591,7 +613,7 @@ App.prototype.componentConnect = function(key, element) {
 		if($(element).parents().filter('body').length > 0) event.args.app.componentSet(element, event.args.val)
 		else {
 			console.info('Component "' + element.id + '" gone, removing event');
-			$(document).off(element, null, handler);
+			$(document).off(event, null, handler);
 		}
 	};
 	var event = "bgDataChange-" + key.replace('.','-');

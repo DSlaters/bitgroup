@@ -119,25 +119,60 @@ h2#sub-title { font-size: 30px; font-weight: normal; margin-top: -10px;}
 	color: black;
 	font: 12px sans-serif;
 	font-weight: bold;
-	border: 1px solid black;
+	border: 1px solid #8B6914;
 	-moz-border-radius: 10px;
 	-webkit-border-radius: 10px;
 	-khtml-border-radius: 10px;
 	border-radius: 10px;
 	padding: 15px 20px 15px 72px;
-	margin: 0 100px;
+	margin: 20px 100px;
 	line-height: 18px;
-	overflow: hidden;
-	clear: none;
+	clear: both;
 }
+#notify div { margin-bottom: 4px; margin-left: 0; margin-right: 0; }
+#notify { width: 500px; margin: 0 auto; }
 .info {
+	border-color: #447BFA;
+	color: #000099;
 	background: #FFFED1 url(/skins/default/icons/info.png) 12px center no-repeat;
 	font-weight: normal;
 }
+.success {
+	color: #009900;
+	border-color: #009900;
+	background: #FFFED1 url(/skins/default/icons/success.png) 16px center no-repeat;
+	font-weight: normal;
+}
 .warning {
-	background: #FFFED1 url(/skins/default/icons/warning.png) 12px center no-repeat;
+	border-color: #cc0000;
+	background: #FFFED1 url(/skins/default/icons/warning.png) 16px center no-repeat;
+}
+.error {
+	border-color: #dd0000;
+	color: #dd0000;
+	background: #FFFED1 url(/skins/default/icons/warning.png) 16px center no-repeat;
 }
 
+/*
+ * Forms
+ */
+div.form {
+	font: 12px sans-serif;
+	color: black;
+	background-color: #F2F2F9;
+	border: 1px solid #8080A1;
+	-moz-border-radius: 10px;
+	-webkit-border-radius: 10px;
+	-khtml-border-radius: 10px;
+	border-radius: 10px;
+	padding: 10px;
+	width: 400px;
+	margin-left: auto;
+	margin-right: auto;
+	clear: both;
+}
+div.form input { margin-right: 5px; }
+div.form label { font-weight: bold; }
 
 table {
     border-collapse: collapse;

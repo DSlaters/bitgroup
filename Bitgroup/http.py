@@ -80,6 +80,10 @@ class handler(asyncore.dispatcher_with_send):
 				content += "<script type=\"text/javascript\" src=\"/newgroup.js\"></script>\n"
 				content += "</head>\n<body>\n</body>\n</html>\n"
 
+			# If this is a new group creation request call the newgroup method and return the sanitised name
+			elif base == '_newgroup':
+				content = app.newGroup(json.loads(data)['name']);
+
 			# If this is a for _sync.json merge the local and client change queues and return the changes
 			elif base == '_sync.json':
 				if group in app.groups:

@@ -110,3 +110,6 @@ class App:
 
 		return str;
 
+	# Create a new group
+	def newGroup(self, name):
+		return "Organic Design"
