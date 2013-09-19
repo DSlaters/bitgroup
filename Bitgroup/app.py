@@ -143,7 +143,7 @@ class App:
 			print "new Bitmessage address created: " + group.addr
 			print "new private Bitmessage address created: " + group.prvaddr
 			self.groups[group.prvaddr] = group
-			data = {'name':name, 'addr':group.addr}
+			data = {'name':name, 'addr':group.addr, 'prvaddr':group.prvaddr}
 
 		# No address was created, return the error (TODO: exceptions not handled during creation)
 		else: data = {'err':group.addr}
