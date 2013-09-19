@@ -11,6 +11,9 @@ class User(BitmessageAddress, Node):
 		# Set the Bitmessage address for this user
 		self.addr = addr
 
+		# User's just have one address, so set the private address to the same as the public
+		self.prvaddr = addr
+
 		# Set the user's passpwd for encrypting stored data and messages
 		self.passwd = passwd
 
@@ -19,6 +22,4 @@ class User(BitmessageAddress, Node):
 
 		return None
 
-	# TODO: Return a list of all the groups the user is a member of
-	def getGroups(self):
-		return {'Organic Design': Group(self.app, 'BM-blablablabla','foobas!@#$')};
+

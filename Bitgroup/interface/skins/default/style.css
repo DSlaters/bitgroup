@@ -125,12 +125,13 @@ h2#sub-title { font-size: 30px; font-weight: normal; margin-top: -10px;}
 	-khtml-border-radius: 10px;
 	border-radius: 10px;
 	padding: 15px 20px 15px 72px;
-	margin: 20px 100px;
+	margin: 20px auto;
 	line-height: 18px;
 	clear: both;
+	width: 450px;
+	min-height: 30px;
 }
-#notify div { margin-bottom: 4px; margin-left: 0; margin-right: 0; }
-#notify { width: 500px; margin: 0 auto; }
+#notify div { width: 500px; margin: 20px auto; }
 .info {
 	border-color: #447BFA;
 	color: #000099;
@@ -152,6 +153,7 @@ h2#sub-title { font-size: 30px; font-weight: normal; margin-top: -10px;}
 	color: #dd0000;
 	background: #FFFED1 url(/skins/default/icons/warning.png) 16px center no-repeat;
 }
+#notify .groupcreated { width: 800px; }
 
 /*
  * Forms

@@ -6,6 +6,7 @@
 		"personal": "personal",
 		"about": "About $1",
 		"documentation": "Documentation",
+		"wait": "Please wait...",
 
 		"group": "group",
 		"newgroup": "New group",
@@ -14,7 +15,7 @@
 		"groups": "My groups",
 		"newgroup-noservice": "Both the <i>Bitgroup</i> and <i>Bitmessage</i> daemons must be running to create a new group.",
 		"newgroup-info": "First enter a name for your new group, then the group's private and public Bitmessage addresses will be created and you will be redirected to the new group's home page to begin adding content and inviting members and subscribers.",
-		"groupcreated": "<b>Your new group has been successfully created!</b><br />You can now begin creating content for your group and inviting new members and subscribers.",
+		"groupcreated": "<b>Group \"$1\" has been successfully created with public address <i>$2</i>!</b><br />You can now begin creating content for your group and inviting new members and subscribers.<br />Click <a href=\"$3\">here</a> to access your new group!",
 
 		"view": "view",
 		"views": "views",
@@ -25,6 +26,8 @@
 		"node": "node",
 		"node-notfound": "Node \"$1\" not found",
 		
-		"err-nosuchcomponent": "No such component type: \"$1\"."
+		"err-nosuchcomponent": "No such component type: \"$1\".",
+		"err-connection": "An error occurred connecting to the Bitgroup daemon.",
+		"err-groupexists": "A group called \"$1\" already exists."
 	}
 }

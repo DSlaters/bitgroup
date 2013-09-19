@@ -17,6 +17,7 @@ function App() {
 	this.data = {};        // the current group's data
 	this.queue = {};       // queue of data updates to send to the background service in the form keypath : [val, timestamp]
 	this.syncTime = 1000;  // milliseconds between each sync request
+	this.syncLock = false; // prevents syncs from occurring if another is still in progress
 
 	// Dynamic application state data
 	this.state = {
@@ -187,9 +188,9 @@ App.prototype.renderPersonal = function() {
 	html += '<li id="groups"><a>' + this.msg('groups') + '</a><ul id="personal-groups">\n';
 	html += '<li id="newgroup-link"><a href="/#/NewGroup">' + this.msg('newgroup') + '...</a></li>\n';
 	var groups = this.user.groups;
-	for( var i = 0; i < groups.length; i++ ) {
+	for( var i in this.user.groups ) {
 		var g = groups[i];
-		var link = '<a href="/' + g + '">' + g +'</a>';
+		var link = '<a href="/' + i + '">' + g +'</a>';
 		html += '<li id="personal-groups-' + this.getId(g) + '">' + link + '</li>\n';
 	}
 	html += '</ul></li>\n';
@@ -203,17 +204,10 @@ App.prototype.renderPersonal = function() {
  * Update the page title
  */
 App.prototype.pageTitle = function() {
-	$('#page-title a').html(this.group ? this.group : this.msg('user-page'));
+	$('#page-title a').html(this.group ? this.user.groups[this.group] : this.msg('user-page'));
 	var view = this.view.constructor.name;
 	var msg = 'title-' + view.toLowerCase();
 	$('#sub-title').html(this.msgExists(msg) ? this.msg(msg, this.node) : this.node);
-
-	// If this is a newly created group, add a message and remove the newgroup propertyu
-	if(this.group && this.getData('newgroup')) {
-		//this.setData('newgroup',false);
-		$('#notify').html(this.notify(this.msg('groupcreated'),'success'));
-	}
-
 };
 
 /**
@@ -290,6 +284,10 @@ App.prototype.viewChange = function() {
  */
 App.prototype.syncData = function() {
 
+	// If a sync is already in progress, bail
+	if(this.syncLock) return console.info('syncLock is set, exiting syncData without doing anything');
+	this.syncLock = true;
+
 	// Convert the queue from a hash into a list
 	var data = [];
 	for( var k in this.queue ) data.push([k, this.queue[k][0], this.queue[k][1]]);
@@ -336,10 +334,14 @@ App.prototype.syncData = function() {
 			var tmp = {};
 			for( var k in this.queue ) if(this.queue[k][1] > lastSync) tmp[k] = this.queue[k];
 			this.queue = tmp;
+
+			// Remove the sync lock
+			this.syncLock = false;
 		},
 		error: function(a,b,c) {
 			this.setState('bg', 'Disconnected');
 			this.setState('bm', 'Unknown');
+			this.syncLock = false;
 		}
 	});
 };

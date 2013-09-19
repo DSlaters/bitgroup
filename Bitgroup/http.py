@@ -37,7 +37,7 @@ class handler(asyncore.dispatcher_with_send):
 			match = re.search(r'X-Bitgroup-ID: (.+?)\s', head)
 			client = match.group(1) if match else ''
 
-			# If the uri starts with a group name, set group and change path to group's files
+			# If the uri starts with a group addr, set group and change path to group's files
 			m = re.match('/(.+?)($|/.*)', uri)
 			if m and m.group(1) in app.groups:
 				group = m.group(1)
@@ -52,24 +52,23 @@ class handler(asyncore.dispatcher_with_send):
 			path = docroot + uri
 			base = os.path.basename(uri)
 			if uri == '/':
+				tmp = {
+					'group': group,
+					'user': {'lang': app.user.lang, 'groups': {}},
+				}
 
-				# Get the user data
-				user = {'lang': app.user.lang, 'groups': app.groups.keys()}
+				# Get the addresses and names of the user's groups
+				for i in app.groups: tmp['user']['groups'][i] = app.groups[i].name
 
 				# Get the group's extensions
-				if group in app.groups: ext = app.groups[group].get('settings.extensions')
-				else: ext = []
+				if group in app.groups: tmp['ext'] = app.groups[group].get('settings.extensions')
+				else: tmp['ext'] = []
 
 				# Build the page content
 				content += "<title>" + ( group + " - " if group else '' ) + app.name + "</title>\n"
 				content += "<meta charset=\"UTF-8\" />\n"
 				content += "<meta name=\"generator\" content=\"" + server + "\" />\n"
-				content += "<script type=\"text/javascript\">\n"
-				content += "window.tmp = {};\n"
-				content += "window.tmp.ext = " + json.dumps(ext) + ";\n"
-				content += "window.tmp.user = " + json.dumps(user) + ";\n"
-				content += "window.tmp.group = '" + group + "';\n"
-				content += "</script>\n"
+				content += "<script type=\"text/javascript\">window.tmp = " + json.dumps(tmp) + ";</script>\n"
 				content += "<script type=\"text/javascript\" src=\"/resources/jquery-1.10.2.min.js\"></script>\n"
 				content += "<link rel=\"stylesheet\" href=\"/resources/jquery-ui-1.10.3/themes/base/jquery-ui.css\" />\n"
 				content += "<script type=\"text/javascript\" src=\"/resources/jquery-ui-1.10.3/ui/jquery-ui.js\"></script>\n"
@@ -81,8 +80,9 @@ class handler(asyncore.dispatcher_with_send):
 				content += "</head>\n<body>\n</body>\n</html>\n"
 
 			# If this is a new group creation request call the newgroup method and return the sanitised name
-			elif base == '_newgroup':
-				content = app.newGroup(json.loads(data)['name']);
+			elif base == '_newgroup.json':
+				ctype = mimetypes.guess_type(base)[0]
+				content = json.dumps(app.newGroup(json.loads(data)['name']));
 
 			# If this is a for _sync.json merge the local and client change queues and return the changes
 			elif base == '_sync.json':

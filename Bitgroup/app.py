@@ -22,11 +22,13 @@ class App:
 	state = {}      # Dynamic application state information
 	stateAge = 0    # Last time the dynsmic application state data was updated
 
-	def __init__(self, config):
+	def __init__(self, config, configfile):
 
 		self.name = 'Bitgroup'
 		self.version = '0.0.0'
 		self.docroot = os.path.dirname(__file__) + '/interface'
+		self.config = config
+		self.configfile = configfile
 
 		# Set the location for application data and create the dir if it doesn't exist
 		self.datapath = os.getenv("HOME") + '/.Bitgroup'
@@ -43,7 +45,7 @@ class App:
 		self.user = User(self, config.get('bitmessage', 'addr'), password)
 
 		# Initialise groups
-		self.groups = self.user.getGroups()
+		self.loadGroups()
 
 		# Initialise the messages list
 		#self.getMessages()
@@ -52,6 +54,23 @@ class App:
 		srv = http.server(self, 'localhost', config.getint('interface', 'port'))
 
 		return None
+
+	# Update the config file and save it
+	def updateConfig(self, section, key, val):
+		self.config.set(section, key, val)
+		h = open(self.configfile, 'wb')
+		self.config.write(h)
+		h.close()
+
+	# Load all the groups found in the config file
+	def loadGroups(self):
+		conf = dict(self.config.items('groups'))
+		for passwd in conf:
+			prvaddr = conf[passwd]
+			print "initialising group: " + prvaddr
+			group = Group(self, prvaddr, passwd)
+			self.groups[prvaddr] = group
+			print "    group initialised (" + group.name + ")"
 
 	# Read the messages from Bitmessage and store in local app list
 	def getMessages(self):
@@ -112,4 +131,27 @@ class App:
 
 	# Create a new group
 	def newGroup(self, name):
-		return "Organic Design"
+
+		# TODO: Sanitise the name
+
+		# Create a new group instance
+		group = Group(self, name)
+		
+		# If a Bitmessage address was created successfully, create the group's bitmessage addresses and add to the config
+		if re.match('BM-', group.addr):
+			print "new password created: " + group.passwd
+			print "new Bitmessage address created: " + group.addr
+			print "new private Bitmessage address created: " + group.prvaddr
+			self.groups[group.prvaddr] = group
+			data = {'name':name, 'addr':group.addr}
+
+		# No address was created, return the error (TODO: exceptions not handled during creation)
+		else: data = {'err':group.addr}
+
+		return data
+
+
+
+
+
+

@@ -74,7 +74,7 @@ class Node:
 
 	# Get the filesystem location of this node's data
 	def path(self):
-		return self.app.datapath + '/' + self.addr + '.json'
+		return self.app.datapath + '/' + self.prvaddr + '.json'
 
 	# Load this node's data into the local cache
 	def load(self):

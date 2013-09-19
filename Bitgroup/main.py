@@ -4,8 +4,9 @@ import sys
 import ConfigParser
 
 # Read the configuration file
+configfile = os.path.dirname(__file__) + '/.config'
 config = ConfigParser.SafeConfigParser();
-config.read(os.path.dirname(__file__) + '/.config')
+config.read(configfile)
 
 # Get location of Bitmessage from config, same location is this if not defined
 try:
@@ -27,7 +28,7 @@ if __name__ == '__main__':
 	singleton.SingleInstance()
 
 	# Instantiate the main app instance
-	app = App(config)
+	app = App(config, configfile)
 
 	# Wait for incoming connections and handle them forever
 	try:
