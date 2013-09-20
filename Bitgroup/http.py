@@ -123,6 +123,7 @@ class handler(asyncore.dispatcher_with_send):
 				ctype = mimetypes.guess_type(uri)[0]
 				fh = open(path, "rb")
 				content = fh.read()
+				fh.close()
 
 			# Return a 404 for everything else
 			else:
