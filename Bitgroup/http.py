@@ -121,17 +121,8 @@ class handler(asyncore.dispatcher_with_send):
 			# Serve the requested file if it exists and isn't a directory
 			elif os.path.exists(path) and not os.path.isdir(path):
 				ctype = mimetypes.guess_type(uri)[0]
-				if ctype == None: ctype = 'text/plain'
-				header = "HTTP/1.0 " + status + "\r\n"
-				header += "Date: " + date + "\r\n"
-				header += "Server: " + server + "\r\n"
-				header += "Content-Type: " + ctype + "\r\n"
-				header += "Connection: keep-alive\r\n"
-				header += "Content-Length: " + str(os.path.getsize(path)) + "\r\n\r\n"
-				self.send(header)
-				try: self.send(open(path, "rb").read())
-				except: print uri
-				return
+				fh = open(path, "rb")
+				content = fh.read()
 
 			# Return a 404 for everything else
 			else:
@@ -141,13 +132,18 @@ class handler(asyncore.dispatcher_with_send):
 				content += "<p>The requested URL " + uri + " was not found on this server.</p>\n"
 				content += "</body></html>"
 
+			# Build the HTTP headers and send the content
 			header = "HTTP/1.0 " + status + "\r\n"
 			header += "Date: " + date + "\r\n"
 			header += "Server: " + server + "\r\n"
 			header += "Content-Type: " + ctype + "\r\n"
 			header += "Connection: keep-alive\r\n"
 			header += "Content-Length: " + str(len(content)) + "\r\n\r\n"
-			self.send(header + content)
+
+			# TODO: why does sendall not work for large files?
+			if ctype == 'image/png': self.sendall(header + content)
+			else: self.send(header + content)
+
 
 class server(asyncore.dispatcher):
 

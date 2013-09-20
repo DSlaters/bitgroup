@@ -185,18 +185,24 @@ App.prototype.renderPersonal = function() {
 	html += '<li><a href="http://www.bitgroup.org">bitgroup.org</a></li>\n';
 	html += '<li><a href="http://www.organicdesign.co.nz/bitgroup">' + this.msg('documentation') + '</a></li>\n</ul></li>\n';
 	html += '<li id="profile"><a id="user-page" href="/">' + this.msg('user-page') + '</a></li>\n';
-	html += '<li id="groups"><a>' + this.msg('groups') + '</a><ul id="personal-groups">\n';
-	html += '<li id="newgroup-link"><a href="/#/NewGroup">' + this.msg('newgroup') + '...</a></li>\n';
+	html += '<li id="groups"><a>' + this.msg('groups') + '</a><ul id="personal-groups">\n' + this.renderGroupsList() + '</ul></li>\n';
+	html += '<li id="state-bg"><a id="state-bg-data"></a></li>\n'
+	html += '<li id="state-bm"><a id="state-bm-data"></a></li>\n'
+	html += '</ul>\n';
+	return html;
+};
+
+/**
+ * Render the personal top bar
+ */
+App.prototype.renderGroupsList = function() {
+	var html = '<li id="newgroup-link"><a href="/#/NewGroup">' + this.msg('newgroup') + '...</a></li>\n';
 	var groups = this.user.groups;
 	for( var i in this.user.groups ) {
 		var g = groups[i];
 		var link = '<a href="/' + i + '">' + g +'</a>';
 		html += '<li id="personal-groups-' + this.getId(g) + '">' + link + '</li>\n';
 	}
-	html += '</ul></li>\n';
-	html += '<li id="state-bg"><a id="state-bg-data"></a></li>\n'
-	html += '<li id="state-bm"><a id="state-bm-data"></a></li>\n'
-	html += '</ul>\n';
 	return html;
 };
 

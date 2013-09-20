@@ -37,8 +37,16 @@ NewGroup.prototype.render = function(app) {
 			contentType: "application/json; charset=utf-8",
 			dataType: 'json',
 			success: function(data) {
-				if('name' in data) $('#notify').html(noservice + app.notify(app.msg('groupcreated',data.name, data.addr, '/' + encodeURIComponent(data.prvaddr)),'success groupcreated'));
-				else $('#notify').html(noservice + app.notify(data.err,'error'));
+				if('name' in data) {
+
+					// Notify that the new group has been successfully created
+					$('#notify').html(noservice + app.notify(app.msg('groupcreated',data.name, data.addr, '/' + encodeURIComponent(data.prvaddr)),'success groupcreated'));
+
+					// Add the new group to the groups menu
+					app.user.groups[data.prvaddr] = data.name;
+					$('#personal-groups').html(app.renderGroupsList());
+
+				} else $('#notify').html(noservice + app.notify(data.err,'error'));
 				showHide();
 			},
 			error: function() {
