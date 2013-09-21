@@ -78,16 +78,3 @@ def getUIDLforSingle(msgID):
 	msgRef = inboxMessages['inboxMessages'][msgID]['msgid'] #gets the message Ref via the message index number
 	return [str(msgRef)]
 
-class Bitmessage:
-	"""Used to create instances of message that can be sent or replied to, GroupMessage then extends this"""
-	def __init__(self):
-		return None
-
-class BitmessageAddress:
-	"""Allows instances of addresses that User and Group instances are based on"""
-
-	addr = None
-
-	def __init__(self):
-		return None
-

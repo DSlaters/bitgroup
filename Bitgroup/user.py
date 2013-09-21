@@ -1,8 +1,6 @@
 from node import *
-from bminterface import *
-from group import Group
 
-class User(BitmessageAddress, Node):
+class User(Node):
 	"""Class representing the current user"""
 
 	def __init__(self, app, addr, passwd):

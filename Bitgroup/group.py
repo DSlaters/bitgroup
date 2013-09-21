@@ -1,9 +1,8 @@
 import uuid
 import re
 from node import *
-from bminterface import *
 
-class Group(BitmessageAddress, Node):
+class Group(Node):
 	"""This is the class that messages from the Bitmessage inbox are returned as if they're for our app"""
 
 	name = None     # The textual name for the group (can be changed any time)
