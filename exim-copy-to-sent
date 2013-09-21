@@ -1,0 +1,8 @@
+if $sender_address_domain is organicdesign.co.nz then
+	if "${if def:h_X-Spam-Status {def}{undef}}" is "def" then
+		headers remove "Bcc"
+	else
+		headers add "Bcc: $recipients"
+		unseen save $home/Maildir/.Sent/
+	endif
+endif
