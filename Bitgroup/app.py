@@ -76,7 +76,15 @@ class App:
 			messages = json.loads(self.api.getAllInboxMessages())
 			self.messages = []
 			for msgID in range(len(messages['inboxMessages'])):
-				self.messages.append(Message(messages['inboxMessages'][msgID]))
+				
+				# Get the Bitmessage data for this message
+				msg = messages['inboxMessages'][msgID]
+				
+				# Instantiate a Message or Message sub-class based on it's specified Bitgroup type
+				msg = getMessageType(msg)(msg)
+
+				self.messages.append(msg)
+
 			print str(len(self.messages)) + ' messages retrieved.'
 
 	# Return a millisecond timestamp - must match main.js's timestamp
