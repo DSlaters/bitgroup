@@ -5,8 +5,9 @@ import email.utils
 import re
 import inspect
 
-# Check if the passed message is one of ours and if so what Message sub-class it is
-def getMessageType(msg):
+# Check if the passed BM-message is one of ours and if so what Message sub-class it is
+# - returns a class that can be used for instatiation, e.g. bg_msg = getMessageClass(bm_msg)(bm_msg)
+def getMessageClass(msg):
 	subject = msg['subject'].decode('base64')
 	match = re.match("Bitgroup-([0-9.]+):(\w+) ", subject)
 	if match:

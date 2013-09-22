@@ -81,7 +81,7 @@ class App:
 				msg = messages['inboxMessages'][msgID]
 				
 				# Instantiate a Message or Message sub-class based on it's specified Bitgroup type
-				msg = getMessageType(msg)(msg)
+				msg = getMessageClass(msg)(msg)
 
 				self.messages.append(msg)
 
