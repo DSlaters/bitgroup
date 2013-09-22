@@ -5,21 +5,6 @@ import email.utils
 import re
 import inspect
 
-# Check if the passed BM-message is one of ours and if so what Message sub-class it is
-# - returns a class that can be used for instatiation, e.g. bg_msg = getMessageClass(bm_msg)(bm_msg)
-def getMessageClass(msg):
-	subject = msg['subject'].decode('base64')
-	match = re.match("Bitgroup-([0-9.]+):(\w+) ", subject)
-	if match:
-		c = match.group(2)
-		if c in globals():
-			if Message in inspect.getmro(globals()[c]):
-				c = [c]
-				return c[0]()
-		print "Class '" + c + "' is not a Message class"
-	return Message
-
-
 class Message:
 	"""Class representing a Bitmessage message"""
 
@@ -37,6 +22,22 @@ class Message:
 		self.subject = msg['subject'].decode('base64')
 		self.body = msg['message'].decode('base64')
 		return None
+
+
+	# Check if the passed BM-message is one of ours and if so what Message sub-class it is
+	# - returns a class that can be used for instatiation, e.g. bg_msg = getMessageClass(bm_msg)(bm_msg)
+	@staticmethod
+	def getClass(msg):
+		subject = msg['subject'].decode('base64')
+		match = re.match("Bitgroup-([0-9.]+):(\w+) ", subject)
+		if match:
+			c = match.group(2)
+			if c in globals():
+				if Message in inspect.getmro(globals()[c]):
+					c = [c]
+					return c[0]()
+			print "Class '" + c + "' is not a Message class"
+		return Message
 
 	def send(self): pass
 	
