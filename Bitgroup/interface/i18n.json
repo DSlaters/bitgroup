@@ -7,6 +7,11 @@
 		"about": "About $1",
 		"documentation": "Documentation",
 		"wait": "Please wait...",
+		"messages": "Messages",
+		"nomessages": "You have no messages",
+		"inbox": "Inbox",
+		"subject": "Subject",
+		"from": "From",
 
 		"group": "group",
 		"newgroup": "New group",

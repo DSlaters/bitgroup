@@ -52,8 +52,25 @@ Overview.prototype.render = function(app) {
 		content += '<table>' + rows + '</table>\n';
 	}
 
+	// Render a live table for inbox messages
+	content += '<br /><br /><h3>' + app.msg('inbox') + '</h3><div id="inbox"></div>\n';
+
 	// Populate the content area
 	$('#content').html(content);
+
+	// Connect the table to the state data so it populates when it arrives
+	var inbox = document.getElementById('inbox');
+	inbox.setValue = function(val) {
+		if(typeof val == 'object' && val.length > 0) {
+			var rows = '<tr><th>' + app.msg('from') + '</th><th>' + app.msg('subject') + '</th></tr>\n';
+			for( var i in val ) {
+				var msg = val[i];
+				rows += '<tr><td>' + msg.from + '</td><td>' + msg.subject + '</td></tr>\n';
+			}
+			$(this).html('<table>' + rows + '</table>');
+		} else $(this).html(app.msg('nomessages'));
+	};
+	app.componentConnect('_inbox', inbox);
 };
 
 // Create a singleton instance of our new view in the app's available views list

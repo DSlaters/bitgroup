@@ -13,13 +13,18 @@ class Message:
 	body     = None
 
 	# Create a local instance of the Bitmessage message containing all the message attributes and data
-	def __init__(self, app, msgID):
-		if app.messages == None: app.messages = json.loads(app.api.getAllInboxMessages())
-		self.date = email.utils.formatdate(time.mktime(datetime.datetime.fromtimestamp(float(app.messages['inboxMessages'][msgID]['receivedTime'])).timetuple()))
-		self.toAddr = app.messages['inboxMessages'][msgID]['toAddress']
-		self.fromAddr = app.messages['inboxMessages'][msgID]['fromAddress']
-		self.Subject = app.messages['inboxMessages'][msgID]['subject'].decode('base64')
-		self.body = app.messages['inboxMessages'][msgID]['message'].decode('base64')
+	def __init__(self, msg):
+		self.date = email.utils.formatdate(time.mktime(datetime.datetime.fromtimestamp(float(msg['receivedTime'])).timetuple()))
+		self.toAddr = msg['toAddress']
+		self.fromAddr = msg['fromAddress']
+		self.subject = msg['subject'].decode('base64')
+		self.body = msg['message'].decode('base64')
+		return None
+
+	def send(self):
+		return None
+	
+	def reply(self):
 		return None
 
 
@@ -47,6 +52,7 @@ class Invitation(BitgroupMessage):
 		return None
 
 	def accept(self):
+		return None
 
 
 class DataSync(BitgroupMessage):

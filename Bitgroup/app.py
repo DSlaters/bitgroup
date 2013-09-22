@@ -8,12 +8,13 @@ import time
 import datetime
 from user import *
 from group import *
+from message import *
 
 class App:
 	"""The main top-level class for all teh functionality of the Bitgroup application"""
 
 	name = None
-	messages = []
+	messages = None
 	user = {}
 	groups = {}
 	maxage = 600000 # Expiry time of queue items in milliseconds
@@ -47,9 +48,6 @@ class App:
 		# Initialise groups
 		self.loadGroups()
 
-		# Initialise the messages list
-		#self.getMessages()
-
 		# Set up a simple HTTP server to handle requests from the interface
 		srv = http.server(self, 'localhost', config.getint('interface', 'port'))
 
@@ -74,7 +72,12 @@ class App:
 
 	# Read the messages from Bitmessage and store in local app list
 	def getMessages(self):
-		self.messages = json.loads(self.api.getAllInboxMessages())
+		if self.messages == None:
+			messages = json.loads(self.api.getAllInboxMessages())
+			self.messages = []
+			for msgID in range(len(messages['inboxMessages'])):
+				self.messages.append(Message(messages['inboxMessages'][msgID]))
+			print str(len(self.messages)) + ' messages retrieved.'
 
 	# Return a millisecond timestamp - must match main.js's timestamp
 	def timestamp(self):
@@ -98,6 +101,13 @@ class App:
 			# Do we have net access?
 			
 			self.stateAge = ts
+
+			# If Bitmessage was available add the message list info
+			if self.state['bm'] == 'Connected':
+				self.getMessages()
+				self.state['inbox'] = []
+				for msg in self.messages:
+					self.state['inbox'].append({'from': msg.fromAddr, 'subject': msg.subject})
 
 		return self.state
 

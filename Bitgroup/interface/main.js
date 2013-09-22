@@ -511,7 +511,9 @@ App.prototype.componentType = function(element) {
 /**
  * Return whether the passed component type allows user input
  */
-App.prototype.componentIsInput = function(type) {
+App.prototype.componentIsInput = function(element, type) {
+	if('getValue' in element) return true;
+	if(type === undefined) type = this.componentType(element);
 	return type == 'input' || type == 'checkbox' || type == 'select' || type == 'checklist' || type == 'textarea';
 };
 
@@ -519,39 +521,45 @@ App.prototype.componentIsInput = function(type) {
  * Set the value of an interface component based on its general type
  */
 App.prototype.componentSet = function(element, val, type) {
-	if(type === undefined) type = this.componentType(element);
-	if(type == 'div' || type == 'span' || type == 'a') $(element).html(val);
-	else if(type == 'input' || type == 'textarea') $(element).val(val);
-	else if(type == 'checkbox') $(element).attr('checked',val ? true : false);
-	else if(type == 'select') {
-		if(typeof val != 'object') val = [val];
-		$('option',element).each(function() { this.selected = val.indexOf($(this).text()) >= 0 });
-	}
-	else if(type == 'checklist') {
-		if(typeof val != 'object') val = [val];
-		$('input',element).each(function() { this.checked = val.indexOf($(this).next().text()) >= 0 });
+	if('setValue' in element) element.setValue.call(element,val);
+	else {
+		if(type === undefined) type = this.componentType(element);
+		if(type == 'div' || type == 'span' || type == 'a') $(element).html(val);
+		else if(type == 'input' || type == 'textarea') $(element).val(val);
+		else if(type == 'checkbox') $(element).attr('checked',val ? true : false);
+		else if(type == 'select') {
+			if(typeof val != 'object') val = [val];
+			$('option',element).each(function() { this.selected = val.indexOf($(this).text()) >= 0 });
+		}
+		else if(type == 'checklist') {
+			if(typeof val != 'object') val = [val];
+			$('input',element).each(function() { this.checked = val.indexOf($(this).next().text()) >= 0 });
+		}
 	}
 };
 
 /**
  * Get the value of an interface component based on its general type
  */
-App.prototype.componentGet = function(element, val, type) {
+App.prototype.componentGet = function(element, type) {
 	var val = false;
-	if(type === undefined) type = this.componentType(element);
-	if(type == 'div' || type == 'span' || type == 'a') val = $(element).html();
-	else if(type == 'input' || type == 'textarea') val = $(element).val();
-	else if(type == 'checkbox') val = $(element).is(':checked');
-	else if(type == 'select') {
-		if($(element).attr('multiple') === undefined) val = $('option[selected]',element).text();
-		else {
-			val = [];
-			$('option',element).each(function() { if($(this).is(':selected')) val.push($(this).text()) });
+	if('getValue' in element) val = element.getValue.call(element);
+	else {
+		if(type === undefined) type = this.componentType(element);
+		if(type == 'div' || type == 'span' || type == 'a') val = $(element).html();
+		else if(type == 'input' || type == 'textarea') val = $(element).val();
+		else if(type == 'checkbox') val = $(element).is(':checked');
+		else if(type == 'select') {
+			if($(element).attr('multiple') === undefined) val = $('option[selected]',element).text();
+			else {
+				val = [];
+				$('option',element).each(function() { if($(this).is(':selected')) val.push($(this).text()) });
+			}
 		}
-	}
-	else if(type == 'checklist') {
-		val = [];
-		$('input',element).each(function() { if($(this).is(':checked')) val.push($(this).next().text()); });
+		else if(type == 'checklist') {
+			val = [];
+			$('input',element).each(function() { if($(this).is(':checked')) val.push($(this).next().text()); });
+		}
 	}
 	return val;
 };
@@ -628,7 +636,7 @@ App.prototype.componentConnect = function(key, element) {
 	$(document).on(event, handler);
 
 	// When the element value changes (if an input), update the local data structure and queue the change for the next sync request
-	if(this.componentIsInput(type)) {
+	if(this.componentIsInput(element, type)) {
 		var i = type == 'checklist' ? $('input',element) : $(element);
 		i.change(function() {
 			var app = window.app;
