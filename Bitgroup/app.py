@@ -45,6 +45,9 @@ class App:
 		# Initialise the current user (just using API password for encrypting user data for now)
 		self.user = User(self, config.get('bitmessage', 'addr'), password)
 
+		# Load i18n messages
+		self.loadI18n()
+
 		# Initialise groups
 		self.loadGroups()
 
@@ -139,7 +142,7 @@ class App:
 		if lang in self.i18n and key in self.i18n[lang]: str = self.i18n[lang][key]
 
 		# Fallback on the en version if not found
-		elif key in self.i18n.en: str = self.i18n['en'][key]
+		elif key in self.i18n['en']: str = self.i18n['en'][key]
 
 		# Otherwise use the message key in angle brackets
 		else: str = '<' + key + '>';

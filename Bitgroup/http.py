@@ -7,15 +7,22 @@ import mimetypes
 import json
 import struct
 import urllib
+import hashlib
 
-syncTimes = {} # record of the last time each client connected
+# Session data stored for each connected client
+clientData = {
+	'lastSync': {},
+	'uuid': None
+}
+
+
 
 class handler(asyncore.dispatcher_with_send):
 
 	def handle_read(self):
 		global app
 		data = self.recv(8192)
-		match = re.match(r'^(GET|POST) (.+?)(\?.+?)? HTTP.+Host: (.+?)\s(.+?)\r\n\r\n\s*(.*?)\s*$', data, re.S)
+		match = re.match(r'^(GET|POST) (.+?)(\?.+?)? HTTP.+Host: (.+?)\s(.+?\r\n\r\n)\s*(.*?)\s*$', data, re.S)
 		if data and match:
 			method = match.group(1)
 			uri = urllib.unquote(match.group(2)).decode('utf8') 
@@ -34,6 +41,51 @@ class handler(asyncore.dispatcher_with_send):
 			# TODO: There must be a proper way to identify client streams in Python
 			match = re.search(r'X-Bitgroup-ID: (.+?)\s', head)
 			client = match.group(1) if match else ''
+			if not client in clientData: clientData[client] = {}
+
+			# Check if the request is authorised and return auth request if not
+			auth = False
+			match = re.search(r'Authorization: Digest (.+?)\r\n', head)
+			if match:
+
+				# Get the client's auth info
+				digest = match.group(1)
+				match = re.search(r'username="(.+?)"', digest)
+				authuser = match.group(1) if match else ''
+				match = re.search(r'nonce="(.+?)"', digest)
+				nonce = match.group(1) if match else ''
+				match = re.search(r'nc=(.+?),', digest)
+				nc = match.group(1) if match else ''
+				match = re.search(r'cnonce="(.+?)"', digest)
+				cnonce = match.group(1) if match else ''
+				match = re.search(r'uri="(.+?)"', digest)
+				authuri = match.group(1) if match else ''
+				match = re.search(r'qop=(.+?),', digest)
+				qop = match.group(1) if match else ''
+				match = re.search(r'response="(.+?)"', digest)
+				res = match.group(1) if match else ''
+
+				# Build the expected response and test against client response
+				A1 = hashlib.md5(':'.join([app.user.iuser,server,app.user.ipass])).hexdigest()
+				A2 = hashlib.md5(':'.join([method,authuri])).hexdigest()
+				ok = hashlib.md5(':'.join([A1,nonce,nc,cnonce,qop,A2])).hexdigest()
+				auth = (res == ok)
+
+			if not auth:
+
+				# Return auth request
+				content = app.msg('authneeded')
+				uuid = hashlib.md5(str(app.timestamp()) + app.user.addr).hexdigest()
+				md5 = hashlib.md5(server).hexdigest()
+				header = "HTTP/1.1 401 Unauthorized\r\n"
+				header += "WWW-Authenticate: Digest realm=\"" + server + "\",qop=\"auth\",nonce=\"" + uuid + "\",opaque=\"" + md5 + "\"\r\n"
+				header += "Date: " + date + "\r\n"
+				header += "Server: " + server + "\r\n"
+				header += "Content-Type: text/plain\r\n"
+				header += "Content-Length: " + str(len(content)) + "\r\n\r\n"
+				clientData[client]['uuid'] = uuid
+				self.send(header + content)
+				return
 
 			# If the uri starts with a group addr, set group and change path to group's files
 			m = re.match('/(.+?)($|/.*)', uri)
@@ -90,9 +142,9 @@ class handler(asyncore.dispatcher_with_send):
 					g = app.groups[group]
 
 					# Get the timestamp of the last time this client connected and update
-					if client in syncTimes: ts = syncTimes[client]
+					if client in clientData and 'lastSync' in clientData[client]: ts = clientData[client]['lastSync']
 					else: ts = 0
-					syncTimes[client] = now
+					clientData[client]['lastSync'] = now
 
 					# If the client sent change-data merge into the local data
 					if data:
@@ -132,7 +184,7 @@ class handler(asyncore.dispatcher_with_send):
 				content += "</body></html>"
 
 			# Build the HTTP headers and send the content
-			header = "HTTP/1.0 " + status + "\r\n"
+			header = "HTTP/1.1 " + status + "\r\n"
 			header += "Date: " + date + "\r\n"
 			header += "Server: " + server + "\r\n"
 			header += "Content-Type: " + ctype + "\r\n"
@@ -140,7 +192,7 @@ class handler(asyncore.dispatcher_with_send):
 			header += "Content-Length: " + str(len(content)) + "\r\n\r\n"
 
 			# TODO: why does sendall not work for large files?
-			if ctype == 'image/png': self.sendall(header + content)
+			if re.match('image/', ctype): self.sendall(header + content)
 			else: self.send(header + content)
 
 

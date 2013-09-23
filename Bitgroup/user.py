@@ -18,6 +18,10 @@ class User(Node):
 		# TODO: lang pref
 		self.lang = 'en'
 
+		# Get the interface user and password from the app's config
+		self.iuser = app.config.get('interface', 'username')
+		self.ipass = app.config.get('interface', 'password')
+
 		return None
 
 

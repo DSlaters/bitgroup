@@ -8,5 +8,7 @@ program = /path/to/PyBitmessage/src
 
 [interface]
 port = 80
+username = HTTP username
+password = HTTP password
 
 [groups]

@@ -13,6 +13,8 @@
 		"subject": "Subject",
 		"from": "From",
 		"type": "Type",
+		"authneeded": "Authentication is required to use Bitgroup.",
+		"authfail": "The username or password supplied were incorrect.",
 
 		"group": "group",
 		"newgroup": "New group",
