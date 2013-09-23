@@ -30,7 +30,7 @@ class Message:
 	@staticmethod
 	def getClass(msg):
 		subject = msg['subject'].decode('base64')
-		subject = "Bitgroup-0.00:Invitation "
+		#subject = "Bitgroup-0.00:Invitation "
 		match = re.match("Bitgroup-([0-9.]+):(\w+) ", subject)
 		if match:
 			c = match.group(2)
