@@ -82,7 +82,6 @@ class App:
 				
 				# Instantiate a Message or Message sub-class based on it's specified Bitgroup type
 				msg = Message.getClass(msg)(msg)
-
 				self.messages.append(msg)
 
 			print str(len(self.messages)) + ' messages retrieved.'

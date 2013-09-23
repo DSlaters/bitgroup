@@ -1,3 +1,4 @@
+import sys
 import json
 import datetime
 import time
@@ -33,9 +34,7 @@ class Message:
 		if match:
 			c = match.group(2)
 			if c in globals():
-				if Message in inspect.getmro(globals()[c]):
-					c = [c]
-					return c[0]()
+				if Message in inspect.getmro(globals()[c]): return globals()[c]
 			print "Class '" + c + "' is not a Message class"
 		return Message
 
@@ -48,13 +47,11 @@ class BitgroupMessage(Message):
 
 	data = None
 
-	def __init__(self):
-
-		# Call Message's constructor first
-		super(BitgroupMessage, self).__init__()
+	def __init__(self, msg):
+		Message.__init__(self, msg)
 
 		# Decode the body data
-		self.data = json.loads(self.body)
+		#self.data = json.loads(self.body)
 		
 		return None
 
@@ -62,8 +59,8 @@ class BitgroupMessage(Message):
 class Invitation(BitgroupMessage):
 	"""Handles the Bitgroup invitation workflow"""
 
-	def __init__(self):
-		super(Invitation, self).__init__()
+	def __init__(self, msg):
+		BitgroupMessage.__init__(self, msg)
 		return None
 
 	def accept(self): pass
@@ -72,5 +69,5 @@ class DataSync(BitgroupMessage):
 	"""Handles the group data synchronisation for offline users"""
 
 	def __init__(self):
-		super(Invitation, self).__init__()
+		BitgroupMessage.__init__(self, msg)
 		return None
