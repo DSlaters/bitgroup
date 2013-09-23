@@ -117,7 +117,10 @@ class App:
 				self.state['inbox'] = []
 				for msg in self.inbox:
 					data = {'from': msg.fromAddr, 'subject': msg.subject}
-					if 'data' in msg: data['data'] = data;
+					cls = str(msg.__class__.__name__)
+					if cls != 'Message':
+						data['data'] = msg.data
+						data['data']['type'] = cls
 					self.state['inbox'].append(data)
 
 		return self.state

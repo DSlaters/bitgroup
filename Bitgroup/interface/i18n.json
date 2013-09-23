@@ -12,6 +12,7 @@
 		"inbox": "Inbox",
 		"subject": "Subject",
 		"from": "From",
+		"type": "Type",
 
 		"group": "group",
 		"newgroup": "New group",

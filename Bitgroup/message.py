@@ -14,6 +14,9 @@ class Message:
 	subject  = None
 	body     = None
 
+	# This is set by syb-classes if data cannot be decoded, or it's found to be invalid
+	invalid = False
+
 	# Create a local instance of the Bitmessage message containing all the message attributes and data
 	def __init__(self, msg):
 		self.date = email.utils.formatdate(time.mktime(datetime.datetime.fromtimestamp(float(msg['receivedTime'])).timetuple()))
@@ -51,13 +54,11 @@ class BitgroupMessage(Message):
 	# The decoded data of the message content
 	data = None
 
-	# This is set if data cannot be decoded, or the sub-class finds the data content invalid
-	invalid = False
-
 	def __init__(self, msg):
 		Message.__init__(self, msg)
 
 		# Decode the body data
+		#self.body = '{}'
 		try: self.data = json.loads(self.body)
 		except:
 			print "No valid data found in message content!"

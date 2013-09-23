@@ -62,10 +62,14 @@ Overview.prototype.render = function(app) {
 	var inbox = document.getElementById('inbox');
 	inbox.setValue = function(val) {
 		if(typeof val == 'object' && val.length > 0) {
-			var rows = '<tr><th>' + app.msg('from') + '</th><th>' + app.msg('subject') + '</th></tr>\n';
+			var rows = '<tr><th>' + app.msg('from') + '</th>'
+			             + '<th>' + app.msg('subject') + '</th>'
+			             + '<th>' + app.msg('type') + '</th></tr>\n';
 			for( var i in val ) {
 				var msg = val[i];
-				rows += '<tr><td>' + msg.from + '</td><td>' + msg.subject + '</td></tr>\n';
+				rows += '<tr><td>' + msg.from + '</td>'
+				          + '<td>' + msg.subject + '</td>'
+				          + '<td>' + ('data' in msg ? msg.data.type : '') + '</td></tr>\n';
 			}
 			$(this).html('<table>' + rows + '</table>');
 		} else $(this).html(app.msg('nomessages'));
