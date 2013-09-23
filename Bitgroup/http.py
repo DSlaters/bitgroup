@@ -1,4 +1,4 @@
-# This will be a simple HHTP server to handle requests from the interface (and only the interface)
+# This will be a simple HTTP server to handle requests from the interface (and only the interface)
 # it must populate and server the html templates and serve the JS, CSS and image resources
 import os
 import socket
