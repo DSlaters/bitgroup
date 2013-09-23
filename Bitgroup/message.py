@@ -1,4 +1,3 @@
-import sys
 import json
 import datetime
 import time
@@ -36,7 +35,7 @@ class Message:
 			c = match.group(2)
 			if c in globals():
 				if Message in inspect.getmro(globals()[c]): return globals()[c]
-			print "Class '" + c + "' is not a Message class"
+			print "Class '" + c + "' is not a Message sub-class"
 		return Message
 
 	# Send the message

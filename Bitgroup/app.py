@@ -101,7 +101,8 @@ class App:
 		# If the state data is older than one second, rebuild it
 		ts = self.timestamp()
 		if ts - self.stateAge > 1000:
-			
+			self.stateAge = ts
+
 			# Is Bitmessage available?
 			try:
 				self.state['bm'] = self.api.add(2,3)
@@ -110,16 +111,14 @@ class App:
 			except:
 				self.state['bm'] = 'Not running'
 
-			# Do we have net access?
-			
-			self.stateAge = ts
-
 			# If Bitmessage was available add the message list info
 			if self.state['bm'] == 'Connected':
 				self.getMessages()
 				self.state['inbox'] = []
 				for msg in self.inbox:
-					self.state['inbox'].append({'from': msg.fromAddr, 'subject': msg.subject})
+					data = {'from': msg.fromAddr, 'subject': msg.subject}
+					if 'data' in msg: data['data'] = data;
+					self.state['inbox'].append(data)
 
 		return self.state
 
