@@ -14,7 +14,7 @@ class App:
 	"""The main top-level class for all teh functionality of the Bitgroup application"""
 
 	name = None
-	messages = None
+	inbox = None
 	user = {}
 	groups = {}
 	maxage = 600000 # Expiry time of queue items in milliseconds
@@ -70,21 +70,26 @@ class App:
 			self.groups[prvaddr] = group
 			print "    group initialised (" + group.name + ")"
 
-	# Read the messages from Bitmessage and store in local app list
+	# Read the messages from Bitmessage and store in local app inbox
 	def getMessages(self):
-		if self.messages == None:
+		if self.inbox == None:
 			messages = json.loads(self.api.getAllInboxMessages())
-			self.messages = []
+			self.inbox = []
 			for msgID in range(len(messages['inboxMessages'])):
 				
 				# Get the Bitmessage data for this message
 				msg = messages['inboxMessages'][msgID]
 				
 				# Instantiate a Message or Message sub-class based on it's specified Bitgroup type
-				msg = Message.getClass(msg)(msg)
-				self.messages.append(msg)
+				bgmsg = Message.getClass(msg)(msg)
 
-			print str(len(self.messages)) + ' messages retrieved.'
+				# If the instance has determined it's not a valid message of it's type, fall back to the Message class
+				if bgmsg.invalid: bgmsg = Message(msg)
+				
+				# Add the instance to the messages
+				self.inbox.append(bgmsg)
+
+			print str(len(self.inbox)) + ' messages retrieved.'
 
 	# Return a millisecond timestamp - must match main.js's timestamp
 	def timestamp(self):
@@ -113,7 +118,7 @@ class App:
 			if self.state['bm'] == 'Connected':
 				self.getMessages()
 				self.state['inbox'] = []
-				for msg in self.messages:
+				for msg in self.inbox:
 					self.state['inbox'].append({'from': msg.fromAddr, 'subject': msg.subject})
 
 		return self.state

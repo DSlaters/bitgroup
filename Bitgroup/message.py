@@ -30,6 +30,7 @@ class Message:
 	@staticmethod
 	def getClass(msg):
 		subject = msg['subject'].decode('base64')
+		subject = "Bitgroup-0.00:Invitation "
 		match = re.match("Bitgroup-([0-9.]+):(\w+) ", subject)
 		if match:
 			c = match.group(2)
@@ -38,20 +39,30 @@ class Message:
 			print "Class '" + c + "' is not a Message class"
 		return Message
 
+	# Send the message
 	def send(self): pass
-	
+
+	# Reply to the messge
 	def reply(self): pass
+
 
 class BitgroupMessage(Message):
 	"""An abstract class that extends the basic Bitmessage message to exhibit properties"""
 
+	# The decoded data of the message content
 	data = None
+
+	# This is set if data cannot be decoded, or the sub-class finds the data content invalid
+	invalid = False
 
 	def __init__(self, msg):
 		Message.__init__(self, msg)
 
 		# Decode the body data
-		#self.data = json.loads(self.body)
+		try: self.data = json.loads(self.body)
+		except:
+			print "No valid data found in message content!"
+			self.invalid = True
 		
 		return None
 
@@ -64,6 +75,7 @@ class Invitation(BitgroupMessage):
 		return None
 
 	def accept(self): pass
+
 
 class DataSync(BitgroupMessage):
 	"""Handles the group data synchronisation for offline users"""
