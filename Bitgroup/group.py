@@ -10,8 +10,7 @@ class Group(Node):
 	prvaddr = None  # The private Bitmessage address for the group (only members can read info from this address)
 
 	# Instantiate a group instance
-	def __init__(self, app, group, passwd = None):
-		self.app = app
+	def __init__(self, group, passwd = None):
 
 		# If instantiating by address, it's an existing group that needs to be initialised
 		if re.match('BM-', group):

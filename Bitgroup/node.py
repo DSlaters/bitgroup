@@ -32,7 +32,7 @@ class Node:
 
 	# Set a property in this nodes data structure
 	def set(self, key, val, ts = None, client = ''):
-		if ts == None: ts = self.app.timestamp()
+		if ts == None: ts = app.timestamp()
 
 		# Load the data if the cache is uninitialised
 		if self.data == None: self.load()
@@ -74,7 +74,7 @@ class Node:
 
 	# Get the filesystem location of this node's data
 	def path(self):
-		return self.app.datapath + '/' + self.prvaddr + '.json'
+		return app.datapath + '/' + self.prvaddr + '.json'
 
 	# Load this node's data into the local cache
 	def load(self):

@@ -35,7 +35,7 @@ class Message:
 	def getClass(msg):
 		subject = msg['subject'].decode('base64')
 		#subject = "Bitgroup-0.00:Invitation "
-		match = re.match("Bitgroup-([0-9.]+):(\w+) ", subject)
+		match = re.match(app.name + "-([0-9.]+):(\w+) ", subject)
 		if match:
 			c = match.group(2)
 			if c in globals():
@@ -83,13 +83,23 @@ class Invitation(BitgroupMessage):
 	def accept(self): pass
 
 
-class DataSync(BitgroupMessage):
+class Changes(BitgroupMessage):
 	"""
 	Handles the group data synchronisation for offline users
 	"""
 
-	def __init__(self):
-		BitgroupMessage.__init__(self, msg)
+	group = None
+
+	def __init__(self, msg):
+
+		# Only instantiate base-class if a message was passed to the constructor
+		if msg.__class__.__name__ == 'dict': BitgroupMessage.__init__(self, msg)
+		else:
+			self.group = msg
+			self.fromAddr = group.prvaddr
+			self.subject = ''
+			
+
 		return None
 
 
@@ -98,6 +108,6 @@ class Presence(BitgroupMessage):
 	Broadcasts presence information for updating members online status
 	"""
 
-	def __init__(self):
+	def __init__(self, msg):
 		BitgroupMessage.__init__(self, msg)
 		return None

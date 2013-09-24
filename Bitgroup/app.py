@@ -1,3 +1,4 @@
+import __builtin__
 import os
 import sys
 import re
@@ -25,6 +26,7 @@ class App:
 
 	def __init__(self, config, configfile):
 
+		__builtin__.app = self   # Make the app a "superglobal"
 		self.name = 'Bitgroup'
 		self.version = '0.0.0'
 		self.docroot = os.path.dirname(__file__) + '/interface'
@@ -43,7 +45,7 @@ class App:
 		self.api = xmlrpclib.ServerProxy("http://"+username+":"+password+"@"+interface+":"+str(port)+"/")
 
 		# Initialise the current user (just using API password for encrypting user data for now)
-		self.user = User(self, config.get('bitmessage', 'addr'), password)
+		self.user = User(config.get('bitmessage', 'addr'), password)
 
 		# Load i18n messages
 		self.loadI18n()
@@ -52,7 +54,7 @@ class App:
 		self.loadGroups()
 
 		# Set up a simple HTTP server to handle requests from the interface
-		srv = http.server(self, 'localhost', config.getint('interface', 'port'))
+		srv = http.server('localhost', config.getint('interface', 'port'))
 
 		return None
 
@@ -69,7 +71,7 @@ class App:
 		for passwd in conf:
 			prvaddr = conf[passwd]
 			print "initialising group: " + prvaddr
-			group = Group(self, prvaddr, passwd)
+			group = Group(prvaddr, passwd)
 			self.groups[prvaddr] = group
 			print "    group initialised (" + group.name + ")"
 

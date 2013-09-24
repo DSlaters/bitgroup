@@ -3,8 +3,7 @@ from node import *
 class User(Node):
 	"""Class representing the current user"""
 
-	def __init__(self, app, addr, passwd):
-		self.app = app
+	def __init__(self, addr, passwd):
 
 		# Set the Bitmessage address for this user
 		self.addr = addr

@@ -20,7 +20,6 @@ clientData = {
 class handler(asyncore.dispatcher_with_send):
 
 	def handle_read(self):
-		global app
 		data = self.recv(8192)
 		match = re.match(r'^(GET|POST) (.+?)(\?.+?)? HTTP.+Host: (.+?)\s(.+?\r\n\r\n)\s*(.*?)\s*$', data, re.S)
 		if data and match:
@@ -198,9 +197,7 @@ class handler(asyncore.dispatcher_with_send):
 
 class server(asyncore.dispatcher):
 
-	def __init__(self, a, host, port):
-		global app
-		app = a
+	def __init__(self, host, port):
 		asyncore.dispatcher.__init__(self)
 		self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
 		self.set_reuse_addr()

@@ -28,7 +28,7 @@ if __name__ == '__main__':
 	singleton.SingleInstance()
 
 	# Instantiate the main app instance
-	app = App(config, configfile)
+	App(config, configfile)
 
 	# Wait for incoming connections and handle them forever
 	try:
