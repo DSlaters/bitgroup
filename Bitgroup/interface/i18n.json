@@ -9,6 +9,7 @@
 		"wait": "Please wait...",
 		"messages": "Messages",
 		"nomessages": "You have no messages",
+		"bg-msg-subject": "This message should be processed by the Bitgroup application.",
 		"inbox": "Inbox",
 		"subject": "Subject",
 		"from": "From",

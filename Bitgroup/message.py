@@ -16,6 +16,9 @@ class Message:
 	subject  = None
 	body     = None
 
+	# This is set if the body content should be encrypted when sent
+	passwd = None
+
 	# This is set by syb-classes if data cannot be decoded, or it's found to be invalid
 	invalid = False
 
@@ -43,8 +46,22 @@ class Message:
 			print "Class '" + c + "' is not a Message sub-class"
 		return Message
 
+	# Set the current message's class
+	def setClass(cls):
+		self.subject = app.title + ': ' + cls + ' ' + app.msg('bg-msg-subject')
+
 	# Send the message
-	def send(self): pass
+	def send(self):
+		subject = self.subject.encode('base64')
+
+		# Encode the body to base64, also encrypt first if a passwd is set
+		body = self.body
+		if self.passwd: body = app.encrypt(body, self.passwd)
+		body = body.encode('base64')
+
+		# Do the actual sending
+		if self.toAddr: app.api.sendMessage(toAddr, fromAddr, subject, body)
+		else: app.api.sendBroadcast(fromAddr, subject, body)
 
 	# Reply to the messge
 	def reply(self): pass
@@ -59,16 +76,30 @@ class BitgroupMessage(Message):
 	data = None
 
 	def __init__(self, msg):
-		Message.__init__(self, msg)
 
-		# Decode the body data
-		#self.body = '{}'
-		try: self.data = json.loads(self.body)
-		except:
-			print "No valid data found in message content!"
-			self.invalid = True
+		# Set the subject line to the message's class to indicate that it's to be processed by a Bitgroup app
+		self.setClass(self.__class__.__name__)
+
+		# Only instantiate base-class and decode the body if a message was passed to the constructor
+		if msg.__class__.__name__ == 'dict':
+			Message.__init__(self, msg)
+
+			# Decode the body data
+			try: self.data = json.loads(self.body)
+			except:
+				print "No valid data found in message content!"
+				self.invalid = True
 		
 		return None
+
+	# The send message method first encodes the data into the body before calling the base-class's send method
+	def send(self):
+
+		# Set the body to the JSON encoded data
+		self.body = json.dumps(self.data)
+
+		# Call the parent class's send method
+		Message.send(self, msg)
 
 
 class Invitation(BitgroupMessage):
@@ -89,16 +120,26 @@ class Changes(BitgroupMessage):
 	"""
 
 	group = None
+	lastSync = 0
 
 	def __init__(self, msg):
+		BitgroupMessage.__init__(self, msg)
 
-		# Only instantiate base-class if a message was passed to the constructor
-		if msg.__class__.__name__ == 'dict': BitgroupMessage.__init__(self, msg)
-		else:
+		# If the passed arg is a group, set the message up as a broadcast to the members
+		if msg.__class__.__name__ == 'Group':
 			self.group = msg
 			self.fromAddr = group.prvaddr
-			self.subject = ''
-			
+
+			# The message will be broadcast to the members
+			self.toAddr = None
+
+			# The content will be encrypted with the groups shared key
+			self.passwd = self.group.passwd
+
+			# Get the changes since the last changes for this group were sent
+			ts = this.lastSync
+			self.data = self.group.changes(ts)
+			this.lastSync = app.timestamp()
 
 		return None
 

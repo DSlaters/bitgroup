@@ -1,10 +1,5 @@
 import os
 import json
-import hashlib
-import pyelliptic
-import highlevelcrypto
-from pyelliptic.openssl import OpenSSL
-from bitmessagemain import pointMult
 
 class Node:
 	"""
@@ -81,7 +76,8 @@ class Node:
 		f = self.path()
 		if os.path.exists(f):
 			h = open(f, "rb")
-			self.data = self.decrypt(json.loads(h.read()), self.passwd)
+			#self.data = self.decrypt(json.loads(h.read()), self.passwd)
+			self.data = json.loads(h.read())
 			h.close()
 		else: self.data = {}
 		return self.data;
@@ -91,7 +87,8 @@ class Node:
 	def save(self):
 		f = self.path()
 		h = open(f, "wb+")
-		h.write(self.encrypt(json.dumps(self.data), self.passwd));
+		#h.write(self.encrypt(json.dumps(self.data), self.passwd));
+		h.write(json.dumps(self.data));
 		h.close()
 
 	# Return the data as JSON for the interface
@@ -99,22 +96,9 @@ class Node:
 		if self.data == None: self.load()
 		return json.dumps(self.data)
 
-	# Encrypt the passed data using a password
-	def encrypt(self, data, passwd):
-		return data # no encryption while debgging
-		privKey = hashlib.sha512(passwd).digest()[:32]
-		pubKey = pointMult(privKey)
-		return highlevelcrypto.encrypt(data, pubKey.encode('hex'))
-
-	# Decrypt the passed encrypted data
-	def decrypt(self, data, passwd):
-		return data # no encryption while debgging
-		privKey = hashlib.sha512(passwd).digest()[:32]
-		return highlevelcrypto.decrypt(data, privKey.encode('hex'))
-
-	# Return a list of changes since a specified time that did not originate from the specified client
-	def changesForClient(self, client, since):
+	# Return a list of changes since a specified time and, (if a client is specified) that did not originate from that client
+	def changes(self, since, client = False):
 		changes = []
-		for k in filter(lambda f: self.queue[f][1] > since and self.queue[f][2] != client, self.queue):
+		for k in filter(lambda f: self.queue[f][1] > since and (client == False or self.queue[f][2] != client), self.queue):
 			changes.append([k, self.queue[k][0], self.queue[k][1]])
 		return changes

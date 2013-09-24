@@ -30,7 +30,6 @@ class handler(asyncore.dispatcher_with_send):
 			data = match.group(6)
 			date = time.strftime("%a, %d %b %Y %H:%M:%S %Z")
 			now  = app.timestamp()
-			server = app.name + "-" + app.version
 			status = "200 OK"
 			ctype = "text/html"
 			content = "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n"
@@ -65,7 +64,7 @@ class handler(asyncore.dispatcher_with_send):
 				res = match.group(1) if match else ''
 
 				# Build the expected response and test against client response
-				A1 = hashlib.md5(':'.join([app.user.iuser,server,app.user.ipass])).hexdigest()
+				A1 = hashlib.md5(':'.join([app.user.iuser,app.title,app.user.ipass])).hexdigest()
 				A2 = hashlib.md5(':'.join([method,authuri])).hexdigest()
 				ok = hashlib.md5(':'.join([A1,nonce,nc,cnonce,qop,A2])).hexdigest()
 				auth = (res == ok)
@@ -75,11 +74,11 @@ class handler(asyncore.dispatcher_with_send):
 				# Return auth request
 				content = app.msg('authneeded')
 				uuid = hashlib.md5(str(app.timestamp()) + app.user.addr).hexdigest()
-				md5 = hashlib.md5(server).hexdigest()
+				md5 = hashlib.md5(app.title).hexdigest()
 				header = "HTTP/1.1 401 Unauthorized\r\n"
-				header += "WWW-Authenticate: Digest realm=\"" + server + "\",qop=\"auth\",nonce=\"" + uuid + "\",opaque=\"" + md5 + "\"\r\n"
+				header += "WWW-Authenticate: Digest realm=\"" + app.title + "\",qop=\"auth\",nonce=\"" + uuid + "\",opaque=\"" + md5 + "\"\r\n"
 				header += "Date: " + date + "\r\n"
-				header += "Server: " + server + "\r\n"
+				header += "Server: " + app.title + "\r\n"
 				header += "Content-Type: text/plain\r\n"
 				header += "Content-Length: " + str(len(content)) + "\r\n\r\n"
 				clientData[client]['uuid'] = uuid
@@ -116,7 +115,7 @@ class handler(asyncore.dispatcher_with_send):
 				# Build the page content
 				content += "<title>" + ( group + " - " if group else '' ) + app.name + "</title>\n"
 				content += "<meta charset=\"UTF-8\" />\n"
-				content += "<meta name=\"generator\" content=\"" + server + "\" />\n"
+				content += "<meta name=\"generator\" content=\"" + app.title + "\" />\n"
 				content += "<script type=\"text/javascript\">window.tmp = " + json.dumps(tmp) + ";</script>\n"
 				content += "<script type=\"text/javascript\" src=\"/resources/jquery-1.10.2.min.js\"></script>\n"
 				content += "<link rel=\"stylesheet\" href=\"/resources/jquery-ui-1.10.3/themes/base/jquery-ui.css\" />\n"
@@ -156,7 +155,7 @@ class handler(asyncore.dispatcher_with_send):
 
 					# Otherwise send the queue of changes that have occurred since the client's last sync request
 					else:
-						content = g.changesForClient(client, ts - (now-ts)) # TODO: messy doubling of period (bug#3)
+						content = g.changes(ts - (now-ts), client) # TODO: messy doubling of period (bug#3)
 						if len(content) > 0: print "Sending to " + client + ': ' + json.dumps(content)
 
 						# Put an object on the end of the list containing the application state data
@@ -185,7 +184,7 @@ class handler(asyncore.dispatcher_with_send):
 			# Build the HTTP headers and send the content
 			header = "HTTP/1.1 " + status + "\r\n"
 			header += "Date: " + date + "\r\n"
-			header += "Server: " + server + "\r\n"
+			header += "Server: " + app.title + "\r\n"
 			header += "Content-Type: " + ctype + "\r\n"
 			header += "Connection: keep-alive\r\n"
 			header += "Content-Length: " + str(len(content)) + "\r\n\r\n"

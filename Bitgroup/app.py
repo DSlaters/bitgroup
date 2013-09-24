@@ -7,6 +7,15 @@ import xmlrpclib
 import json
 import time
 import datetime
+
+# Bitmessage modules
+import hashlib
+import pyelliptic
+import highlevelcrypto
+from pyelliptic.openssl import OpenSSL
+from bitmessagemain import pointMult
+
+# Bitgroup modules
 from user import *
 from group import *
 from message import *
@@ -14,27 +23,31 @@ from message import *
 class App:
 	"""The main top-level class for all teh functionality of the Bitgroup application"""
 
-	name = None
+	name = 'Bitgroup'
+	version = '0.0.0'
+	title = name + "-" + version
+
+	docroot = os.path.dirname(__file__) + '/interface'
+	datapath = os.getenv("HOME") + '/.Bitgroup'
+	config = None
+	configfile = None
+	api = None
+
 	inbox = None
 	user = {}
 	groups = {}
 	maxage = 600000 # Expiry time of queue items in milliseconds
 	i18n = {}       # i18n interface messages loaded from interface/i18n.json
-
 	state = {}      # Dynamic application state information
 	stateAge = 0    # Last time the dynsmic application state data was updated
 
 	def __init__(self, config, configfile):
 
 		__builtin__.app = self   # Make the app a "superglobal"
-		self.name = 'Bitgroup'
-		self.version = '0.0.0'
-		self.docroot = os.path.dirname(__file__) + '/interface'
 		self.config = config
 		self.configfile = configfile
 
-		# Set the location for application data and create the dir if it doesn't exist
-		self.datapath = os.getenv("HOME") + '/.Bitgroup'
+		# Create the dir if it doesn't exist
 		if not os.path.exists(self.datapath): os.mkdir(self.datapath)
 
 		# Build the Bitmessage RPC URL from the key and password
@@ -54,7 +67,7 @@ class App:
 		self.loadGroups()
 
 		# Set up a simple HTTP server to handle requests from the interface
-		srv = http.server('localhost', config.getint('interface', 'port'))
+		http.server('localhost', config.getint('interface', 'port'))
 
 		return None
 
@@ -179,8 +192,16 @@ class App:
 
 		return data
 
+	# Encrypt the passed data using a password
+	def encrypt(self, data, passwd):
+		privKey = hashlib.sha512(passwd).digest()[:32]
+		pubKey = pointMult(privKey)
+		return highlevelcrypto.encrypt(data, pubKey.encode('hex'))
 
-
+	# Decrypt the passed encrypted data
+	def decrypt(self, data, passwd):
+		privKey = hashlib.sha512(passwd).digest()[:32]
+		return highlevelcrypto.decrypt(data, privKey.encode('hex'))
 
 
 
