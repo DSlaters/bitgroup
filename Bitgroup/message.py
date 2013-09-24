@@ -6,7 +6,9 @@ import re
 import inspect
 
 class Message:
-	"""Class representing a Bitmessage message"""
+	"""
+	Class representing a Bitmessage message
+	"""
 
 	date     = None
 	toAddr   = None
@@ -49,7 +51,9 @@ class Message:
 
 
 class BitgroupMessage(Message):
-	"""An abstract class that extends the basic Bitmessage message to exhibit properties"""
+	"""
+	An "abstract" class representing a Bitgroup message that extends the basic Bitmessage message to exhibit properties
+	"""
 
 	# The decoded data of the message content
 	data = None
@@ -68,7 +72,9 @@ class BitgroupMessage(Message):
 
 
 class Invitation(BitgroupMessage):
-	"""Handles the Bitgroup invitation workflow"""
+	"""
+	Handles the Bitgroup invitation workflow
+	"""
 
 	def __init__(self, msg):
 		BitgroupMessage.__init__(self, msg)
@@ -78,7 +84,19 @@ class Invitation(BitgroupMessage):
 
 
 class DataSync(BitgroupMessage):
-	"""Handles the group data synchronisation for offline users"""
+	"""
+	Handles the group data synchronisation for offline users
+	"""
+
+	def __init__(self):
+		BitgroupMessage.__init__(self, msg)
+		return None
+
+
+class Presence(BitgroupMessage):
+	"""
+	Broadcasts presence information for updating members online status
+	"""
 
 	def __init__(self):
 		BitgroupMessage.__init__(self, msg)
