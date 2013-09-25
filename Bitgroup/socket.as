@@ -10,9 +10,9 @@ class App {
 		_root.status.text = 'init';
   
 		// Socket connect
-		this.sock.onConnect = function(status) {
+		this.sock.onConnect = function(s) {
 			var app = _root.app;
-			if(status) {
+			if(s) {
 				app.connected = true;
 				_root.status.text = 'connected';
 			} else {
@@ -38,8 +38,8 @@ class App {
 		_root.onEnterFrame = function() {
 			var app = _root.app;
 			if(app.connected == false && ++app.ctr%50 == 1) {
-				app.sock.connect('127.0.0.1', 8080);
-				_root.status.text = app.connected = 'connecting...';
+				var x = app.sock.connect(null, 8080);
+				_root.status.text = app.connected = 'connecting ' + (x ? '(1)' : '(0)');
 			}
 		};
  	}

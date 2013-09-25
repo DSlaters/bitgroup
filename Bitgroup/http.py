@@ -25,10 +25,21 @@ class handler(asynchat.async_chat):
 		self.request = None
 		self.data = ""
 		self.shutdown = 0
+		self.server = server
 
 	def collect_incoming_data(self, data):
 		self.data += data
 		msg = False
+
+		# Check if this is the SWF asking for the connection policy
+		if self.data == '<policy-file-request/>\x00':
+			self.data == ""
+			policy = '<allow-access-from domain="' + self.server.host + '" to-ports="' + str(self.server.port) + '" />'
+			policy = '<cross-domain-policy>' + policy + '</cross-domain-policy>'
+			self.push(policy)
+			self.close_when_done()
+			print 'SWF policy sent.'
+			return
 
 		# Check if there's a full header in the content, and if so if content-length is specified and we have that amount
 		match = re.match(r'(.+\r\n\r\n)', self.data, re.S)
@@ -71,7 +82,6 @@ class handler(asynchat.async_chat):
 				docroot = app.docroot
 
 				# Identify the client stream using a unique ID in the header
-				# TODO: There must be a proper way to identify client streams in Python
 				match = re.search(r'X-Bitgroup-ID: (.+?)\s', head)
 				client = match.group(1) if match else ''
 				if not client in clientData: clientData[client] = {}
@@ -118,6 +128,7 @@ class handler(asynchat.async_chat):
 					header += "Content-Length: " + str(len(content)) + "\r\n\r\n"
 					clientData[client]['uuid'] = uuid
 					self.push(header + content)
+					self.close_when_done()
 					return
 
 				# If the uri starts with a group addr, set group and change path to group's files
@@ -229,16 +240,22 @@ class handler(asynchat.async_chat):
 				header += "Content-Length: " + str(clen) + "\r\n\r\n"
 				self.push(header)
 				self.push(content)
-
+				self.close_when_done()
 
 class server(asyncore.dispatcher):
+
+	host = None
+	port = None
 
 	def __init__(self, host, port):
 		asyncore.dispatcher.__init__(self)
 		self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
 		self.set_reuse_addr()
 		self.bind((host, port))
+		self.setblocking(0)
 		self.listen(5)
+		self.host = host
+		self.port = port
 
 	def handle_accept(self):
 		sock, addr = self.accept()
