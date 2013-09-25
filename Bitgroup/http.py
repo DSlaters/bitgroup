@@ -31,7 +31,7 @@ class handler(asynchat.async_chat):
 		self.data += data
 		msg = False
 
-		# Check if this is the SWF asking for the connection policy
+		# Check if this is the SWF asking for the connection policy, and if so, respond with a policy restricted to this host and port
 		if self.data == '<policy-file-request/>\x00':
 			self.data == ""
 			policy = '<allow-access-from domain="' + self.server.host + '" to-ports="' + str(self.server.port) + '" />'
