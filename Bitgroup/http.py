@@ -31,17 +31,19 @@ class handler(asynchat.async_chat):
 		msg = False
 
 		# Check if there's a full header in the content, and if so if content-length is specified and we have that amount
-		if re.match(r'(.+\r\n\r\n)', self.data):
+		match = re.match(r'(.+\r\n\r\n)', self.data, re.S)
+		if match:
 			head = match.group(1)
-			match = re.search(r'content-length: (\d+).*?\r\n\r\n(.*)', self.data, re.I)
-			data = match.group(2)
+			data = ""
+			match = re.search(r'content-length: (\d+).*?\r\n\r\n(.*)', self.data, re.I|re.S)
 			if match:
+				data = match.group(2)
 				dl = len(data)
 				cl = int(match.group(1))
 				if dl >= cl:
 
 					# Finished a head+content message, if we have more than the content length, start a new message
-					msg = data[:cl]
+					msg = head + data[:cl]
 					if dl > cl: self.data = data[cl:]
 					else: self.data = ""
 			else:
@@ -64,7 +66,8 @@ class handler(asynchat.async_chat):
 				now  = app.timestamp()
 				status = "200 OK"
 				ctype = "text/html"
-				content = "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n"
+				content = str("<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n")
+				clen = 0
 				docroot = app.docroot
 
 				# Identify the client stream using a unique ID in the header
@@ -158,6 +161,7 @@ class handler(asynchat.async_chat):
 					content += "<script type=\"text/javascript\" src=\"/overview.js\"></script>\n"
 					content += "<script type=\"text/javascript\" src=\"/newgroup.js\"></script>\n"
 					content += "</head>\n<body>\n</body>\n</html>\n"
+					content = str(content)
 
 				# If this is a new group creation request call the newgroup method and return the sanitised name
 				elif base == '_newgroup.json':
@@ -201,6 +205,7 @@ class handler(asynchat.async_chat):
 				# Serve the requested file if it exists and isn't a directory
 				elif os.path.exists(path) and not os.path.isdir(path):
 					ctype = mimetypes.guess_type(uri)[0]
+					clen = os.path.getsize(path)
 					fh = open(path, "rb")
 					content = fh.read()
 					fh.close()
@@ -212,15 +217,18 @@ class handler(asynchat.async_chat):
 					content += "<body><h1>Not Found</h1>\n"
 					content += "<p>The requested URL " + uri + " was not found on this server.</p>\n"
 					content += "</body></html>"
+					content = str(content)
 
 				# Build the HTTP headers and send the content
+				if clen == 0: clen = len(content)
 				header = "HTTP/1.1 " + status + "\r\n"
 				header += "Date: " + date + "\r\n"
 				header += "Server: " + app.title + "\r\n"
 				header += "Content-Type: " + ctype + "\r\n"
 				header += "Connection: keep-alive\r\n"
-				header += "Content-Length: " + str(len(content)) + "\r\n\r\n"
-				self.push(header + content)
+				header += "Content-Length: " + str(clen) + "\r\n\r\n"
+				self.push(header)
+				self.push(content)
 
 
 class server(asyncore.dispatcher):
@@ -233,7 +241,5 @@ class server(asyncore.dispatcher):
 		self.listen(5)
 
 	def handle_accept(self):
-		pair = self.accept()
-		if pair is not None:
-			sock, addr = pair
-			handler(self, sock, addr)
+		sock, addr = self.accept()
+		handler(self, sock, addr)
