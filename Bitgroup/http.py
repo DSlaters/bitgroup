@@ -190,7 +190,7 @@ class handler(asyncore.dispatcher_with_send):
 			header += "Content-Length: " + str(len(content)) + "\r\n\r\n"
 
 			# TODO: why does sendall not work for large files?
-			if re.match('image/', ctype): self.sendall(header + content)
+			if re.search('(image/|flash)', ctype): self.sendall(header + content)
 			else: self.send(header + content)
 
 

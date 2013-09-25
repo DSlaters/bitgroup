@@ -36,16 +36,17 @@ class App:
 	inbox = None
 	user = {}
 	groups = {}
-	maxage = 600000 # Expiry time of queue items in milliseconds
-	i18n = {}       # i18n interface messages loaded from interface/i18n.json
-	state = {}      # Dynamic application state information
-	stateAge = 0    # Last time the dynsmic application state data was updated
+	maxage = 600000   # Expiry time of queue items in milliseconds
+	i18n = {}         # i18n interface messages loaded from interface/i18n.json
+	state = {}        # Dynamic application state information
+	stateAge = 0      # Last time the dynsmic application state data was updated
 
 	def __init__(self, config, configfile):
-
-		__builtin__.app = self   # Make the app a "superglobal"
 		self.config = config
 		self.configfile = configfile
+
+		# Make the app a "superglobal"
+		__builtin__.app = self
 
 		# Create the dir if it doesn't exist
 		if not os.path.exists(self.datapath): os.mkdir(self.datapath)

@@ -140,6 +140,9 @@ App.prototype.renderPage = function() {
 	page += '<div id="content"></div>';
 	page += '</div>\n';
 
+	// Add our SWF for asynchronous incoming data
+	page += this.renderSWF();
+
 	// Add the completed page structure to the HTML document body
 	$('body').html(page);
 
@@ -350,6 +353,19 @@ App.prototype.syncData = function() {
 			this.syncLock = false;
 		}
 	});
+};
+
+/**
+ * Render a container for our 1px SWF which allows asynchronous incoming data
+ */
+App.prototype.renderSWF = function() {
+	return '<object id="myFlashMovie" width="100" height="20" codebase="http://active.macromedia.com/flash2/cabs/swflash.cab#version=4,0,0,0" classid="clsid:D27CDB6E-AE6D-11cf-96B8-444553540000">'
+		+ '<param value="socket.swf" name="movie">'
+		+ '<param value="high" name="quality">'
+		+ '<param value="false" name="play">'
+		+ '<param value="#FFFFFF" name="bgcolor">'
+		+ '<embed width="100" height="20" pluginspage="http://www.macromedia.com/shockwave/download/index.cgi?P1_Prod_Version=ShockwaveFlash" type="application/x-shockwave-flash" bgcolor="#FFFFFF" quality="high" src="socket.swf" name="socket" swliveconnect="true" play="false">'
+		+ '</object>\n';
 };
 
 /**

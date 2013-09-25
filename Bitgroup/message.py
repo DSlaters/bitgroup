@@ -31,21 +31,6 @@ class Message:
 		self.body = msg['message'].decode('base64')
 		return None
 
-
-	# Check if the passed BM-message is one of ours and if so what Message sub-class it is
-	# - returns a class that can be used for instatiation, e.g. bg_msg = getMessageClass(bm_msg)(bm_msg)
-	@staticmethod
-	def getClass(msg):
-		subject = msg['subject'].decode('base64')
-		#subject = "Bitgroup-0.00:Invitation "
-		match = re.match(app.name + "-([0-9.]+):(\w+) ", subject)
-		if match:
-			c = match.group(2)
-			if c in globals():
-				if Message in inspect.getmro(globals()[c]): return globals()[c]
-			print "Class '" + c + "' is not a Message sub-class"
-		return Message
-
 	# Set the current message's class
 	def setClass(cls):
 		self.subject = app.title + ': ' + cls + ' ' + app.msg('bg-msg-subject')
@@ -65,6 +50,19 @@ class Message:
 
 	# Reply to the messge
 	def reply(self): pass
+
+	# Check if the passed BM-message is one of ours and if so what Message sub-class it is
+	# - returns a class that can be used for instatiation, e.g. bg_msg = getMessageClass(bm_msg)(bm_msg)
+	@staticmethod
+	def getClass(msg):
+		subject = msg['subject'].decode('base64')
+		match = re.match(app.name + "-([0-9.]+):(\w+) ", subject)
+		if match:
+			c = match.group(2)
+			if c in globals():
+				if Message in inspect.getmro(globals()[c]): return globals()[c]
+			print "Class '" + c + "' is not a Message sub-class"
+		return Message
 
 
 class BitgroupMessage(Message):
