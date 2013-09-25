@@ -17,7 +17,7 @@ clientData = {
 
 
 
-class handler(asyncore.asynchat.async_chat):
+class handler(asynchat.async_chat):
 
 	def __init__(self, server, sock, addr):
 		asynchat.async_chat.__init__(self, sock)
@@ -38,7 +38,7 @@ class handler(asyncore.asynchat.async_chat):
 			if match:
 				dl = len(data)
 				cl = int(match.group(1))
-				if dl >= cl):
+				if dl >= cl:
 
 					# Finished a head+content message, if we have more than the content length, start a new message
 					msg = data[:cl]
