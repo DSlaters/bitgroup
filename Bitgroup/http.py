@@ -105,7 +105,7 @@ class handler(asynchat.async_chat):
 		if msg: self.processHTTP(msg)
 
 
-	# Process a completed HTTP message from a JavaScript client
+	# Process a completed HTTP message (including header and digest authentication) from a JavaScript client
 	def processHTTP(self, msg):
 		clients = self.server.clients
 		match = re.match(r'^(GET|POST) (.+?)(\?.+?)? HTTP.+Host: (.+?)\s(.+?\r\n\r\n)\s*(.*?)\s*$', msg, re.S)
@@ -296,8 +296,7 @@ class handler(asynchat.async_chat):
 
 		# Check if this is the SWF asking for the connection policy, and if so, respond with a policy restricted to this host and port
 		if msg == '<policy-file-request/>\x00':
-			#policy = '<allow-access-from domain="' + self.server.host + '" to-ports="' + str(self.server.port) + '" />'
-			policy = '<allow-access-from domain="*" to-ports="*" />'
+			policy = '<allow-access-from domain="' + self.server.host + '" to-ports="' + str(self.server.port) + '" />'
 			policy = '<cross-domain-policy>' + policy + '</cross-domain-policy>'
 			self.push(policy)
 			self.close_when_done()

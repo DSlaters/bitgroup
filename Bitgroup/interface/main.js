@@ -396,8 +396,8 @@ App.prototype.swfRender = function() {
 		+ '<param value="socket.swf" name="movie">'
 		+ '<param value="high" name="quality">'
 		+ '<param value="false" name="play">'
-		+ '<param value="#FFFFFF" name="bgcolor">'
-		+ '<embed width="100" height="20" pluginspage="http://www.macromedia.com/shockwave/download/index.cgi?P1_Prod_Version=ShockwaveFlash" type="application/x-shockwave-flash" bgcolor="#FFFFFF" quality="high" src="socket.swf" name="swfsocket" swliveconnect="true" play="false">'
+		+ '<param value="#F4F4F4" name="bgcolor">'
+		+ '<embed width="100" height="20" pluginspage="http://www.macromedia.com/shockwave/download/index.cgi?P1_Prod_Version=ShockwaveFlash" type="application/x-shockwave-flash" bgcolor="#F4F4F4" quality="high" src="socket.swf" name="swfsocket" swliveconnect="true" play="false">'
 		+ '</object>\n';
 };
 
