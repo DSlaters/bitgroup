@@ -10,10 +10,7 @@ import urllib
 import hashlib
 
 # Session data stored for each connected client
-clientData = {
-	'lastSync': {},
-	'uuid': None
-}
+clientData = {}
 
 
 
@@ -40,6 +37,14 @@ class handler(asynchat.async_chat):
 			self.close_when_done()
 			print 'SWF policy sent.'
 			return
+
+		# Check if this is a SWF giving its client id so that we can associate the socket with it
+		match = re.match('<client-id>(.+?)</client-id>', self.data)
+		if match:
+			client = match.group(1)
+			global clientData
+			if not client in clientData: clientData[client] = {}
+			clientData[client]['swf'] = self
 
 		# Check if there's a full header in the content, and if so if content-length is specified and we have that amount
 		match = re.match(r'(.+\r\n\r\n)', self.data, re.S)
