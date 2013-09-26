@@ -164,6 +164,16 @@ App.prototype.renderPage = function() {
 		// Call the view's render method to populate the content area
 		this.view.render(this);
 
+		$('#swfsocket').after('<input type="button" id="foo" value="send" />')
+		$('#foo').click(function(){
+			//window.app.returnSWF().SetVariable("client", window.app.id);
+			window.app.returnSWF().test(window.app.id);
+		});
+
+		window.test = function() {
+			console.log('received message from swf');
+		};
+
 	};
 
 	// Load and run the skin script
@@ -359,14 +369,26 @@ App.prototype.syncData = function() {
  * Render a container for our 1px SWF which allows asynchronous incoming data
  */
 App.prototype.renderSWF = function() {
-	return '<object id="myFlashMovie" width="100" height="20" codebase="http://active.macromedia.com/flash2/cabs/swflash.cab#version=4,0,0,0" classid="clsid:D27CDB6E-AE6D-11cf-96B8-444553540000">'
+	return '<object id="swfsocket" width="100" height="20" codebase="http://active.macromedia.com/flash2/cabs/swflash.cab#version=4,0,0,0" classid="clsid:D27CDB6E-AE6D-11cf-96B8-444553540000">'
 		+ '<param value="socket.swf" name="movie">'
 		+ '<param value="high" name="quality">'
 		+ '<param value="false" name="play">'
 		+ '<param value="#FFFFFF" name="bgcolor">'
-		+ '<embed width="100" height="20" pluginspage="http://www.macromedia.com/shockwave/download/index.cgi?P1_Prod_Version=ShockwaveFlash" type="application/x-shockwave-flash" bgcolor="#FFFFFF" quality="high" src="socket.swf" name="socket" swliveconnect="true" play="false">'
+		+ '<embed width="100" height="20" pluginspage="http://www.macromedia.com/shockwave/download/index.cgi?P1_Prod_Version=ShockwaveFlash" type="application/x-shockwave-flash" bgcolor="#FFFFFF" quality="high" src="socket.swf" name="swfsocket" swliveconnect="true" play="false">'
 		+ '</object>\n';
 };
+
+/**
+ * Returns the SWF object - by F. Permadi May 2000
+ */
+App.prototype.returnSWF = function() {
+	var swf = 'swfsocket';
+	if(window.document[swf]) return window.document[swf];
+	if(navigator.appName.indexOf("Microsoft Internet") == -1) {
+		if(document.embeds && document.embeds[swf]) return document.embeds[swf]; 
+	}
+	return document.getElementById(swf);
+}
 
 /**
  * Set the dynamic application state data returned from the server side on the last sync if it's changed

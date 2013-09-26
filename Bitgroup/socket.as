@@ -1,20 +1,27 @@
+import flash.external.ExternalInterface;
+
 class App {
 
 	static var app:App;
 	var sock:XMLSocket = new XMLSocket();
 	var connected = false;
-	var ctr = 1;		
+	var ctr = 1;	
 
 	function App() {
 		_root.createTextField("status",0,0,0,100,20);
 		_root.status.text = 'init';
+		_root.client = false;
+    
+		ExternalInterface.addCallback("test", null, function(msg) {
+			_root.status.text = msg;
+		});
   
 		// Socket connect
 		this.sock.onConnect = function(s) {
 			var app = _root.app;
 			if(s) {
 				app.connected = true;
-				_root.status.text = 'connected';
+				ExternalInterface.call("window.test");
 			} else {
 				app.connected = false;
 				app.ctr = 1;
@@ -37,10 +44,8 @@ class App {
 		// Called periodically (per frame)
 		_root.onEnterFrame = function() {
 			var app = _root.app;
-			if(app.connected == false && ++app.ctr%50 == 1) {
-				var x = app.sock.connect(null, 8080);
-				_root.status.text = app.connected = 'connecting ' + (x ? '(1)' : '(0)');
-			}
+			//_root.status.text = 'test: ' + _root.client;
+			if(app.connected == false && ++app.ctr%50 == 1) app.sock.connect(null, 8080);
 		};
  	}
 

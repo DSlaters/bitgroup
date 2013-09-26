@@ -9,7 +9,7 @@ if [ -f ./interface/socket.swf ]; then
 fi
 
 echo "Compiling socket.swf..."
-./mtasc -swf ./interface/socket.swf -main -header 100:20:20 socket.as
+./mtasc -swf ./interface/socket.swf -main -header 100:20:20 -version 8 socket.as
 
 if [ -f ./interface/socket.swf ]; then
 	echo "Done."
