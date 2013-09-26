@@ -485,7 +485,8 @@ App.prototype.setData = function(key, val, send, ts) {
 		else this.queue[key] = val;
 	}
 
-	console.info(key + ' changed from "' + oldval + '" to "' + val[0] + '" (@' + ts + ')' + (queue ? ' - queued' : ''));
+	var action = send ? (app.swfConnected ? ' - sent' : ' - queued') : '';
+	console.info(key + ' changed from "' + oldval + '" to "' + val[0] + '" (@' + ts + ')' + action);
 	return true;
 };
 
