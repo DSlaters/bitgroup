@@ -109,12 +109,20 @@ App.prototype.run = function() {
 	// Initialise a poller for regular data transfers to and from the service
 	setInterval( function() {
 		var app = window.app;
-		$.event.trigger({type: "bgPoller"});
-		app.syncData();
-		if(app.swfConnected && !app.swfIdSent) {
-			app.swfGetObject().data(app.id, window.location.port);
-			app.swfIdSent = true;
+
+		// If the SWF is available and we haven't sent our client ID to it yet, do it now
+		if(app.swfConnected) {
+			if(!app.swfIdSent) {
+				app.swfGetObject().data(app.id, window.location.port);
+				app.swfIdSent = true;
+			}
 		}
+
+		// Otherwise if the SWF isn't available, call the Ajax syncData method instead
+		else app.syncData();
+
+		// Allow other extensions to do something regularly too
+		$.event.trigger({type: "bgPoller"});
 	}, this.syncTime );
 };
 
@@ -295,7 +303,7 @@ App.prototype.viewChange = function() {
 };
 
 /**
- * Called on a regular interval to send queued data to the service and receive any queued items
+ * Send queued data to the Python service and receive any queued items (called on a regular interval if the SWF is not connected)
  */
 App.prototype.syncData = function() {
 
@@ -357,6 +365,25 @@ App.prototype.syncData = function() {
 			this.setState('bg', 'Disconnected');
 			this.setState('bm', 'Unknown');
 			this.syncLock = false;
+		}
+	});
+};
+
+/**
+ * Sends a single change to the Python service (used if the SWF is connected)
+ * - sends as a normal sync request, but don't expect anything back as it's going to the SWF instead
+ */
+App.prototype.sendData = function(key, val, ts) {
+	$.ajax({
+		type: 'POST',
+		url: (this.group ? '/' + this.group : '' ) + '/_sync.json',
+		data: JSON.stringify([[key, val, ts]]),
+		contentType: "application/json; charset=utf-8",
+		headers: { 'X-Bitgroup-ID': this.id },
+		dataType: 'html',
+		error: function() {
+			this.setState('bg', 'Disconnected');
+			this.setState('bm', 'Unknown');
 		}
 	});
 };
@@ -425,7 +452,7 @@ App.prototype.getData = function(key, ts) {
  * Set the data for the passed key to the passed value
  * TODO: don't use eval for this, make a path walking function like node.py
  */
-App.prototype.setData = function(key, val, queue, ts) {
+App.prototype.setData = function(key, val, send, ts) {
 
 	// Get the current value and timestamp
 	var oldval = this.getData(key, true);
@@ -449,9 +476,14 @@ App.prototype.setData = function(key, val, queue, ts) {
 	val = [val, ts];
 	eval('this.data.' + key + '=val');
 
-	// Add the change to the outgoing sync queue (if it didn't come from the incoming queue)
-	if(queue === undefined) queue = true;
-	if(queue) this.queue[key] = val;
+	// If the change originated in this page, then 
+	if(send === undefined) send = true;
+	if(send) {
+
+		// If the SWF is connected send the change directly now, otherwise add it to the outgoing sync queue
+		if(app.swfConnected) this.sendData(key, val[0], val[1]);
+		else this.queue[key] = val;
+	}
 
 	console.info(key + ' changed from "' + oldval + '" to "' + val[0] + '" (@' + ts + ')' + (queue ? ' - queued' : ''));
 	return true;

@@ -108,7 +108,7 @@ class Node:
 	def push(self, key, val, ts, excl = False):
 		for client in app.server.clients.keys():
 			data = app.server.clients[client]
-			if 'swfsocket' in data and client != excl:
+			if 'swfSocket' in data and client != excl:
 				change = [key,val,ts]
-				data['swfsocket'].push(json.dumps(change) + '\0')
+				data['swfSocket'].push(json.dumps(change) + '\0')
 				print "Sending to SWF:" + client + ": " + str(change)
