@@ -39,7 +39,7 @@ class App {
 			app.idSent = false;
 		};
 
-		// When ths socket receives data, send to the JS
+		// When this socket receives data, send it to the JS
 		this.sock.onData = function(json) {
 			ExternalInterface.call("window.app.swfData", json);
 		};
