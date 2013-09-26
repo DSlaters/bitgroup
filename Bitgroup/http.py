@@ -42,6 +42,15 @@ class handler(asynchat.async_chat):
 		self.request = None
 		self.shutdown = 0
 
+	# When the socket closes, remove self from the swfsocket list if in there
+	def handle_close(self):
+		asyncore.dispatcher.handle_close(self)
+		for client in self.server.clients.keys():
+			data = self.server.clients[client]
+			if 'swfsocket' in data and data['swfsocket'] is self:
+				del self.server.clients[client]
+				print "Socket closed, client " + client + " removed from data"
+
 	def collect_incoming_data(self, data):
 		clients = self.server.clients
 		self.data += data
