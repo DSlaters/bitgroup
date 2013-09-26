@@ -6,18 +6,20 @@ function App() {
 	// An identity for this client connection - python socket seems to be missing the ability to identify the stream
 	this.id = Math.uuid(5)
 
-	this.user;             // the current user data
-	this.group;            // the current group name
-	this.views = [];       // the availabe view classes - this first is the default if no view is specified by the current node
-	this.view;             // the current view instance
-	this.node;             // the current node name
-	this.sep = '/';        // separator character used in hash fragment
-	this.i18n = {};        // i18n messages loaded from /interface/i18n.json
+	this.user;       // the current user data
+	this.group;      // the current group name
+	this.views = []; // the availabe view classes - this first is the default if no view is specified by the current node
+	this.view;       // the current view instance
+	this.node;       // the current node name
+	this.sep = '/';  // separator character used in hash fragment
+	this.i18n = {};  // i18n messages loaded from /interface/i18n.json
 
-	this.data = {};        // the current group's data
-	this.queue = {};       // queue of data updates to send to the background service in the form keypath : [val, timestamp]
-	this.syncTime = 1000;  // milliseconds between each sync request
-	this.syncLock = false; // prevents syncs from occurring if another is still in progress
+	this.data = {};            // the current group's data
+	this.queue = {};           // queue of data updates to send to the background service in the form keypath : [val, timestamp]
+	this.syncTime = 1000;      // milliseconds between each sync request
+	this.syncLock = false;     // prevents syncs from occurring if another is still in progress
+	this.swfIdSent = false;    // this client's ID has been sent to the SWF
+	this.swfConnected = false; // whether the SWF is available for receiving data
 
 	// Dynamic application state data
 	this.state = {
@@ -106,8 +108,10 @@ App.prototype.run = function() {
 
 	// Initialise a poller for regular data transfers to and from the service
 	setInterval( function() {
+		var app = window.app;
 		$.event.trigger({type: "bgPoller"});
-		window.app.syncData();
+		app.syncData();
+		if(app.swfConnected && !app.swfIdSent) app.swfGetObject().data(app.id, window.location.port);
 	}, this.syncTime );
 };
 
@@ -141,7 +145,7 @@ App.prototype.renderPage = function() {
 	page += '</div>\n';
 
 	// Add our SWF for asynchronous incoming data
-	page += this.renderSWF();
+	page += this.swfRender();
 
 	// Add the completed page structure to the HTML document body
 	$('body').html(page);
@@ -163,17 +167,6 @@ App.prototype.renderPage = function() {
 
 		// Call the view's render method to populate the content area
 		this.view.render(this);
-
-		$('#swfsocket').after('<input type="button" id="foo" value="send" />')
-		$('#foo').click(function(){
-			//window.app.returnSWF().SetVariable("client", window.app.id);
-			window.app.returnSWF().test(window.app.id);
-		});
-
-		window.test = function() {
-			console.log('received message from swf');
-		};
-
 	};
 
 	// Load and run the skin script
@@ -368,7 +361,7 @@ App.prototype.syncData = function() {
 /**
  * Render a container for our 1px SWF which allows asynchronous incoming data
  */
-App.prototype.renderSWF = function() {
+App.prototype.swfRender = function() {
 	return '<object id="swfsocket" width="100" height="20" codebase="http://active.macromedia.com/flash2/cabs/swflash.cab#version=4,0,0,0" classid="clsid:D27CDB6E-AE6D-11cf-96B8-444553540000">'
 		+ '<param value="socket.swf" name="movie">'
 		+ '<param value="high" name="quality">'
@@ -381,7 +374,7 @@ App.prototype.renderSWF = function() {
 /**
  * Returns the SWF object - by F. Permadi May 2000
  */
-App.prototype.returnSWF = function() {
+App.prototype.swfGetObject = function() {
 	var swf = 'swfsocket';
 	if(window.document[swf]) return window.document[swf];
 	if(navigator.appName.indexOf("Microsoft Internet") == -1) {
@@ -389,6 +382,16 @@ App.prototype.returnSWF = function() {
 	}
 	return document.getElementById(swf);
 }
+
+/**
+ * Receive data from the SWF
+ */
+App.prototype.swfData = function(data) {
+	this.swfConnected = true;
+	if(data) {
+		console.info(data);
+	}
+};
 
 /**
  * Set the dynamic application state data returned from the server side on the last sync if it's changed

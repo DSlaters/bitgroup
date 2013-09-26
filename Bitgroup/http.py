@@ -9,22 +9,41 @@ import struct
 import urllib
 import hashlib
 
-# Session data stored for each connected client
-clientData = {}
+class server(asyncore.dispatcher):
 
+	clients = {}
+	host = None
+	port = None
+
+	def __init__(self, host, port):
+		asyncore.dispatcher.__init__(self)
+		self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
+		self.set_reuse_addr()
+		self.bind((host, port))
+		#self.setblocking(0)
+		self.listen(5)
+		self.host = host
+		self.port = port
+
+	def handle_accept(self):
+		sock, addr = self.accept()
+		handler(self, sock)
 
 
 class handler(asynchat.async_chat):
 
-	def __init__(self, server, sock, addr):
+	server = None
+	data = ""
+
+	def __init__(self, server, sock):
 		asynchat.async_chat.__init__(self, sock)
+		self.server = server
 		self.set_terminator(None)
 		self.request = None
-		self.data = ""
 		self.shutdown = 0
-		self.server = server
 
 	def collect_incoming_data(self, data):
+		clients = self.server.clients
 		self.data += data
 		msg = False
 
@@ -41,10 +60,11 @@ class handler(asynchat.async_chat):
 		# Check if this is a SWF giving its client id so that we can associate the socket with it
 		match = re.match('<client-id>(.+?)</client-id>', self.data)
 		if match:
+			self.data == ""
 			client = match.group(1)
-			global clientData
-			if not client in clientData: clientData[client] = {}
-			clientData[client]['swf'] = self
+			if not client in clients: clients[client] = {}
+			clients[client]['swfsocket'] = self
+			print "SWF socket identified for client " + client
 
 		# Check if there's a full header in the content, and if so if content-length is specified and we have that amount
 		match = re.match(r'(.+\r\n\r\n)', self.data, re.S)
@@ -89,7 +109,7 @@ class handler(asynchat.async_chat):
 				# Identify the client stream using a unique ID in the header
 				match = re.search(r'X-Bitgroup-ID: (.+?)\s', head)
 				client = match.group(1) if match else ''
-				if not client in clientData: clientData[client] = {}
+				if not client in clients: clients[client] = {}
 
 				# Check if the request is authorised and return auth request if not
 				auth = False
@@ -131,7 +151,7 @@ class handler(asynchat.async_chat):
 					header += "Server: " + app.title + "\r\n"
 					header += "Content-Type: text/plain\r\n"
 					header += "Content-Length: " + str(len(content)) + "\r\n\r\n"
-					clientData[client]['uuid'] = uuid
+					clients[client]['uuid'] = uuid
 					self.push(header + content)
 					self.close_when_done()
 					return
@@ -192,9 +212,9 @@ class handler(asynchat.async_chat):
 						g = app.groups[group]
 
 						# Get the timestamp of the last time this client connected and update
-						if client in clientData and 'lastSync' in clientData[client]: ts = clientData[client]['lastSync']
+						if client in clients and 'lastSync' in clients[client]: ts = clients[client]['lastSync']
 						else: ts = 0
-						clientData[client]['lastSync'] = now
+						clients[client]['lastSync'] = now
 
 						# If the client sent change-data merge into the local data
 						if data:
@@ -207,8 +227,12 @@ class handler(asynchat.async_chat):
 
 						# Otherwise send the queue of changes that have occurred since the client's last sync request
 						else:
-							content = g.changes(ts - (now-ts), client) # TODO: messy doubling of period (bug#3)
-							if len(content) > 0: print "Sending to " + client + ': ' + json.dumps(content)
+
+							# If we have a SWF socket for this client, bail as changes will already be sent
+							if 'swfsocket' in clients[client]: content = []
+							else:
+								content = g.changes(ts - (now-ts), client) # TODO: messy doubling of period (bug#3)
+								if len(content) > 0: print "Sending to " + client + ': ' + json.dumps(content)
 
 							# Put an object on the end of the list containing the application state data
 							content.append(app.getStateData())
@@ -246,22 +270,3 @@ class handler(asynchat.async_chat):
 				self.push(header)
 				self.push(content)
 				self.close_when_done()
-
-class server(asyncore.dispatcher):
-
-	host = None
-	port = None
-
-	def __init__(self, host, port):
-		asyncore.dispatcher.__init__(self)
-		self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
-		self.set_reuse_addr()
-		self.bind((host, port))
-		self.setblocking(0)
-		self.listen(5)
-		self.host = host
-		self.port = port
-
-	def handle_accept(self):
-		sock, addr = self.accept()
-		handler(self, sock, addr)

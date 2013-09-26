@@ -33,6 +33,7 @@ class App:
 	configfile = None
 	api = None
 
+	server = None
 	inbox = None
 	user = {}
 	groups = {}
@@ -68,7 +69,7 @@ class App:
 		self.loadGroups()
 
 		# Set up a simple HTTP server to handle requests from the interface
-		http.server('localhost', config.getint('interface', 'port'))
+		self.server = http.server('localhost', config.getint('interface', 'port'))
 
 		return None
 

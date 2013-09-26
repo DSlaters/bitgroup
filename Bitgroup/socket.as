@@ -5,32 +5,29 @@ class App {
 	static var app:App;
 	var sock:XMLSocket = new XMLSocket();
 	var connected = false;
-	var ctr = 1;	
+	var id;
+	var idSent = false;
+	var port = false;
+	var ctr = 1;
 
 	function App() {
 		_root.createTextField("status",0,0,0,100,20);
 		_root.status.text = 'init';
-		_root.client = false;
-    
-		ExternalInterface.addCallback("test", null, function(msg) {
-			_root.status.text = msg;
-		});
+
+		// Send null data to tell the JS we're ready
+		ExternalInterface.call("window.app.swfData", "");
   
 		// Socket connect
-		this.sock.onConnect = function(s) {
+		this.sock.onConnect = function(status) {
 			var app = _root.app;
-			if(s) {
+			if(status) {
 				app.connected = true;
-				ExternalInterface.call("window.test");
+				_root.status.text = 'connected';
 			} else {
 				app.connected = false;
 				app.ctr = 1;
 				_root.status.text = 'failed';
 			}
-		};
- 
-		// Socket data
-		this.sock.onData = function(data) {
 		};
  
 		// Socket close
@@ -40,12 +37,38 @@ class App {
 			_root.status.text = 'not connected';
 			app.ctr = 1;
 		};
+
+		// When ths socket receives data, send to the JS
+		this.sock.onData = function(data) {
+			_root.status.text = 'data';
+			ExternalInterface.call("window.app.swfData", data);
+		};
+ 
+		// Receive the client ID and connection port from the JS
+		ExternalInterface.addCallback("data", null, function(id, port) {
+			var app = _root.app;
+			app.id = id;
+			app.port = port;
+			app.sock.connect(null, port);
+			app.ctr = 1;
+		});
  
 		// Called periodically (per frame)
 		_root.onEnterFrame = function() {
 			var app = _root.app;
-			//_root.status.text = 'test: ' + _root.client;
-			if(app.connected == false && ++app.ctr%50 == 1) app.sock.connect(null, 8080);
+			if(app.connected) {
+
+				// If the ID hasn't been sent to the server yetm do it now
+				if(!app.idSent) {
+					app.sock.send('<client-id>' + app.id + '</client-id>')
+					app.idSent = true;
+				}
+			}
+			else {
+				
+				// If the socket isn't connected, try and connect every few seconds
+				if(app.port && ++app.ctr%50 == 1) app.sock.connect(null, app.port);
+			}
 		};
  	}
 

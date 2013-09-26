@@ -57,6 +57,7 @@ class Node:
 			j[leaf] = [val, ts]
 			self.save()
 			self.queue[key] = [val, ts, client]
+			self.push(key, val, ts, client)
 
 		# Return state of change
 		return changed
@@ -97,8 +98,18 @@ class Node:
 		return json.dumps(self.data)
 
 	# Return a list of changes since a specified time and, (if a client is specified) that did not originate from that client
-	def changes(self, since, client = False):
+	def changes(self, since, excl = False):
 		changes = []
-		for k in filter(lambda f: self.queue[f][1] > since and (client == False or self.queue[f][2] != client), self.queue):
+		for k in filter(lambda f: self.queue[f][1] > since and (excl == False or self.queue[f][2] != excl), self.queue):
 			changes.append([k, self.queue[k][0], self.queue[k][1]])
 		return changes
+
+	# Send a change to all client's SWF sockets except the client specified
+	def push(self, key, val, ts, excl = False):
+		for client in app.server.clients.keys():
+			data = app.server.clients[client]
+			if 'swfsocket' in data and client != excl:
+				change = [key,val,ts]
+				data['swfsocket'].push('<test>foo</test>\x00')
+				data['swfsocket'].close_when_done()
+				print "Sending to SWF:" + client + ": " + str(change)
