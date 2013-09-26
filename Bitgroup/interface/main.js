@@ -111,7 +111,10 @@ App.prototype.run = function() {
 		var app = window.app;
 		$.event.trigger({type: "bgPoller"});
 		app.syncData();
-		if(app.swfConnected && !app.swfIdSent) app.swfGetObject().data(app.id, window.location.port);
+		if(app.swfConnected && !app.swfIdSent) {
+			app.swfGetObject().data(app.id, window.location.port);
+			app.swfIdSent = true;
+		}
 	}, this.syncTime );
 };
 
@@ -389,7 +392,9 @@ App.prototype.swfGetObject = function() {
 App.prototype.swfData = function(data) {
 	this.swfConnected = true;
 	if(data) {
-		console.info(data);
+		console.info("Data received from SWF: " + data);
+		data = JSON.parse(data);
+		this.setData(data[0], data[1], false, data[2]);
 	}
 };
 

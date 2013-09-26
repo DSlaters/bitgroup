@@ -39,9 +39,8 @@ class App {
 		};
 
 		// When ths socket receives data, send to the JS
-		this.sock.onData = function(data) {
-			_root.status.text = 'data';
-			ExternalInterface.call("window.app.swfData", data);
+		this.sock.onData = function(json) {
+			ExternalInterface.call("window.app.swfData", json);
 		};
  
 		// Receive the client ID and connection port from the JS

@@ -110,6 +110,5 @@ class Node:
 			data = app.server.clients[client]
 			if 'swfsocket' in data and client != excl:
 				change = [key,val,ts]
-				data['swfsocket'].push('<test>foo</test>\x00')
-				data['swfsocket'].close_when_done()
+				data['swfsocket'].push(json.dumps(change) + '\0')
 				print "Sending to SWF:" + client + ": " + str(change)

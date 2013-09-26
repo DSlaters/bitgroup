@@ -20,7 +20,7 @@ class server(asyncore.dispatcher):
 		self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
 		self.set_reuse_addr()
 		self.bind((host, port))
-		#self.setblocking(0)
+		self.setblocking(1)
 		self.listen(5)
 		self.host = host
 		self.port = port
@@ -50,7 +50,8 @@ class handler(asynchat.async_chat):
 		# Check if this is the SWF asking for the connection policy, and if so, respond with a policy restricted to this host and port
 		if self.data == '<policy-file-request/>\x00':
 			self.data == ""
-			policy = '<allow-access-from domain="' + self.server.host + '" to-ports="' + str(self.server.port) + '" />'
+			#policy = '<allow-access-from domain="' + self.server.host + '" to-ports="' + str(self.server.port) + '" />'
+			policy = '<allow-access-from domain="*" to-ports="*" />'
 			policy = '<cross-domain-policy>' + policy + '</cross-domain-policy>'
 			self.push(policy)
 			self.close_when_done()
@@ -65,6 +66,7 @@ class handler(asynchat.async_chat):
 			if not client in clients: clients[client] = {}
 			clients[client]['swfsocket'] = self
 			print "SWF socket identified for client " + client
+			return
 
 		# Check if there's a full header in the content, and if so if content-length is specified and we have that amount
 		match = re.match(r'(.+\r\n\r\n)', self.data, re.S)
@@ -152,7 +154,7 @@ class handler(asynchat.async_chat):
 					header += "Content-Type: text/plain\r\n"
 					header += "Content-Length: " + str(len(content)) + "\r\n\r\n"
 					clients[client]['uuid'] = uuid
-					self.push(header + content)
+					self.push(str(header + content))
 					self.close_when_done()
 					return
 
@@ -267,6 +269,6 @@ class handler(asynchat.async_chat):
 				header += "Content-Type: " + ctype + "\r\n"
 				header += "Connection: keep-alive\r\n"
 				header += "Content-Length: " + str(clen) + "\r\n\r\n"
-				self.push(header)
+				self.push(str(header))
 				self.push(content)
 				self.close_when_done()
