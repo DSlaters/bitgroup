@@ -4,5 +4,5 @@ else
 	if $recipients contains "," then
 		headers add "Bcc:${sg{$recipients}{^.+?,}{}}"
 	endif
-	unseen save $home/Maildir/.Sent/	
+	seen save $home/Maildir/.Sent/	
 endif
