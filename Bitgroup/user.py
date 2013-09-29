@@ -1,7 +1,9 @@
 from node import *
 
 class User(Node):
-	"""Class representing the current user"""
+	"""
+	Class representing the current user
+	"""
 
 	def __init__(self, addr, passwd):
 

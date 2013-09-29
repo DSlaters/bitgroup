@@ -9,7 +9,9 @@ class Group(Node):
 	addr = None     # The public Bitmessage address for the group (anyone can subscribe to this)
 	prvaddr = None  # The private Bitmessage address for the group (only members can read info from this address)
 
-	# Instantiate a group instance
+	"""
+	Instantiate a group instance
+	"""
 	def __init__(self, group, passwd = None):
 
 		# If instantiating by address, it's an existing group that needs to be initialised
@@ -42,7 +44,9 @@ class Group(Node):
 
 		return None
 
-# Data structure of a newly created group
+"""
+Data structure of a newly created group
+"""
 template = {
 	'settings.name': '',
 	'settings.addr': '',

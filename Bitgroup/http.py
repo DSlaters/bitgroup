@@ -49,7 +49,9 @@ class handler(asynchat.async_chat):
 	ctype  = None  # HTTP content type returned to client
 	clen = None    # HTTP content length returned to client
 
-	# Set up the handler (we use no terminator as we're detecting and removing completed messages manually)
+	"""
+	Set up the handler (we use no terminator as we're detecting and removing completed messages manually)
+	"""
 	def __init__(self, server, sock):
 		asynchat.async_chat.__init__(self, sock)
 		self.server = server
@@ -57,7 +59,9 @@ class handler(asynchat.async_chat):
 		self.request = None
 		self.shutdown = 0
 
-	# When the socket closes, remove self from the swfSocket list if in there
+	"""
+	When the socket closes, remove self from the swfSocket list if in there
+	"""
 	def handle_close(self):
 		asyncore.dispatcher.handle_close(self)
 		for client in self.server.clients.keys():
@@ -66,8 +70,9 @@ class handler(asynchat.async_chat):
 				del self.server.clients[client]
 				print "Socket closed, client " + client + " removed from data"
 
-
-	# New data has arrived, accumulate the data and remove messages for processing as they're completed
+	"""
+	New data has arrived, accumulate the data and remove messages for processing as they're completed
+	"""
 	def collect_incoming_data(self, data):
 		self.data += data
 		msg = False
@@ -108,8 +113,9 @@ class handler(asynchat.async_chat):
 		# If we have a complete message:
 		if msg: self.httpProcessMessage(msg)
 
-
-	# Process a completed HTTP message (including header and digest authentication) from a JavaScript client
+	"""
+	Process a completed HTTP message (including header and digest authentication) from a JavaScript client
+	"""
 	def httpProcessMessage(self, msg):
 		match = re.match(r'^(GET|POST) (.+?)(\?.+?)? HTTP.+Host: (.+?)\s(.+?\r\n\r\n)\s*(.*?)\s*$', msg, re.S)
 		if match:
@@ -168,8 +174,9 @@ class handler(asynchat.async_chat):
 			self.push(content)
 			self.close_when_done()
 
-
-	# Check whether the HTTP request is authenticated
+	"""
+	Check whether the HTTP request is authenticated
+	"""
 	def httpIsAuthenticated(self, head, method):
 		match = re.search(r'Authorization: Digest (.+?)\r\n', head)
 		if not match:
@@ -202,8 +209,9 @@ class handler(asynchat.async_chat):
 		if not auth: print "Authentication failed!"
 		return auth
 
-
-	# Return a digest authentication request to client
+	"""
+	Return a digest authentication request to client
+	"""
 	def httpSendAuthRequest(self):
 		content = app.msg('authneeded')
 		uuid = hashlib.md5(str(app.timestamp()) + app.user.addr).hexdigest()
@@ -218,8 +226,9 @@ class handler(asynchat.async_chat):
 		self.close_when_done()
 		print "Authentication request sent to client"
 
-
-	# Return the main default HTML document
+	"""
+	Return the main default HTML document
+	"""
 	def httpDefaultDocument(self, group):
 		tmp = {
 			'group': group,
@@ -250,8 +259,9 @@ class handler(asynchat.async_chat):
 		content += "</head>\n<body>\n</body>\n</html>\n"
 		return str(content)
 
-
-	# Process a DataSync request from an HTTP client
+	"""
+	Process a DataSync request from an HTTP client
+	"""
 	def httpSyncData(self, head, data, base, group):
 		if group in app.groups:
 			clients = self.server.clients
@@ -298,8 +308,9 @@ class handler(asynchat.async_chat):
 		else: content = json.dumps([app.getStateData()])
 		return content
 
-
-	# Get a file from the specified URI and path info
+	"""
+	Get a file from the specified URI and path info
+	"""
 	def httpGetFile(self, uri, path):
 		self.ctype = mimetypes.guess_type(uri)[0]
 		self.clen = os.path.getsize(path)
@@ -308,8 +319,9 @@ class handler(asynchat.async_chat):
 		fh.close()
 		return content
 
-
-	# Return a 404 Not Found document
+	"""
+	Return a 404 Not Found document
+	"""
 	def httpNotFound(self, uri):
 		self.status = "404 Not Found"
 		content = "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n"
@@ -319,8 +331,9 @@ class handler(asynchat.async_chat):
 		content += "</body></html>"
 		return str(content)
 
-
-	# Process a completed message from a SWF instance
+	"""
+	Process a completed message from a SWF instance
+	"""
 	def swfProcessMessage(self, msg):
 		clients = self.server.clients
 
