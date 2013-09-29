@@ -8,6 +8,7 @@ import xmlrpclib
 import json
 import time
 import datetime
+import urllib
 
 # Bitmessage modules
 import hashlib
@@ -84,6 +85,9 @@ class App:
 
 		# Call the regular interval timer
 		self.interval()
+
+		# Get external IP address (do this better later)
+		self.peerIP = self.getExternalIP()
 
 		return None
 
@@ -233,3 +237,14 @@ class App:
 		privKey = hashlib.sha512(passwd).digest()[:32]
 		return highlevelcrypto.decrypt(data, privKey.encode('hex'))
 
+	"""
+	Get the external IP address of this host (this should be done a better way)
+	"""
+	def getExternalIP(self):
+		html = urllib.urlopen("http://checkip.dyndns.org/").read()
+		match = re.search(r'(\d+\.\d+.\d+.\d+)', html)
+		if match:
+			print "External IP address of local host is " + match.group(1)
+			return match.group(1)
+		print "Could not obtain external IP address"
+		return None
