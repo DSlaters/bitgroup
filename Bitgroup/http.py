@@ -79,7 +79,7 @@ class handler(asynchat.async_chat):
 		self.data += data
 		msg = False
 
-		# If the data starts with < and contains a zero byte, then it's an XML message from a local SWF socket
+		# If the data starts with < and contains a zero byte, then it's an XML message from an interface SWF socket
 		match = re.match('(<.+?\0)', self.data, re.S)
 		if match:
 			msg = match.group(1)
@@ -89,7 +89,7 @@ class handler(asynchat.async_chat):
 			else: self.data = ""
 			self.swfProcessMessage(msg)
 
-		# If the data starts with { and contains a zero byte, then it's a JSON message from a remote peer
+		# If the data starts with { and contains a zero byte, then it's a JSON message from a peer
 		match = re.match('(\{.+?\0)', self.data, re.S)
 		if match:
 			msg = match.group(1)
@@ -344,7 +344,7 @@ class handler(asynchat.async_chat):
 		return str(content)
 
 	"""
-	Process a completed XML message from a local SWF instance
+	Process a completed XML message from an interface SWF instance
 	"""
 	def swfProcessMessage(self, msg):
 
@@ -366,7 +366,7 @@ class handler(asynchat.async_chat):
 			print "SWF socket identified for client " + client
 
 	"""
-	TODO: Process a completed JSON message from a remote peer
+	TODO: Process a completed JSON message from a peer
 	"""
 	def peerProcessMessage(self, msg):
 		try:
