@@ -22,7 +22,9 @@ class Message:
 	# This is set by syb-classes if data cannot be decoded, or it's found to be invalid
 	invalid = False
 
-	# Create a local instance of the Bitmessage message containing all the message attributes and data
+	"""
+	Create a local instance of the Bitmessage message containing all the message attributes and data
+	"""
 	def __init__(self, msg):
 		self.date = email.utils.formatdate(time.mktime(datetime.datetime.fromtimestamp(float(msg['receivedTime'])).timetuple()))
 		self.toAddr = msg['toAddress']
@@ -31,11 +33,15 @@ class Message:
 		self.body = msg['message'].decode('base64')
 		return None
 
-	# Set the current message's class
+	"""
+	Set the current message's class
+	"""
 	def setClass(cls):
 		self.subject = app.title + ': ' + cls + ' ' + app.msg('bg-msg-subject')
 
-	# Send the message
+	"""
+	Send the message
+	"""
 	def send(self):
 		subject = self.subject.encode('base64')
 
@@ -48,11 +54,40 @@ class Message:
 		if self.toAddr: app.api.sendMessage(toAddr, fromAddr, subject, body)
 		else: app.api.sendBroadcast(fromAddr, subject, body)
 
-	# Reply to the messge
+	"""
+	Reply to the messge
+	"""
 	def reply(self): pass
 
-	# Check if the passed BM-message is one of ours and if so what Message sub-class it is
-	# - returns a class that can be used for instatiation, e.g. bg_msg = getMessageClass(bm_msg)(bm_msg)
+	"""
+	Read the messages from Bitmessage and update the passed local mailbox
+	TODO: this just reads all messages and replaces all in the local box, it should update not replace
+	"""
+	@staticmethod
+	def getMessages(mailbox):
+		if mailbox == None:
+			messages = json.loads(app.api.getAllInboxMessages())
+			mailbox = []
+			for msgID in range(len(messages['inboxMessages'])):
+				
+				# Get the Bitmessage data for this message
+				msg = messages['inboxMessages'][msgID]
+				
+				# Instantiate a Message or Message sub-class based on it's specified Bitgroup type
+				bgmsg = Message.getClass(msg)(msg)
+
+				# If the instance has determined it's not a valid message of it's type, fall back to the Message class
+				if bgmsg.invalid: bgmsg = Message(msg)
+				
+				# Add the instance to the messages
+				mailbox.append(bgmsg)
+
+			print str(len(mailbox)) + ' messages retrieved.'
+
+	"""
+	Check if the passed BM-message is one of ours and if so what Message sub-class it is
+	- returns a class that can be used for instatiation, e.g. bg_msg = getMessageClass(bm_msg)(bm_msg)
+	"""
 	@staticmethod
 	def getClass(msg):
 		subject = msg['subject'].decode('base64')
@@ -90,7 +125,9 @@ class BitgroupMessage(Message):
 		
 		return None
 
-	# The send message method first encodes the data into the body before calling the base-class's send method
+	"""
+	The send message method first encodes the data into the body before calling the base-class's send method
+	"""
 	def send(self):
 
 		# Set the body to the JSON encoded data
