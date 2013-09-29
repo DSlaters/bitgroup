@@ -8,6 +8,7 @@ class Group(Node):
 	name = None     # The textual name for the group (can be changed any time)
 	addr = None     # The public Bitmessage address for the group (anyone can subscribe to this)
 	prvaddr = None  # The private Bitmessage address for the group (only members can read info from this address)
+	server = False  # Whether or not we are the server for this group
 
 	"""
 	Instantiate a group instance

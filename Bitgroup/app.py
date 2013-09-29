@@ -31,6 +31,7 @@ class App:
 	version = '0.0.0'
 	title = name + "-" + version
 	peerID = None
+	peerIP = None
 
 	docroot = os.path.dirname(__file__) + '/interface'
 	datapath = os.getenv("HOME") + '/.Bitgroup'
@@ -238,7 +239,8 @@ class App:
 		return highlevelcrypto.decrypt(data, privKey.encode('hex'))
 
 	"""
-	Get the external IP address of this host (this should be done a better way)
+	Get the external IP address of this host
+	- this should only be a backup to use if no peers are available to ask
 	"""
 	def getExternalIP(self):
 		html = urllib.urlopen("http://checkip.dyndns.org/").read()

@@ -378,3 +378,20 @@ class handler(asynchat.async_chat):
 			print "Invalid data received (no peer ID) from remote peer: " + str(self.sock)
 			return
 		peer = data['peer']
+
+	"""
+	TODO: a peer has gone offline or a new peer has come online, update the peer info
+	"""
+	def peerUpdateInfo(self, peer = None):
+
+		# TODO: If a new peer has come online add its data
+		if peer:
+			pass
+
+		clients = self.server.clients
+		for client in clients:
+			pass
+
+		# deterime group server-peer
+		
+		# if not server now, but was before, close all peer sockets

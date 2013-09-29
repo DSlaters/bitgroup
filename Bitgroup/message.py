@@ -181,17 +181,42 @@ class Changes(BitgroupMessage):
 
 class Presence(BitgroupMessage):
 	"""
-	Broadcasts presence information for updating members online status
+	TODO: Broadcasts presence information for updating members online status
 	"""
 
 	def __init__(self, msg):
 		BitgroupMessage.__init__(self, msg)
 		
-		data = {
-			'peer': app.peerID,
-			'port': app.server.port
-		}
-		
-		# TODO: include IP address and port
-		
+		# If the message is intantiate with a group as parameter, this is an outgoing presence message
+		if msg.__class__.__name__ == 'Group':
+			self.group = msg
+			self.fromAddr = group.prvaddr
+
+			# The message will be broadcast to the members
+			self.toAddr = None
+
+			# The content will be encrypted with the groups shared key
+			self.passwd = self.group.passwd
+
+			data = {
+				'peer': app.peerID,
+				'addr': app.peerIP,
+				'port': app.server.port
+				'last': # timestamp of last data
+			}
+
+		# Otherwise it's an incoming presence message from a newly connected peer
+		else:
+
+			# Update the peer info with the new peer's data
+			app.server.peerUpdateInfo(self.data)
+
+			# If we are the group server,
+			if self.group.server:
+
+				# respond with dataSince and member online info
+				
+				# open a socket to the client
+				pass
+
 		return None
