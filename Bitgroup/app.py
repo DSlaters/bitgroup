@@ -21,7 +21,9 @@ from group import *
 from message import *
 
 class App:
-	"""The main top-level class for all teh functionality of the Bitgroup application"""
+	"""
+	The main top-level class for all teh functionality of the Bitgroup application
+	"""
 
 	name = 'Bitgroup'
 	version = '0.0.0'
@@ -40,8 +42,12 @@ class App:
 	maxage = 600000   # Expiry time of queue items in milliseconds
 	i18n = {}         # i18n interface messages loaded from interface/i18n.json
 	state = {}        # Dynamic application state information
-	stateAge = 0      # Last time the dynsmic application state data was updated
+	stateAge = 0      # Last time the dynamic application state data was updated
+	lastInterval = 0  # Last time the interval timer was called
 
+	"""
+	Initialise the application
+	"""
 	def __init__(self, config, configfile):
 		self.config = config
 		self.configfile = configfile
@@ -71,16 +77,41 @@ class App:
 		# Set up a simple HTTP server to handle requests from the interface
 		self.server = http.server('localhost', config.getint('interface', 'port'))
 
+		# Call the regular interval timer
+		self.interval()
+
 		return None
 
-	# Update the config file and save it
+	"""
+	Regular interval timer
+	"""
+	def interval(self):
+		threading.Timer(10.0, interval).start()
+		now = self.timestamp()
+		ts = self.lastInterval
+		self.lastInterval = now
+
+		# Check for new messages every 10 seconds
+		Message.getMessages(self.inbox)
+		
+		# TODO: Send outgoing queued DataSync messages every 10 minutes
+		if now - ts > 595000:
+			for group in app.groups:
+				group.send()
+
+
+	"""
+	Update the config file and save it
+	"""
 	def updateConfig(self, section, key, val):
 		self.config.set(section, key, val)
 		h = open(self.configfile, 'wb')
 		self.config.write(h)
 		h.close()
 
-	# Load all the groups found in the config file
+	"""
+	Load all the groups found in the config file
+	"""
 	def loadGroups(self):
 		conf = dict(self.config.items('groups'))
 		for passwd in conf:
@@ -90,32 +121,15 @@ class App:
 			self.groups[prvaddr] = group
 			print "    group initialised (" + group.name + ")"
 
-	# Read the messages from Bitmessage and store in local app inbox
-	def getMessages(self):
-		if self.inbox == None:
-			messages = json.loads(self.api.getAllInboxMessages())
-			self.inbox = []
-			for msgID in range(len(messages['inboxMessages'])):
-				
-				# Get the Bitmessage data for this message
-				msg = messages['inboxMessages'][msgID]
-				
-				# Instantiate a Message or Message sub-class based on it's specified Bitgroup type
-				bgmsg = Message.getClass(msg)(msg)
-
-				# If the instance has determined it's not a valid message of it's type, fall back to the Message class
-				if bgmsg.invalid: bgmsg = Message(msg)
-				
-				# Add the instance to the messages
-				self.inbox.append(bgmsg)
-
-			print str(len(self.inbox)) + ' messages retrieved.'
-
-	# Return a millisecond timestamp - must match main.js's timestamp
+	"""
+	Return a millisecond timestamp - must match main.js's timestamp
+	"""
 	def timestamp(self):
 		return (int(time.strftime('%s'))-1378723000)*1000 + int(datetime.datetime.now().microsecond/1000)
 
-	# Return data about the dynamic state of the application
+	"""
+	Return data about the dynamic state of the application
+	"""
 	def getStateData(self):
 
 		# If the state data is older than one second, rebuild it
@@ -133,7 +147,6 @@ class App:
 
 			# If Bitmessage was available add the message list info
 			if self.state['bm'] == 'Connected':
-				self.getMessages()
 				self.state['inbox'] = []
 				for msg in self.inbox:
 					data = {'from': msg.fromAddr, 'subject': msg.subject}
@@ -145,13 +158,17 @@ class App:
 
 		return self.state
 
-	# Load the i18n messages
+	"""
+	Load the i18n messages
+	"""
 	def loadI18n(self):
 		h = open(self.docroot + '/i18n.json', "r")
 		self.i18n = json.loads(h.read())
 		h.close()
 
-	# Return message from key
+	"""
+	Return message from key
+	"""
 	def msg(self, key, s1 = False, s2 = False, s3 = False, s4 = False, s5 = False):
 		lang = self.user.lang
 
@@ -173,7 +190,9 @@ class App:
 
 		return str;
 
-	# Create a new group
+	"""
+	Create a new group
+	"""
 	def newGroup(self, name):
 
 		# TODO: Sanitise the name
@@ -194,16 +213,18 @@ class App:
 
 		return data
 
-	# Encrypt the passed data using a password
+	"""
+	Encrypt the passed data using a password
+	"""
 	def encrypt(self, data, passwd):
 		privKey = hashlib.sha512(passwd).digest()[:32]
 		pubKey = pointMult(privKey)
 		return highlevelcrypto.encrypt(data, pubKey.encode('hex'))
 
-	# Decrypt the passed encrypted data
+	"""
+	Decrypt the passed encrypted data
+	"""
 	def decrypt(self, data, passwd):
 		privKey = hashlib.sha512(passwd).digest()[:32]
 		return highlevelcrypto.decrypt(data, privKey.encode('hex'))
-
-
 
