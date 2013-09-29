@@ -364,8 +364,8 @@ class handler(asynchat.async_chat):
 			print "SWF socket identified for client " + client
 
 	"""
-	Process a completed JSON message from a remote peer
+	TODO: Process a completed JSON message from a remote peer
 	"""
 	def peerProcessMessage(self, msg):
-		# TODO
-		pass
+		data = json.loads(msg)
+		peer = data['peer']
