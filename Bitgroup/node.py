@@ -7,11 +7,14 @@ class Node:
 	The data is stored encrypted using the encryption functions directly from the PyBitmessage source.
 	"""
 
-	data = None    # cache of this node's data
-	passwd = None  # used to ecrypt data and messages for this user or group
-	queue = {}     # cache of key : [val, ts, client] for sending changes to clients on sync requests
+	data = None       # cache of this node's data
+	passwd = None     # used to ecrypt data and messages for this user or group
+	queue = {}        # cache of key : [val, ts, client] for sending changes to clients on sync requests
+	lastSend = None   # Last time this group's changes were broadcast to the members
 
-	# Get a property in this nodes data structure (with its timestamo if ts set)
+	"""
+	Get a property in this nodes data structure (with its timestamo if ts set)
+	"""
 	def get(self, key, ts = False):
 
 		# Load the data if the cache is uninitialised
@@ -25,7 +28,9 @@ class Node:
 
 		return val if ts else val[0]
 
-	# Set a property in this nodes data structure
+	"""
+	Set a property in this nodes data structure
+	"""
 	def set(self, key, val, ts = None, client = ''):
 		if ts == None: ts = app.timestamp()
 
@@ -62,17 +67,23 @@ class Node:
 		# Return state of change
 		return changed
 
-	# TODO
+	"""
+	TODO
+	"""
 	def remove(self):
 
 		# Load the data if the cache is uninitialised
 		if self.data == None: self.load()
 
-	# Get the filesystem location of this node's data
+	"""
+	Get the filesystem location of this node's data
+	"""
 	def path(self):
 		return app.datapath + '/' + self.prvaddr + '.json'
 
-	# Load this node's data into the local cache
+	"""
+	Load this node's data into the local cache
+	"""
 	def load(self):
 		f = self.path()
 		if os.path.exists(f):
@@ -83,8 +94,10 @@ class Node:
 		else: self.data = {}
 		return self.data;
 
-	# Save the local cache to the data file
-	# TODO: data changes should queue and save periodically, not on every property change
+	"""
+	Save the local cache to the data file
+	TODO: data changes should queue and save periodically, not on every property change
+	"""
 	def save(self):
 		f = self.path()
 		h = open(f, "wb+")
@@ -92,23 +105,45 @@ class Node:
 		h.write(json.dumps(self.data));
 		h.close()
 
-	# Return the data as JSON for the interface
+	"""
+	Return the data as JSON for the interface
+	"""
 	def json(self):
 		if self.data == None: self.load()
 		return json.dumps(self.data)
 
-	# Return a list of changes since a specified time and, (if a client is specified) that did not originate from that client
+	"""
+	Return a list of changes since a specified time and, (if a client is specified) that did not originate from that client
+	"""
 	def changes(self, since, excl = False):
 		changes = []
 		for k in filter(lambda f: self.queue[f][1] > since and (excl == False or self.queue[f][2] != excl), self.queue):
 			changes.append([k, self.queue[k][0], self.queue[k][1]])
 		return changes
 
-	# Send a change to all client's SWF sockets except the client specified
+	"""
+	Push a change to all real-time client's (local interface SWF sockets, and remote online members)
+	"""
 	def push(self, key, val, ts, excl = False):
 		for client in app.server.clients.keys():
 			data = app.server.clients[client]
-			if 'swfSocket' in data and client != excl:
-				change = [key,val,ts]
-				data['swfSocket'].push(json.dumps(change) + '\0')
-				print "Sending to SWF:" + client + ": " + str(change)
+			if client != excl:
+
+				# Client is a local SWF socket
+				if 'swfSocket' in data:
+					change = [key,val,ts]
+					data['swfSocket'].push(json.dumps(change) + '\0')
+					print "Sending to SWF:" + client + ": " + str(change)
+
+				# Client is a remote member peer
+				elif 'peerSocket' in data:
+					pass
+
+	"""
+	TODO: Send queued changes since last send to the group's private Bitmessage address
+	"""
+	def send(self, group):
+		data = self.changes(self.lastSend)
+		msg = new Changes(self)
+		msg.send()
+		self.lastSend = app.timestamp()
