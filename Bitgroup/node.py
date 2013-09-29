@@ -6,7 +6,6 @@ class Node:
 	User and Group classes inherit this functionality so they can have a persistent properties structure.
 	The data is stored encrypted using the encryption functions directly from the PyBitmessage source.
 	"""
-
 	data = None       # cache of this node's data
 	passwd = None     # used to ecrypt data and messages for this user or group
 	queue = {}        # cache of key : [val, ts, client] for sending changes to clients on sync requests

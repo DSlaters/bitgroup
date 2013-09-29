@@ -43,6 +43,7 @@ class handler(asynchat.async_chat):
 	"""
 
 	server = None  # Gives the handler access to the server properties such as the client data array
+	sock = None
 	data = ""      # Data accumulates here until a complete message has arrived
 
 	status = None  # HTTP status code returned to client
@@ -55,6 +56,7 @@ class handler(asynchat.async_chat):
 	def __init__(self, server, sock):
 		asynchat.async_chat.__init__(self, sock)
 		self.server = server
+		self.sock = sock
 		self.set_terminator(None)
 		self.request = None
 		self.shutdown = 0
@@ -367,5 +369,12 @@ class handler(asynchat.async_chat):
 	TODO: Process a completed JSON message from a remote peer
 	"""
 	def peerProcessMessage(self, msg):
-		data = json.loads(msg)
+		try:
+			data = json.loads(msg)
+		except:
+			print "Invalid JSON data received from remote peer: " + str(self.sock)
+			return
+		if not 'peer' in data:
+			print "Invalid data received (no peer ID) from remote peer: " + str(self.sock)
+			return
 		peer = data['peer']

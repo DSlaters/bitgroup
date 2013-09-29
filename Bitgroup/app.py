@@ -79,8 +79,8 @@ class App:
 		# Initialise groups
 		self.loadGroups()
 
-		# Set up a simple HTTP server to handle requests from the interface
-		self.server = http.server('localhost', config.getint('interface', 'port'))
+		# Set up a simple HTTP server to handle requests from any interface on our port
+		self.server = http.server('', config.getint('interface', 'port'))
 
 		# Call the regular interval timer
 		self.interval()

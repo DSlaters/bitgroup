@@ -186,4 +186,12 @@ class Presence(BitgroupMessage):
 
 	def __init__(self, msg):
 		BitgroupMessage.__init__(self, msg)
+		
+		data = {
+			'peer': app.peerID,
+			'port': app.server.port
+		}
+		
+		# TODO: include IP address and port
+		
 		return None
