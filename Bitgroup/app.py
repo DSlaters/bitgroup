@@ -2,6 +2,7 @@ import __builtin__
 import os
 import sys
 import re
+import uuid
 import http
 import xmlrpclib
 import json
@@ -28,6 +29,7 @@ class App:
 	name = 'Bitgroup'
 	version = '0.0.0'
 	title = name + "-" + version
+	peerID = None
 
 	docroot = os.path.dirname(__file__) + '/interface'
 	datapath = os.getenv("HOME") + '/.Bitgroup'
@@ -57,6 +59,9 @@ class App:
 
 		# Create the dir if it doesn't exist
 		if not os.path.exists(self.datapath): os.mkdir(self.datapath)
+
+		# Give the local instance a unique session ID for real-time communication with peers
+		self.peerID = self.encrypt(str(uuid.uuid4()),str(uuid.uuid4())).encode('base64')[:8]
 
 		# Build the Bitmessage RPC URL from the key and password
 		port = config.getint('bitmessage', 'port')

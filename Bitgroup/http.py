@@ -77,7 +77,7 @@ class handler(asynchat.async_chat):
 		self.data += data
 		msg = False
 
-		# If the data starts with < and contains a zero byte, then it's a SWF message
+		# If the data starts with < and contains a zero byte, then it's an XML message from a local SWF socket
 		match = re.match('(<.+?\0)', self.data, re.S)
 		if match:
 			msg = match.group(1)
@@ -86,6 +86,16 @@ class handler(asynchat.async_chat):
 			if dl > cl: self.data = data[cl:]
 			else: self.data = ""
 			self.swfProcessMessage(msg)
+
+		# If the data starts with { and contains a zero byte, then it's a JSON message from a remote peer
+		match = re.match('(\{.+?\0)', self.data, re.S)
+		if match:
+			msg = match.group(1)
+			dl = len(self.data)
+			cl = len(msg)
+			if dl > cl: self.data = data[cl:]
+			else: self.data = ""
+			self.peerProcessMessage(msg)
 
 		# Check if there's a full header in the content, and if so if content-length is specified and we have that amount
 		match = re.match(r'(.+\r\n\r\n)', self.data, re.S)
@@ -332,10 +342,9 @@ class handler(asynchat.async_chat):
 		return str(content)
 
 	"""
-	Process a completed message from a SWF instance
+	Process a completed XML message from a local SWF instance
 	"""
 	def swfProcessMessage(self, msg):
-		clients = self.server.clients
 
 		# Check if this is the SWF asking for the connection policy, and if so, respond with a policy restricted to this host and port
 		if msg == '<policy-file-request/>\x00':
@@ -348,8 +357,15 @@ class handler(asynchat.async_chat):
 		# Check if this is a SWF giving its client id so that we can associate the socket with it
 		match = re.match('<client-id>(.+?)</client-id>', msg)
 		if match:
+			clients = self.server.clients
 			client = match.group(1)
 			if not client in clients: clients[client] = {}
 			clients[client]['swfSocket'] = self
 			print "SWF socket identified for client " + client
 
+	"""
+	Process a completed JSON message from a remote peer
+	"""
+	def peerProcessMessage(self, msg):
+		# TODO
+		pass

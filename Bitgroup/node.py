@@ -137,6 +137,7 @@ class Node:
 
 				# Client is a remote member peer
 				elif 'peerSocket' in data:
+					data = {'peer': app.peerID}
 					pass
 
 	"""
