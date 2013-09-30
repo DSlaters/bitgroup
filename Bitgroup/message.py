@@ -5,11 +5,10 @@ import email.utils
 import re
 import inspect
 
-class Message:
+class Message(object):
 	"""
 	Class representing a Bitmessage message
 	"""
-
 	date     = None
 	toAddr   = None
 	fromAddr = None
@@ -23,7 +22,25 @@ class Message:
 	invalid = False
 
 	"""
-	Create a local instance of the Bitmessage message containing all the message attributes and data
+	Determine the correct class for the message and instantiate it
+	"""
+	def __new__(self, msg):
+		if self.__class__.__name__ == 'Message':
+
+			# Determine what class it should be
+			cls = Message.getClass(msg)
+			if cls.__class__.__name__ != 'Message':
+
+				# Make an instance of the class
+				bgmsg = cls(msg)
+
+				# If the instance has determined it's a valid message of it's type, set self to the new instance
+				if not bgmsg.invalid: self = bgmsg
+
+		return object.__new__(self, msg)
+
+	"""
+	Initialise the Bitmessage message containing all the message attributes and data
 	"""
 	def __init__(self, msg):
 		self.date = email.utils.formatdate(time.mktime(datetime.datetime.fromtimestamp(float(msg['receivedTime'])).timetuple()))
@@ -34,7 +51,22 @@ class Message:
 		return None
 
 	"""
-	Set the current message's class
+	Check if the passed BM-message is one of ours and if so what Message sub-class it is
+	- returns a class that can be used for instatiation, e.g. bg_msg = getMessageClass(bm_msg)(bm_msg)
+	"""
+	@staticmethod
+	def getClass(msg):
+		subject = msg['subject'].decode('base64')
+		match = re.match(app.name + "-([0-9.]+):(\w+) ", subject)
+		if match:
+			c = match.group(2)
+			if c in globals():
+				if Message in inspect.getmro(globals()[c]): return globals()[c]
+			print "Class '" + c + "' is not a Message sub-class"
+		return Message
+
+	"""
+	Set the current message's class in the subject line for the recipient
 	"""
 	def setClass(cls):
 		self.subject = app.title + ': ' + cls + ' ' + app.msg('bg-msg-subject')
@@ -60,7 +92,7 @@ class Message:
 	def reply(self): pass
 
 	"""
-	Read the messages from Bitmessage and update the passed local mailbox
+	Read the messages from Bitmessage and update the passed local mailbox with Message instances of the correct sub-class
 	TODO: this just reads all messages and replaces all in the local box, it should update not replace
 	"""
 	@staticmethod
@@ -69,35 +101,8 @@ class Message:
 			messages = json.loads(app.api.getAllInboxMessages())
 			mailbox = []
 			for msgID in range(len(messages['inboxMessages'])):
-				
-				# Get the Bitmessage data for this message
-				msg = messages['inboxMessages'][msgID]
-				
-				# Instantiate a Message or Message sub-class based on it's specified Bitgroup type
-				bgmsg = Message.getClass(msg)(msg)
-
-				# If the instance has determined it's not a valid message of it's type, fall back to the Message class
-				if bgmsg.invalid: bgmsg = Message(msg)
-				
-				# Add the instance to the messages
-				mailbox.append(bgmsg)
-
+				mailbox.append(Message(messages['inboxMessages'][msgID]))
 			print str(len(mailbox)) + ' messages retrieved.'
-
-	"""
-	Check if the passed BM-message is one of ours and if so what Message sub-class it is
-	- returns a class that can be used for instatiation, e.g. bg_msg = getMessageClass(bm_msg)(bm_msg)
-	"""
-	@staticmethod
-	def getClass(msg):
-		subject = msg['subject'].decode('base64')
-		match = re.match(app.name + "-([0-9.]+):(\w+) ", subject)
-		if match:
-			c = match.group(2)
-			if c in globals():
-				if Message in inspect.getmro(globals()[c]): return globals()[c]
-			print "Class '" + c + "' is not a Message sub-class"
-		return Message
 
 
 class BitgroupMessage(Message):

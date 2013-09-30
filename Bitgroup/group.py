@@ -19,7 +19,7 @@ class Group(Node, object):
 			for g in app.groups:
 				if g.prvaddr == group: found = g
 			if found: self = found
-		return self
+		return object.__new__(self, group, passwd)
 
 	"""
 	Initialise the new group instance
