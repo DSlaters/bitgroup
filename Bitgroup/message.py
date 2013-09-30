@@ -31,11 +31,11 @@ class Message(object):
 			cls = Message.getClass(msg)
 			if cls.__class__.__name__ != 'Message':
 
-				# Make an instance of the class
-				bgmsg = cls(msg)
+				# Change the Message class an instance of the returned class
+				self = cls(msg)
 
-				# If the instance has determined it's a valid message of it's type, set self to the new instance
-				if not bgmsg.invalid: self = bgmsg
+				# If the instance has determined it's not a valid message of it's type, return None
+				if bgmsg.invalid: return None
 
 		return object.__new__(self, msg)
 
@@ -113,21 +113,42 @@ class BitgroupMessage(Message):
 	# The decoded data of the message content
 	data = None
 
+	# The group the message is to
+	group = None
+
 	def __init__(self, msg):
 
-		# Set the subject line to the message's class to indicate that it's to be processed by a Bitgroup app
-		self.setClass(self.__class__.__name__)
-
-		# Only instantiate base-class and decode the body if a message was passed to the constructor
+		# Only instantiate base-class and decode the body if it's an incoming message
 		if msg.__class__.__name__ == 'dict':
 			Message.__init__(self, msg)
 
-			# Decode the body data
-			try: self.data = json.loads(self.body)
-			except:
+			# Set the message's group instance from the To address
+			for g in app.groups:
+				if g.prvaddr == self.toAddr:
+					self.group = Group(self.toAddr)
+
+			# Bail if we don't have an instance for this group
+			# - this could only happen if we're subscribed to a group's private address that we're not a member of
+			if self.group == None:
 				print "No valid data found in message content!"
 				self.invalid = True
-		
+				return None
+
+			# Decode the body data (first try as raw JSON, if not try decrypting it with the group passwd)
+			try: self.data = json.loads(self.body)
+			except:
+				try: self.data = json.loads(app.decrypt(self.body, self.group.passwd))
+				except:
+					print "No valid data found (or couldn't decrypt it) in message content!"
+					self.invalid = True
+					return None
+
+		# It's an outgoing message,
+		else:
+
+			# Set the subject line to the message's class to indicate that it's to be processed by a Bitgroup app
+			self.setClass(self.__class__.__name__)
+
 		return None
 
 	"""
@@ -214,8 +235,12 @@ class Presence(BitgroupMessage):
 		else:
 
 			# The presence message should consist of just the group BM address, and an encrypted payload
+			if not 'group' in self.data:
+				self.invalid = true
+				print "No group specified in Presence data"
 
 			# check if its one of the groups we have
+			group = Group(
 
 			# if so, instantiate it and 
 				
