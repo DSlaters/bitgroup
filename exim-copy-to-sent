@@ -1,4 +1,4 @@
-if $sender_address_domain is organicdesign.co.nz then
+if ${if match {${lookup{$sender_address}lsearch{/etc/exim4/virtual.users}}}{@localhost\$}{yes}{}} is "yes" then
         if "${if def:h_X-Spam-Status {def}{undef}}" is "def" then
                 headers remove "Bcc"
         else
