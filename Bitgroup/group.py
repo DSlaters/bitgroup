@@ -2,7 +2,7 @@ import uuid
 import re
 from node import *
 
-class Group(Node):
+class Group(Node, object):
 	"""This is the class that messages from the Bitmessage inbox are returned as if they're for our app"""
 
 	name = None     # The textual name for the group (can be changed any time)
@@ -11,16 +11,30 @@ class Group(Node):
 	server = False  # Whether or not we are the server for this group
 
 	"""
-	Instantiate a group instance
+	Instantiate a new group instance, return the existing instance if the passed group already has one
+	"""
+	def __new__(self, group, passwd = None):
+		if re.match('BM-', group) and passwd == None:
+			found = False
+			for g in app.groups:
+				if g.prvaddr == group: found = g
+			if found: self = found
+		return self
+
+	"""
+	Initialise the new group instance
 	"""
 	def __init__(self, group, passwd = None):
 
-		# If instantiating by address, it's an existing group that needs to be initialised
+		# If instantiating by address,
 		if re.match('BM-', group):
-			self.prvaddr = group
-			self.passwd = passwd
-			self.addr = self.get('settings.addr')
-			self.name = self.get('settings.name')
+
+			# If we've provided a passwd, then we're initialising the instance
+			if passwd:
+				self.prvaddr = group
+				self.passwd = passwd
+				self.addr = self.get('settings.addr')
+				self.name = self.get('settings.name')
 
 		# Instantiating by name, create a new group
 		else:

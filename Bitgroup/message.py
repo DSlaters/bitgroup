@@ -208,6 +208,15 @@ class Presence(BitgroupMessage):
 		# Otherwise it's an incoming presence message from a newly connected peer
 		else:
 
+			# The presence message should consist of just the group BM address, and an encrypted payload
+
+			# check if its one of the groups we have
+
+			# if so, instantiate it and 
+				
+				
+				
+
 			# Update the peer info with the new peer's data
 			app.server.peerUpdateInfo(self.data)
 
