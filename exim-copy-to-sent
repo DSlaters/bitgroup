@@ -5,6 +5,6 @@ if $sender_address_domain is organicdesign.co.nz then
                 if $recipients contains "," then
                         headers add "Bcc:${sg{$recipients}{^.+?,}{}}"
                 endif
-                unseen save $home/Maildir/.Sent/        
+                seen save $home/Maildir/.Sent/        
         endif
 endif
