@@ -76,13 +76,7 @@ class Message(object):
 	"""
 	def send(self):
 		subject = self.subject.encode('base64')
-
-		# Encode the body to base64, also encrypt first if a passwd is set
-		body = self.body
-		if self.passwd: body = app.encrypt(body, self.passwd)
-		body = body.encode('base64')
-
-		# Do the actual sending
+		body = self.body.encode('base64')
 		if self.toAddr: app.api.sendMessage(toAddr, fromAddr, subject, body)
 		else: app.api.sendBroadcast(fromAddr, subject, body)
 
@@ -108,6 +102,10 @@ class Message(object):
 class BitgroupMessage(Message):
 	"""
 	An "abstract" class representing a Bitgroup message that extends the basic Bitmessage message to exhibit properties
+	- determines if its incoming or outgoing
+	- adds the group instance that its broadcast to
+	- encodes and encrypts the data for outgoing messages
+	- decodes and decrypts the data for incoming messages
 	"""
 
 	# The decoded data of the message content
@@ -116,10 +114,26 @@ class BitgroupMessage(Message):
 	# The group the message is to
 	group = None
 
-	def __init__(self, msg):
+	# Whether the message is incoming or outgoing
+	incoming = False
+	outgoing = False
 
-		# Only instantiate base-class and decode the body if it's an incoming message
-		if msg.__class__.__name__ == 'dict':
+	def __init__(self, param):
+
+		# It's an outgoing message, set up the new message to broadcast an encrypted message to the group
+		if msg.__class__.__name__ == 'Group':
+			self.outgoing = True
+			self.group = param
+			self.fromAddr = param.prvaddr
+			self.toAddr = None
+			self.passwd = param.passwd
+			self.setClass(self.__class__.__name__)
+
+		# Message is incoming
+		else:
+			self.incoming = True
+
+			# Only instantiate base-class and decode the body if it's an incoming message
 			Message.__init__(self, msg)
 
 			# Set the message's group instance from the To address
@@ -130,24 +144,19 @@ class BitgroupMessage(Message):
 			# Bail if we don't have an instance for this group
 			# - this could only happen if we're subscribed to a group's private address that we're not a member of
 			if self.group == None:
-				print "No valid data found in message content!"
+				print "Message received for a group we're not a member of!"
+				# TODO: should unsubscribe from this group's private address
 				self.invalid = True
 				return None
 
-			# Decode the body data (first try as raw JSON, if not try decrypting it with the group passwd)
-			try: self.data = json.loads(self.body)
+			# Decode the body data (try as plain unencrypted if decrypting fails)
+			try: self.data = json.loads(app.decrypt(self.body, self.group.passwd))
 			except:
-				try: self.data = json.loads(app.decrypt(self.body, self.group.passwd))
+				try: self.data = json.loads(self.body)
 				except:
 					print "No valid data found (or couldn't decrypt it) in message content!"
 					self.invalid = True
 					return None
-
-		# It's an outgoing message,
-		else:
-
-			# Set the subject line to the message's class to indicate that it's to be processed by a Bitgroup app
-			self.setClass(self.__class__.__name__)
 
 		return None
 
@@ -159,15 +168,17 @@ class BitgroupMessage(Message):
 		# Set the body to the JSON encoded data
 		self.body = json.dumps(self.data)
 
+		# Encrypt it if the passwd is set - by default it will have been set
+		if self.passwd: self.body = app.encrypt(self.body, self.passwd)
+
 		# Call the parent class's send method
-		Message.send(self, msg)
+		Message.send(self)
 
 
 class Invitation(BitgroupMessage):
 	"""
 	Handles the Bitgroup invitation workflow
 	"""
-
 	def __init__(self, msg):
 		BitgroupMessage.__init__(self, msg)
 		return None
@@ -175,32 +186,48 @@ class Invitation(BitgroupMessage):
 	def accept(self): pass
 
 
+class Post(BitgroupMessage):
+	"""
+	General informational post to the group
+	"""
+	def __init__(self, msg, subject, body):
+		BitgroupMessage.__init__(self, msg)
+
+		# TODO: Incoming post
+		if self.incoming:
+
+		# Outgoing post, put the subject and body into the data
+		else:
+			self.data = {
+				'subject': subject,
+				'body': body
+			}
+
+		return None
+
+
 class Changes(BitgroupMessage):
 	"""
 	Handles the group data synchronisation for offline users
 	"""
-
 	group = None
 	lastSync = 0
 
-	def __init__(self, msg):
-		BitgroupMessage.__init__(self, msg)
+	def __init__(self, param, ts = None):
+		BitgroupMessage.__init__(self, param)
 
-		# If the passed arg is a group, set the message up as a broadcast to the members
-		if msg.__class__.__name__ == 'Group':
-			self.group = msg
-			self.fromAddr = group.prvaddr
+		# TODO: Incoming changes
+		if self.incoming:
+			pass
 
-			# The message will be broadcast to the members
-			self.toAddr = None
+		# Outgoing, set the message up as a broadcast to the members
+		else:
 
-			# The content will be encrypted with the groups shared key
-			self.passwd = self.group.passwd
-
-			# Get the changes since the last changes for this group were sent
-			ts = this.lastSync
+			# Get the changes since the last changes for this group were sent (or since passed timestamp)
+			if ts == None:
+				ts = this.lastSync
+				this.lastSync = app.timestamp()
 			self.data = self.group.changes(ts)
-			this.lastSync = app.timestamp()
 
 		return None
 
@@ -210,52 +237,21 @@ class Presence(BitgroupMessage):
 	TODO: Broadcasts presence information for updating members online status
 	"""
 
-	def __init__(self, msg):
-		BitgroupMessage.__init__(self, msg)
+	def __init__(self, param):
+		BitgroupMessage.__init__(self, param)
 		
-		# If the message is intantiate with a group as parameter, this is an outgoing presence message
-		if msg.__class__.__name__ == 'Group':
-			self.group = msg
-			self.fromAddr = group.prvaddr
+		# Incoming presence message from a newly connected peer
+		if self.incoming:
 
-			# The message will be broadcast to the members
-			self.toAddr = None
+			group.addPeer(peer)
 
-			# The content will be encrypted with the groups shared key
-			self.passwd = self.group.passwd
-
+		# Outgoing presence message, add our data to the message
+		else:
 			data = {
 				'peer': app.peerID,
 				'addr': app.peerIP,
-				'port': app.server.port
+				'port': app.server.port,
 				'last': # timestamp of last data
 			}
-
-		# Otherwise it's an incoming presence message from a newly connected peer
-		else:
-
-			# The presence message should consist of just the group BM address, and an encrypted payload
-			if not 'group' in self.data:
-				self.invalid = true
-				print "No group specified in Presence data"
-
-			# check if its one of the groups we have
-			group = Group(
-
-			# if so, instantiate it and 
-				
-				
-				
-
-			# Update the peer info with the new peer's data
-			app.server.peerUpdateInfo(self.data)
-
-			# If we are the group server,
-			if self.group.server:
-
-				# respond with dataSince and member online info
-				
-				# open a socket to the client
-				pass
 
 		return None

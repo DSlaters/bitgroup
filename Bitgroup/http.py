@@ -17,7 +17,7 @@ class server(asyncore.dispatcher):
 	host = None
 	port = None
 
-	# This contains a key for each active client ID, and each key contains "lastSync" and "swfSocket"
+	# This contains a key for each active client ID, and each key can contain "lastSync", "swfSocket", "peerSocket", "group"
 	clients = {}
 
 	# Set up the listener
@@ -66,43 +66,52 @@ class handler(asynchat.async_chat):
 	"""
 	def handle_close(self):
 		asyncore.dispatcher.handle_close(self)
-		for client in self.server.clients.keys():
-			data = self.server.clients[client]
-			if 'swfSocket' in data and data['swfSocket'] is self:
-				del self.server.clients[client]
-				print "Socket closed, client " + client + " removed from data"
+		for k in self.server.clients.keys():
+			client = self.server.clients[k]
+
+			# Closing a SWF client
+			if 'swfSocket' in client and client['swfSocket'] is self:
+				del self.server.clients[k]
+				print "Socket closed, client " + k + " removed from data"
+
+			# Closing a peer
+			elif 'peerSocket' in client and client['peerSocket'] is self:
+				client['group'].delPeer(k, False)
 
 	"""
 	New data has arrived, accumulate the data and remove messages for processing as they're completed
 	"""
 	def collect_incoming_data(self, data):
 		self.data += data
-		msg = False
 
 		# If the data starts with < and contains a zero byte, then it's an XML message from an interface SWF socket
-		match = re.match('(<.+?\0)', self.data, re.S)
+		match = re.match('<.+?\0', self.data, re.S)
 		if match:
-			msg = match.group(1)
+			msg = match.group(0)
 			dl = len(self.data)
 			cl = len(msg)
 			if dl > cl: self.data = data[cl:]
 			else: self.data = ""
 			self.swfProcessMessage(msg)
+		else: msg = False
 
-		# If the data starts with { and contains a zero byte, then it's a JSON message from a peer
-		match = re.match('(\{.+?\0)', self.data, re.S)
+		# If the data starts with Bitgroup:peer:type\nMSG\0, then it's a message from a peer
+		match = re.match(app.name + "-([0-9.]+):(.+?):(\w+)\n(.+?)\0", self.data)
 		if match:
-			msg = match.group(1)
+			peer = match.group(2)
+			msgType = match.group(3)
+			msg = match.group(4)
 			dl = len(self.data)
-			cl = len(msg)
+			cl = len(match.group(0))
 			if dl > cl: self.data = data[cl:]
 			else: self.data = ""
-			self.peerProcessMessage(msg)
+			self.peerProcessMessage(msgType, msg)
+		else: msg = False
 
 		# Check if there's a full header in the content, and if so if content-length is specified and we have that amount
-		match = re.match(r'(.+\r\n\r\n)', self.data, re.S)
+		match = re.match(r'.+\r\n\r\n', self.data, re.S)
 		if match:
-			head = match.group(1)
+			head = match.group(0)
 			data = ""
 			match = re.search(r'content-length: (\d+).*?\r\n\r\n(.*)', self.data, re.I|re.S)
 			if match:
@@ -121,6 +130,7 @@ class handler(asynchat.async_chat):
 				msg = head
 				self.data = data
 				done = True
+		else: msg = False
 
 		# If we have a complete message:
 		if msg: self.httpProcessMessage(msg)
@@ -296,7 +306,7 @@ class handler(asynchat.async_chat):
 			if data:
 				cdata = json.loads(data)
 				for item in cdata: g.set(item[0], item[1], item[2], client)
-				print "Received from " + client + " (last=" + str(ts) + "): " + str(cdata)
+				print "Changes received from " + client + " (last=" + str(ts) + "): " + str(cdata)
 
 			# Last sync was more than maxage seconds ago, send all data
 			if now - ts > app.maxage: content = app.groups[group].json()
@@ -368,30 +378,34 @@ class handler(asynchat.async_chat):
 	"""
 	TODO: Process a completed JSON message from a peer
 	"""
-	def peerProcessMessage(self, msg):
-		try:
-			data = json.loads(msg)
-		except:
-			print "Invalid JSON data received from remote peer: " + str(self.sock)
-			return
-		if not 'peer' in data:
-			print "Invalid data received (no peer ID) from remote peer: " + str(self.sock)
-			return
-		peer = data['peer']
-
-	"""
-	TODO: a peer has gone offline or a new peer has come online, update the peer info
-	"""
-	def peerUpdateInfo(self, peer = None):
-
-		# TODO: If a new peer has come online add its data
-		if peer:
-			pass
-
+	def peerProcessMessage(self, peer, msgType, msg):
 		clients = self.server.clients
-		for client in clients:
-			pass
 
-		# deterime group server-peer
-		
-		# if not server now, but was before, close all peer sockets
+		# Get the peer entry in the clients list
+		client = None
+		for k in clients.keys():
+			if k == peer: client = clients[k]
+		if client == None:
+			print "Message received from unknown peer \"" + peer + "\": " + str(self.sock)
+			return
+
+		# Get the group from the client entry
+		group = client['group']
+
+		# Peer known, try and decrypt its message
+		try:
+			data = json.loads(app.decrypt(msg, group.passwd))
+		except:
+			print "Invalid data received from remote peer: " + str(self.sock)
+			return
+
+		# This is a Welcome message (repsonse to Presence)
+		if msgType == 'Welcome':
+
+			# If the change-data was sent, merge into the local data
+			if 'changes' in data:
+				for item in data['changes']: group.set(item[0], item[1], item[2], peer)
+				print "Changes received from " + peer + str(data['changes']) 
+
+			# If peer information was sent, store in the group data
+			if 'peers' in data: group.peers = data['peers']

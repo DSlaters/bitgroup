@@ -14,7 +14,7 @@ class Node:
 	"""
 	Get a property in this nodes data structure (with its timestamo if ts set)
 	"""
-	def get(self, key, ts = False):
+	def getData(self, key, ts = False):
 
 		# Load the data if the cache is uninitialised
 		if self.data == None: self.load()
@@ -30,7 +30,7 @@ class Node:
 	"""
 	Set a property in this nodes data structure
 	"""
-	def set(self, key, val, ts = None, client = ''):
+	def setData(self, key, val, ts = None, client = ''):
 		if ts == None: ts = app.timestamp()
 
 		# Load the data if the cache is uninitialised
@@ -61,7 +61,7 @@ class Node:
 			j[leaf] = [val, ts]
 			self.save()
 			self.queue[key] = [val, ts, client]
-			self.push(key, val, ts, client)
+			self.pushChanges(key, val, ts, client)
 
 		# Return state of change
 		return changed
@@ -123,7 +123,7 @@ class Node:
 	"""
 	Push a change to all real-time client's (local interface SWF sockets, and remote online members)
 	"""
-	def push(self, key, val, ts, excl = False):
+	def pushChanges(self, key, val, ts, excl = False):
 		for client in app.server.clients.keys():
 			data = app.server.clients[client]
 			if client != excl:
@@ -142,7 +142,7 @@ class Node:
 	"""
 	TODO: Send queued changes since last send to the group's private Bitmessage address
 	"""
-	def send(self, group):
+	def sendChanges(self, group):
 		data = self.changes(self.lastSend)
 		msg = new Changes(self)
 		msg.send()

@@ -15,10 +15,8 @@ class Group(Node, object):
 	"""
 	def __new__(self, group, passwd = None):
 		if re.match('BM-', group) and passwd == None:
-			found = False
 			for g in app.groups:
-				if g.prvaddr == group: found = g
-			if found: self = found
+				if g.prvaddr == group: return g
 		return object.__new__(self, group, passwd)
 
 	"""
@@ -33,8 +31,8 @@ class Group(Node, object):
 			if passwd:
 				self.prvaddr = group
 				self.passwd = passwd
-				self.addr = self.get('settings.addr')
-				self.name = self.get('settings.name')
+				self.addr = self.getData('settings.addr')
+				self.name = self.getData('settings.name')
 
 		# Instantiating by name, create a new group
 		else:
@@ -53,11 +51,85 @@ class Group(Node, object):
 
 			# Initialise the group's data to the template
 			global template
-			for k in template: self.set(k, template[k])
-			self.set('settings.name', self.name)
-			self.set('settings.addr', self.addr)
+			for k in template: self.setData(k, template[k])
+			self.setData('settings.name', self.name)
+			self.setData('settings.addr', self.addr)
 
 		return None
+
+	"""
+	Determine and set which peer (online member) in the group is the server
+	"""
+	def determineServer(self):
+
+		# TODO: who's server?
+		gsrv = some prvaddr
+
+		# if not server now, but was before, close all peer sockets for this group
+		if self.server and not gsrv:
+			clients = app.server.clients
+			d = []
+			for k in clients.keys():
+				client = clients[k]
+				if 'peerSocket' in client and client['group'] is g:
+					client['peerSocket'].close()
+					d.append(k)
+			for k in d: del clients[k]
+
+		g.server = gsrv
+		return gsrv
+
+	"""
+	Return the ID's for all the current peers from the server's active clients list
+	"""
+	def peers(self):
+		clients = app.server.clients
+		peers = []
+		for k in clients.keys():
+			client = clients[k]
+			if 'peerSocket' in client and client['group'] is self:
+				peers.append(k)
+		return peers
+
+	"""
+	Add a new peer and establish a connection with it
+	"""
+	def addPeer(self, peer, info):
+
+		# Add the peer's info to the server's active clients list
+		app.server.clients[peer] = {
+			'peerSocket': sock,
+			'group': self.group
+		}
+
+		# Since peers have changed, we need to know who's the server now
+		self.determineServer()
+
+		# If we are the group server,
+		if self.group.server:
+			
+			# TODO: Open a socket to the new peer
+			# get peer IP and port
+			sock = app.server.connect((addr, port))
+
+			# Send data since peer's last data and the current peer info
+			data = {
+				'changes': group.changes(self.data['last']),
+				'peers': group.peers()
+			}
+			sock.push(json.dumps(data))
+			
+			# TODO: If this is a new member (not in member info), broadcast a message about it to the group
+			Post(self.group, subject, body).send()		
+
+	"""
+	Delete a peer from the active peers list
+	"""
+	def delPeer(self, peer, close = True):
+		if close: app.server.clients[peer]['peerSocket'].close()
+		del app.server.clients[peer]
+		self.determineServer()
+
 
 """
 Data structure of a newly created group

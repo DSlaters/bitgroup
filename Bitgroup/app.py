@@ -87,9 +87,6 @@ class App:
 		# Call the regular interval timer
 		self.interval()
 
-		# Get external IP address (do this better later)
-		self.peerIP = self.getExternalIP()
-
 		return None
 
 	"""
@@ -101,13 +98,20 @@ class App:
 		ts = self.lastInterval
 		self.lastInterval = now
 
+		# If we have no IP address, try and obtain it and if successful, broardcast our presence to our groups
+		if self.peerIP == None:
+			self.peerIP = self.getExternalIP()
+			if self.peerIP:
+				for g in app.groups:
+					Presence(g).send()
+
 		# Check for new messages every 10 seconds
 		Message.getMessages(self.inbox)
 		
-		# TODO: Send outgoing queued DataSync messages every 10 minutes
+		# TODO: Send outgoing queued changes messages every 10 minutes
 		if now - ts > 595000:
-			for group in app.groups:
-				group.send()
+			for g in app.groups:
+				g.sendChanges()
 
 
 	"""
