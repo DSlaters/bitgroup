@@ -113,10 +113,9 @@ class Group(Node, object):
 			sock = app.server.connect((addr, port))
 
 			# Send data since peer's last data and the current peer info
-			data = {
-				'changes': group.changes(self.data['last']),
-				'peers': group.peers()
-			}
+			data = {'peers': group.peers()}
+			changes = group.changes(self.data['last'])
+			if len(changes) > 0: data['changes'] = changes
 			sock.push(json.dumps(data))
 			
 			# TODO: If this is a new member (not in member info), broadcast a message about it to the group

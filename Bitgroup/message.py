@@ -242,14 +242,19 @@ class Presence(BitgroupMessage):
 		
 		# Incoming presence message from a newly connected peer
 		if self.incoming:
-
-			group.addPeer(peer)
+			info = {
+				'bmAddr': data.bmAddr,
+				'ipAddr': data.ipAddr,
+				'port': data.port
+			}
+			group.addPeer(data.peerID, info)
 
 		# Outgoing presence message, add our data to the message
 		else:
 			data = {
 				'peer': app.peerID,
-				'addr': app.peerIP,
+				'bmAddr': app.user.addr,
+				'ipAddr': app.peerIP,
 				'port': app.server.port,
 				'last': # timestamp of last data
 			}
