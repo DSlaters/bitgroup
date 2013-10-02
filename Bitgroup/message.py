@@ -68,17 +68,19 @@ class Message(object):
 	"""
 	Set the current message's class in the subject line for the recipient
 	"""
-	def setClass(cls):
+	def setClass(self, cls):
 		self.subject = app.title + ': ' + cls + ' ' + app.msg('bg-msg-subject')
 
 	"""
 	Send the message
 	"""
 	def send(self):
-		subject = self.subject.encode('base64')
-		body = self.body.encode('base64')
-		if self.toAddr: app.api.sendMessage(toAddr, fromAddr, subject, body)
-		else: app.api.sendBroadcast(fromAddr, subject, body)
+		if 'bm' in app.state and app.state['bm'] == 'Connected':
+			subject = self.subject.encode('base64')
+			body = self.body.encode('base64')
+			if self.toAddr: app.api.sendMessage(self.toAddr, self.fromAddr, subject, body)
+			else: app.api.sendBroadcast(self.fromAddr, subject, body)
+		else: print "Not sending " + (self.__class__.__name__) + " message, Bitmessage not running"
 
 	"""
 	Reply to the messge
@@ -92,11 +94,13 @@ class Message(object):
 	@staticmethod
 	def getMessages(mailbox):
 		if mailbox == None:
-			messages = json.loads(app.api.getAllInboxMessages())
-			mailbox = []
-			for msgID in range(len(messages['inboxMessages'])):
-				mailbox.append(Message(messages['inboxMessages'][msgID]))
-			print str(len(mailbox)) + ' messages retrieved.'
+			if 'bm' in app.state and app.state['bm'] == 'Connected':
+				messages = json.loads(app.api.getAllInboxMessages())
+				mailbox = []
+				for msgID in range(len(messages['inboxMessages'])):
+					mailbox.append(Message(messages['inboxMessages'][msgID]))
+				print str(len(mailbox)) + ' messages retrieved.'
+			else: print "Not getting messages, Bitmessage not running"
 
 
 class BitgroupMessage(Message):
@@ -226,8 +230,8 @@ class Changes(BitgroupMessage):
 
 			# Get the changes since the last changes for this group were sent (or since passed timestamp)
 			if ts == None:
-				ts = this.lastSync
-				this.lastSync = app.timestamp()
+				ts = self.lastSync
+				self.lastSync = app.timestamp()
 			self.data = self.group.changes(ts)
 
 		return None
@@ -251,7 +255,7 @@ class Presence(BitgroupMessage):
 				'user': app.user.info(),
 				'ip': app.ip,
 				'port': app.server.port,
-				'last': # timestamp of last data
+				'last': 0 # timestamp of last data
 			}
 
 		return None

@@ -258,7 +258,7 @@ class handler(asynchat.async_chat):
 		}
 
 		# Get the addresses and names of the user's groups
-		for i in app.groups: tmp['user']['groups'][i] = app.groups[i].name
+		for g in app.groups: tmp['user']['groups'][g.prvaddr] = g.name
 
 		# Get the group's extensions
 		if group in app.groups: tmp['ext'] = app.groups[group].get('settings.extensions')

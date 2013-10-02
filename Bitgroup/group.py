@@ -65,8 +65,8 @@ class Group(Node, object):
 	"""
 	def determineServer(self):
 
-		# TODO: who's server?
-		gsrv = some prvaddr
+		# TODO: who's server? - for now just sort by bm addresses and pick the first
+		gsrv = app.peer == self.peers().sort()[0]
 
 		# if not server now, but was before, close all peer sockets for this group
 		if self.server and not gsrv:

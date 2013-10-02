@@ -1,14 +1,7 @@
 import __builtin__
-import os
-import sys
-import re
-import uuid
-import http
-import xmlrpclib
-import json
-import time
-import datetime
-import urllib
+import os, sys, re, threading
+import uuid, http, urllib, xmlrpclib, json
+import time, datetime
 
 # Bitmessage modules
 import hashlib
@@ -42,7 +35,7 @@ class App:
 	server = None
 	inbox = None
 	user = {}
-	groups = {}
+	groups = []
 	maxage = 600000   # Expiry time of queue items in milliseconds
 	i18n = {}         # i18n interface messages loaded from interface/i18n.json
 	state = {}        # Dynamic application state information
@@ -93,7 +86,7 @@ class App:
 	Regular interval timer
 	"""
 	def interval(self):
-		threading.Timer(10.0, interval).start()
+		threading.Timer(10.0, self.interval).start()
 		now = self.timestamp()
 		ts = self.lastInterval
 		self.lastInterval = now
@@ -132,7 +125,7 @@ class App:
 			prvaddr = conf[passwd]
 			print "initialising group: " + prvaddr
 			group = Group(prvaddr, passwd)
-			self.groups[prvaddr] = group
+			self.groups.append(group)
 			print "    group initialised (" + group.name + ")"
 
 	"""

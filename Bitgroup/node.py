@@ -1,5 +1,6 @@
 import os
 import json
+from message import *
 
 class Node:
 	"""
@@ -142,8 +143,8 @@ class Node:
 	"""
 	TODO: Send queued changes since last send to the group's private Bitmessage address
 	"""
-	def sendChanges(self, group):
+	def sendChanges(self):
 		data = self.changes(self.lastSend)
-		msg = new Changes(self)
+		msg = Changes(self)
 		msg.send()
 		self.lastSend = app.timestamp()
