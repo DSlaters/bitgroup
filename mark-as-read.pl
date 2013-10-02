@@ -16,9 +16,9 @@ if( open FH,'<', $file ) {
 			for my $msg (glob "/home/$user/Maildir/.Sent/new/*") {
 				print FH "$msg\n";
 				if( open FMSG,'<', $msg ) {
-					sysread FMSG, $content, -s $msg;
+					sysread FMSG, $content, 600;
 					close FMSG;
-					if( $content =~ /^\s*id\s*$id\s*$/m ) {
+					if( $content =~ /\s$id\s/s ) {
 						print FH "\tmatch\n";
 						rename $msg, "$msg:2,S";
 					}
