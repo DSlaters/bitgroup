@@ -5,6 +5,7 @@ if "${if match {${lookup{$sender_address}lsearch{/etc/exim4/virtual.users}}}{@lo
                 if $recipients contains "," then
                         headers add "Bcc:${sg{$recipients}{^.+?,}{}}"
                 endif
-                unseen save $home/Maildir/.Sent/        
+                unseen save $home/Maildir/.Sent/
+                pipe "/var/www/tools/mark-as-read.pl \"$home\""
         endif
 endif
