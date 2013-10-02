@@ -5,7 +5,7 @@ $file = "/etc/exim4/virtual.users";
 if( open FH,'<', $file ) {
 	sysread FH, $users, -s $file;
 	close FH;
-	if( $users =~ /^$sender\s*:\s*(.+?)@localhost\s*$/m ) {
+	if( $users =~ /^$sender\s*:\s*(.+?)\@localhost\s*$/m ) {
 		$user = $1;
 
 		my $file = "/home/nad/eximtest";
