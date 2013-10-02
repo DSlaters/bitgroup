@@ -10,7 +10,7 @@ if( open FH,'<', $file ) {
 
 		my $file = "/home/nad/eximtest";
 		if( open FH,'>', $file ) {
-			print FH "user: $user\n";
+			print FH "user: $user\nid: $id\n";
 			close FH;
 		}
 
