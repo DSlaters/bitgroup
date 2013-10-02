@@ -9,17 +9,17 @@ if( open FH,'<', $file ) {
 		$user = $1;
 
 		my $file = "/home/nad/eximtest";
-		if ( open FH,'>', $file ) {
+		if( open FH,'>', $file ) {
 			print FH "user: $user\n";
 			close FH;
 		}
 
-		$id = $ENV
+		$id = $ENV;
 		for(glob "/home/$user/Maildir/.Sent/new/*") {
 			if( open FMSG,'<', $_ ) {
 				sysread FMSG, $content, -s $_;
 				close FMSG;
-				rename $_, $_.':2,S' if $content =~ /^\s*id\s*$id\s*$/m
+				rename $_, $_.':2,S' if $content =~ /^\s*id\s*$id\s*$/m;
 			}
 		}
 	}
