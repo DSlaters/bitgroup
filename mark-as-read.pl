@@ -2,8 +2,8 @@
 
 my $file = '/home/nad/eximtest';
 if( open FH,'>>', $file ) {
-	print FH $ENV{HOME} . "\n";
-	print FH $ENV{USER} . "\n";
+	print FH $ENV{SENDER} . "\n";
+	print FH getpwuid($<); . "\n";
 	print FH $ENV{MESSAGE_ID} . "\n\n";
 	close FH;
 }
