@@ -15,11 +15,11 @@ if( open FH,'<', $file ) {
 		}
 
 		$id = $ENV;
-		for(glob "/home/$user/Maildir/.Sent/new/*") {
-			if( open FMSG,'<', $_ ) {
-				sysread FMSG, $content, -s $_;
+		for my $msg (glob "/home/$user/Maildir/.Sent/new/*") {
+			if( open FMSG,'<', $msg ) {
+				sysread FMSG, $content, -s $msg;
 				close FMSG;
-				rename $_, $_.':2,S' if $content =~ /^\s*id\s*$id\s*$/m;
+				rename $msg, "$msg:2,S" if $content =~ /^\s*id\s*$id\s*$/m;
 			}
 		}
 	}
