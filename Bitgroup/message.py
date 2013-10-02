@@ -121,12 +121,12 @@ class BitgroupMessage(Message):
 	def __init__(self, param):
 
 		# It's an outgoing message, set up the new message to broadcast an encrypted message to the group
-		if msg.__class__.__name__ == 'Group':
+		if param.__class__.__name__ == 'Group':
 			self.outgoing = True
 			self.group = param
+			self.passwd = param.passwd
 			self.fromAddr = param.prvaddr
 			self.toAddr = None
-			self.passwd = param.passwd
 			self.setClass(self.__class__.__name__)
 
 		# Message is incoming
@@ -134,7 +134,7 @@ class BitgroupMessage(Message):
 			self.incoming = True
 
 			# Only instantiate base-class and decode the body if it's an incoming message
-			Message.__init__(self, msg)
+			Message.__init__(self, param)
 
 			# Set the message's group instance from the To address
 			for g in app.groups:
@@ -179,8 +179,8 @@ class Invitation(BitgroupMessage):
 	"""
 	Handles the Bitgroup invitation workflow
 	"""
-	def __init__(self, msg):
-		BitgroupMessage.__init__(self, msg)
+	def __init__(self, param):
+		BitgroupMessage.__init__(self, param)
 		return None
 
 	def accept(self): pass
@@ -190,11 +190,12 @@ class Post(BitgroupMessage):
 	"""
 	General informational post to the group
 	"""
-	def __init__(self, msg, subject, body):
-		BitgroupMessage.__init__(self, msg)
+	def __init__(self, param, subject, body):
+		BitgroupMessage.__init__(self, param)
 
 		# TODO: Incoming post
 		if self.incoming:
+			pass
 
 		# Outgoing post, put the subject and body into the data
 		else:
@@ -241,20 +242,14 @@ class Presence(BitgroupMessage):
 		BitgroupMessage.__init__(self, param)
 		
 		# Incoming presence message from a newly connected peer
-		if self.incoming:
-			info = {
-				'bmAddr': data.bmAddr,
-				'ipAddr': data.ipAddr,
-				'port': data.port
-			}
-			group.addPeer(data.peerID, info)
+		if self.incoming: self.group.addPeer(data)
 
 		# Outgoing presence message, add our data to the message
 		else:
 			data = {
-				'peer': app.peerID,
-				'bmAddr': app.user.addr,
-				'ipAddr': app.peerIP,
+				'peer': app.peer,
+				'user': app.user.info(),
+				'ip': app.ip,
 				'port': app.server.port,
 				'last': # timestamp of last data
 			}

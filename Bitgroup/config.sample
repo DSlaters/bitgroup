@@ -1,5 +1,4 @@
 [bitmessage]
-addr = BM-YourBitMessageAddress
 port = 8442
 interface = 127.0.0.1
 username = BitMessageAPIuser
@@ -10,5 +9,13 @@ program = /path/to/PyBitmessage/src
 port = 80
 username = HTTP username
 password = HTTP password
+
+[user]
+bmaddr = BM-YourBitMessageAddress
+nickname = Foo
+firstname = Henry
+surname = McFoo
+email = foo@bar.baz
+website = http://bar.baz/foo
 
 [groups]

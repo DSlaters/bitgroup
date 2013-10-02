@@ -30,8 +30,8 @@ class App:
 	name = 'Bitgroup'
 	version = '0.0.0'
 	title = name + "-" + version
-	peerID = None
-	peerIP = None
+	peer = None
+	ip = None
 
 	docroot = os.path.dirname(__file__) + '/interface'
 	datapath = os.getenv("HOME") + '/.Bitgroup'
@@ -72,8 +72,8 @@ class App:
 		password = config.get('bitmessage', 'password')
 		self.api = xmlrpclib.ServerProxy("http://"+username+":"+password+"@"+interface+":"+str(port)+"/")
 
-		# Initialise the current user (just using API password for encrypting user data for now)
-		self.user = User(config.get('bitmessage', 'addr'), password)
+		# Initialise the current user
+		self.user = User()
 
 		# Load i18n messages
 		self.loadI18n()
@@ -99,9 +99,9 @@ class App:
 		self.lastInterval = now
 
 		# If we have no IP address, try and obtain it and if successful, broardcast our presence to our groups
-		if self.peerIP == None:
-			self.peerIP = self.getExternalIP()
-			if self.peerIP:
+		if self.ip == None:
+			self.ip = self.getExternalIP()
+			if self.ip:
 				for g in app.groups:
 					Presence(g).send()
 

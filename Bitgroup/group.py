@@ -49,11 +49,14 @@ class Group(Node, object):
 			# Update the config file with the private address and password (all thats needed to be a member)
 			app.updateConfig('groups', self.passwd, self.prvaddr)
 
-			# Initialise the group's data to the template
+			# Initialise the group's data from the template
 			global template
 			for k in template: self.setData(k, template[k])
 			self.setData('settings.name', self.name)
 			self.setData('settings.addr', self.addr)
+
+			# Add self as the only member
+			self.setData(settings.members, [app.user.info()])
 
 		return None
 
@@ -92,9 +95,9 @@ class Group(Node, object):
 		return peers
 
 	"""
-	Add a new peer and establish a connection with it
+	Add a new peer and establish a connection with it - data is the format sent by a Presence message
 	"""
-	def addPeer(self, peer, info):
+	def addPeer(self, data):
 
 		# Add the peer's info to the server's active clients list
 		app.server.clients[peer] = {
@@ -108,9 +111,8 @@ class Group(Node, object):
 		# If we are the group server,
 		if self.group.server:
 			
-			# TODO: Open a socket to the new peer
-			# get peer IP and port
-			sock = app.server.connect((addr, port))
+			# Open a socket to the new peer
+			sock = app.server.connect((data['ip'], data['port']))
 
 			# Send data since peer's last data and the current peer info
 			data = {'peers': group.peers()}
@@ -139,6 +141,8 @@ template = {
 	'settings.extensions': [],
 	'settings.tags': [],
 	'settings.skin': 'default',
+
+	'members': [],
 
 	'Contact.type': 'Node',
 	'Contact.views': ['Properties'],
