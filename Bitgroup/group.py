@@ -22,24 +22,31 @@ class Group(Node, object):
 	"""
 	Initialise the new group instance
 	"""
-	def __init__(self, group, passwd = None):
+	def __init__(self, param, passwd = None):
 
 		# If instantiating by address,
-		if re.match('BM-', group):
+		if re.match('BM-', param):
 
 			# If we've provided a passwd, then we're initialising the instance
 			if passwd:
-				self.prvaddr = group
+				self.prvaddr = param
 				self.passwd = passwd
 				self.addr = self.getData('settings.addr')
 				self.name = self.getData('settings.name')
 
 		# Instantiating by name, create a new group
 		else:
-			self.name = group
+			if not passwd:
+				print "Invalid Group instantiation, \"" + param + "\" and no passwd"
+				return None
+			if not app.bmConnected():
+				print "Not creating group \"" + param + "\", Bitmessage not connected"
+				return None
+
+			self.name = param
 
 			# Make a new random password - encrypting with openssl in case uuid's not very random
-			self.passwd = self.encrypt(str(uuid.uuid4()),str(uuid.uuid4())).encode('base64').strip().lower()
+			self.passwd = app.encrypt(str(uuid.uuid4()),str(uuid.uuid4())).encode('base64').strip().lower()
 		
 			# Now create two address from the passphrase
 			addrs = json.loads(app.api.createDeterministicAddresses(self.passwd, 2))

@@ -171,6 +171,12 @@ class App:
 		return self.state
 
 	"""
+	Return whether or not Bitmessage is connected
+	"""
+	def bmConnected(self):
+		return 'bm' in app.state and app.state['bm'] is BM_CONNECTED
+
+	"""
 	Load the i18n messages
 	"""
 	def loadI18n(self):

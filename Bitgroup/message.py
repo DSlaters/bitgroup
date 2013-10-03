@@ -75,7 +75,7 @@ class Message(object):
 	Send the message
 	"""
 	def send(self):
-		if 'bm' in app.state and app.state['bm'] is BM_CONNECTED:
+		if app.bmConnected():
 			subject = self.subject.encode('base64')
 			body = self.body.encode('base64')
 			if self.toAddr: app.api.sendMessage(self.toAddr, self.fromAddr, subject, body)
@@ -94,7 +94,7 @@ class Message(object):
 	@staticmethod
 	def getMessages(mailbox):
 		if mailbox is None:
-			if 'bm' in app.state and app.state['bm'] is BM_CONNECTED:
+			if app.bmConnected():
 				messages = json.loads(app.api.getAllInboxMessages())
 				mailbox = []
 				for msgID in range(len(messages['inboxMessages'])):

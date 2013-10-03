@@ -1,13 +1,7 @@
-import os
-import socket
-import asyncore, asynchat
-import time
-import re
-import mimetypes
-import struct
-import urllib
-import hashlib
-import json
+import os, re, time, struct
+import socket, asyncore, asynchat
+import urllib, hashlib, json, mimetypes
+from group import *
 
 class Server(asyncore.dispatcher):
 	"""
@@ -154,14 +148,16 @@ class Connection(asynchat.async_chat):
 			if not self.httpIsAuthenticated(head, method): return self.httpSendAuthRequest()
 
 			# If the uri starts with a group addr, set group and change path to group's files
-			m = re.match('/(.+?)($|/.*)', uri)
-			if m and m.group(1) in app.groups:
-				group = m.group(1)
-				if m.group(2) == '/' or m.group(2) == '': uri = '/'
-				else:
-					docroot = app.datapath
-					uri = '/' + group + '/files' + m.group(2)
-			else: group = ''
+			m = re.match('/(BM-.+?)($|/.*)', uri)
+			if m:
+				group = Group(m.group(1)) if m else None
+				if not group.addr: group = None
+				if group:
+					if m.group(2) == '/' or m.group(2) == '': uri = '/'
+					else:
+						docroot = app.datapath
+						uri = '/' + group.prvaddr + '/files' + m.group(2)
+			else: group = None
 			uri = os.path.abspath(uri)
 			path = docroot + uri
 			base = os.path.basename(uri)
@@ -252,7 +248,7 @@ class Connection(asynchat.async_chat):
 	"""
 	def httpDefaultDocument(self, group):
 		tmp = {
-			'group': group,
+			'group': group.prvaddr if group else False,
 			'user': {'lang': app.user.lang, 'groups': {}},
 		}
 
@@ -260,12 +256,12 @@ class Connection(asynchat.async_chat):
 		for g in app.groups: tmp['user']['groups'][g.prvaddr] = g.name
 
 		# Get the group's extensions
-		if group in app.groups: tmp['ext'] = app.groups[group].get('settings.extensions')
+		if group: tmp['ext'] = group.getData('settings.extensions')
 		else: tmp['ext'] = []
 
 		# Build the page content
 		content = "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n"
-		content += "<title>" + ( group + " - " if group else '' ) + app.name + "</title>\n"
+		content += "<title>" + ( group.name + " - " if group else '' ) + app.name + "</title>\n"
 		content += "<meta charset=\"UTF-8\" />\n"
 		content += "<meta name=\"generator\" content=\"" + app.title + "\" />\n"
 		content += "<script type=\"text/javascript\">window.tmp = " + json.dumps(tmp) + ";</script>\n"
@@ -284,12 +280,11 @@ class Connection(asynchat.async_chat):
 	Process a DataSync request from an HTTP client
 	"""
 	def httpSyncData(self, head, data, base, group):
-		if group in app.groups:
+		if group:
 			clients = self.server.clients
 			now  = app.timestamp()
 			self.ctype = mimetypes.guess_type(base)[0]
 			cdata = []
-			g = app.groups[group]
 
 			# Identify the client stream using a unique ID in the header
 			match = re.search(r'X-Bitgroup-ID: (.+?)\s', head)
@@ -304,11 +299,11 @@ class Connection(asynchat.async_chat):
 			# If the client sent change-data merge into the local data
 			if data:
 				cdata = json.loads(data)
-				for item in cdata: g.set(item[0], item[1], item[2], client)
+				for item in cdata: group.setData(item[0], item[1], item[2], client)
 				print "Changes received from " + client + " (last=" + str(ts) + "): " + str(cdata)
 
 			# Last sync was more than maxage seconds ago, send all data
-			if now - ts > app.maxage: content = app.groups[group].json()
+			if now - ts > app.maxage: content = group.json()
 
 			# Otherwise send the queue of changes that have occurred since the client's last sync request
 			else:
@@ -316,7 +311,7 @@ class Connection(asynchat.async_chat):
 				# If we have a SWF socket for this client, bail as changes will already be sent
 				if CLIENTSOCK in clients[client]: content = ''
 				else:
-					content = g.changes(ts - (now-ts), client) # TODO: messy doubling of period (bug#3)
+					content = group.changes(ts - (now-ts), client) # TODO: messy doubling of period (bug#3)
 					if len(content) > 0: print "Sending to " + client + ': ' + json.dumps(content)
 
 					# Put an object on the end of the list containing the application state data
