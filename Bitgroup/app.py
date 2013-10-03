@@ -150,15 +150,15 @@ class App:
 			# Is Bitmessage available?
 			try:
 				self.state['bm'] = self.api.add(2,3)
-				if self.state['bm'] == 5: self.state['bm'] = BM_CONNECTED
+				if self.state['bm'] == 5: self.state['bm'] = CONNECTED
 				else:
 					self.state['bm_err'] = self.state['bm']
-					self.state['bm'] = BM_ERROR
+					self.state['bm'] = ERROR
 			except:
-				self.state['bm'] = BM_NOTCONNECTED
+				self.state['bm'] = NOTCONNECTED
 
 			# If Bitmessage was available add the message list info
-			if self.state['bm'] is BM_CONNECTED:
+			if self.state['bm'] is CONNECTED:
 				self.state['inbox'] = []
 				for msg in self.inbox:
 					data = {'from': msg.fromAddr, 'subject': msg.subject}
@@ -174,7 +174,7 @@ class App:
 	Return whether or not Bitmessage is connected
 	"""
 	def bmConnected(self):
-		return 'bm' in app.state and app.state['bm'] is BM_CONNECTED
+		return 'bm' in app.state and app.state['bm'] is CONNECTED
 
 	"""
 	Load the i18n messages

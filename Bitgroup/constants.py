@@ -21,7 +21,8 @@ const('CHANGES', 4)
 const('GROUP', 5)
 const('DATA', 6)
 
-# Bitmessage states
-const('BM_NOTCONNECTED', 0)
-const('BM_CONNECTED', 1)
-const('BM_ERROR', 2)
+# Connectivity states
+const('NOTCONNECTED', 0)
+const('CONNECTED', 1)
+const('ERROR', 2)
+const('UNKNOWN', 3)

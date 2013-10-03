@@ -21,14 +21,18 @@ function App() {
 	this.swfIdSent = false;    // this client's ID has been sent to the SWF
 	this.swfConnected = false; // whether the SWF is available for receiving data
 
-	// Dynamic application state data
-	this.state = {
-		bg: 'Connected',   // State of connection to Bitgroup service
-		bm: false          // State of connection to Bitmessage daemon
+	// Populate the properties that were sent in the page
+	for( var i in window.tmp ) {
+		if(i == 'const') {
+			for( var j in window.tmp['const'] ) window[j] = window.tmp['const'][j];
+		} else this[i] = window.tmp[i];
 	}
 
-	// Populate the properties that were sent in the page
-	for( var i in window.tmp ) this[i] = window.tmp[i];
+	// Dynamic application state data
+	this.state = {
+		bg: CONNECTED,   // State of connection to Bitgroup service
+		bm: UNKNOWN      // State of connection to Bitmessage daemon
+	}
 
 	// Run the app after the document is ready, load the i18n message and then run the app
 	$(document).ready(function() {
@@ -46,7 +50,7 @@ function App() {
 
 				// Run the application
 				this.run();
-
+alert('test: ' + UNKNOWN);
 				// Regiester hash changes with our handler
 				$(window).hashchange(function() { window.app.locationChange.call(window.app) });
 			}
@@ -341,7 +345,7 @@ App.prototype.syncData = function() {
 				// The last item is an object contain application information
 				var state = data.pop();
 				for( var i in state ) this.setState(i, state[i]);
-				this.setState('bg', 'Connected');
+				this.setState('bg', CONNECTED);
 
 				// The rest of the list is the change data
 				for( var i = 0; i < data.length; i++ ) {
@@ -362,8 +366,8 @@ App.prototype.syncData = function() {
 			this.syncLock = false;
 		},
 		error: function(a,b,c) {
-			this.setState('bg', 'Disconnected');
-			this.setState('bm', 'Unknown');
+			this.setState('bg', DISCONNECTED);
+			this.setState('bm', UNKNOWN);
 			this.syncLock = false;
 		}
 	});
@@ -382,8 +386,8 @@ App.prototype.sendData = function(key, val, ts) {
 		headers: { 'X-Bitgroup-ID': this.id },
 		dataType: 'html',
 		error: function() {
-			this.setState('bg', 'Disconnected');
-			this.setState('bm', 'Unknown');
+			this.setState('bg', NOTCONNECTED);
+			this.setState('bm', CONNECTED);
 		}
 	});
 };

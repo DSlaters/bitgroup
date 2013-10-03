@@ -250,6 +250,7 @@ class Connection(asynchat.async_chat):
 		tmp = {
 			'group': group.prvaddr if group else False,
 			'user': {'lang': app.user.lang, 'groups': {}},
+			'const': constants
 		}
 
 		# Get the addresses and names of the user's groups
