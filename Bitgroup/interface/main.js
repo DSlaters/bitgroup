@@ -30,8 +30,10 @@ function App() {
 
 	// Dynamic application state data
 	this.state = {
-		bg: CONNECTED,   // State of connection to Bitgroup service
-		bm: UNKNOWN      // State of connection to Bitmessage daemon
+		bg: CONNECTED,    // State of connection to Bitgroup service
+		bm: UNKNOWN,      // State of connection to Bitmessage daemon
+		ip: UNKNOWN,      // State of network connection
+		swf: NOTCONNECTED // Bitgroup connection type
 	}
 
 	// Run the app after the document is ready, load the i18n message and then run the app
@@ -50,7 +52,7 @@ function App() {
 
 				// Run the application
 				this.run();
-alert('test: ' + UNKNOWN);
+
 				// Regiester hash changes with our handler
 				$(window).hashchange(function() { window.app.locationChange.call(window.app) });
 			}
@@ -177,8 +179,19 @@ App.prototype.renderPage = function() {
 		this.pageTitle();
 
 		// Connect the dynamic application data elements
-		this.componentConnect('_bg', $('#state-bg-data'));
-		this.componentConnect('_bm', $('#state-bm-data'));
+		var bgElem = $('#state-bg-data')[0];
+		var bmElem = $('#state-bm-data')[0];
+		var ipElem = $('#state-ip-data')[0];
+		var swfElem = $('#state-swf-data')[0];
+		var fStatus = function(val) { $(this).html( val > 0 && val < 10 ? app.msg('con-status-'+val) : val ) };
+		bgElem.setValue = fStatus;
+		bmElem.setValue = fStatus;
+		ipElem.setValue = fStatus;
+		swfElem.setValue = function(val) { $(this).html(app.msg('swf-status-'+val)) };
+		this.componentConnect('_bg', bgElem);
+		this.componentConnect('_bm', bmElem);
+		this.componentConnect('_ip', ipElem);
+		this.componentConnect('_swf', swfElem);
 
 		// Call the view's render method to populate the content area
 		this.view.render(this);
@@ -207,9 +220,12 @@ App.prototype.renderPersonal = function() {
 	html += '<li><a href="http://www.organicdesign.co.nz/bitgroup">' + this.msg('documentation') + '</a></li>\n</ul></li>\n';
 	html += '<li id="profile"><a id="user-page" href="/">' + this.msg('user-page') + '</a></li>\n';
 	html += '<li id="groups"><a>' + this.msg('groups') + '</a><ul id="personal-groups">\n' + this.renderGroupsList() + '</ul></li>\n';
-	html += '<li id="state-bg"><a id="state-bg-data"></a></li>\n'
-	html += '<li id="state-bm"><a id="state-bm-data"></a></li>\n'
-	html += '</ul>\n';
+	html += '<li id="status"><a>' + this.msg('status') + '</a><ul>\n';
+	html += '<li id="state-bg"><a>' + this.msg('bg') + '</a><ul><li><a id="state-bg-data"></a></li></li>\n'
+	html += '<li><a id="state-swf-data"></a></li></ul></li>\n'
+	html += '<li id="state-bm"><a>' + this.msg('bm') + '</a><ul><li><a id="state-bm-data"></a></li></ul></li>\n'
+	html += '<li id="state-ip"><a>' + this.msg('ip') + '</a><ul><li><a id="state-ip-data"></a></li></ul></li>\n'
+	html += '</ul>\n</ul>\n';
 	return html;
 };
 
@@ -422,6 +438,7 @@ App.prototype.swfGetObject = function() {
  */
 App.prototype.swfData = function(data) {
 	this.swfConnected = true;
+	this.setState('swf', CONNECTED);
 	if(data) {
 		console.info("Data received from SWF: " + data);
 		data = JSON.parse(data);

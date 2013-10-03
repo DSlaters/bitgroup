@@ -22,7 +22,7 @@ const('GROUP', 5)
 const('DATA', 6)
 
 # Connectivity states
-const('NOTCONNECTED', 0)
-const('CONNECTED', 1)
-const('ERROR', 2)
-const('UNKNOWN', 3)
+const('NOTCONNECTED', 1)
+const('CONNECTED', 2)
+const('ERROR', 3)
+const('UNKNOWN', 4)

@@ -1,5 +1,8 @@
 {
 	"en": {
+		"bg": "Bitgroup",
+		"bm": "Bitmessage",
+		"ip": "IP address",
 		"user": "user",
 		"user-page": "User profile",
 		"user-info": "User information",
@@ -16,6 +19,14 @@
 		"type": "Type",
 		"authneeded": "Authentication is required to use Bitgroup.",
 		"authfail": "The username or password supplied were incorrect.",
+
+		"status": "Status",
+		"con-status-1": "Not connected",
+		"con-status-2": "Connected",
+		"con-status-3": "Error",
+		"con-status-4": "Unknown",
+		"swf-status-1": "Ajax only",
+		"swf-status-2": "Ajax + SWF",
 
 		"group": "group",
 		"newgroup": "New group",
