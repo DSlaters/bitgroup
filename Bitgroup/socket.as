@@ -51,6 +51,7 @@ class App {
 			app.port = port;
 			app.sock.connect(null, port);
 			app.ctr = 1;
+			_root.status.text = 'connecting: ' + port;
 		});
  
 		// Called periodically (per frame)

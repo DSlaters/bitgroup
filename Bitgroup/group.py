@@ -74,8 +74,8 @@ class Group(Node, object):
 			d = []
 			for k in clients.keys():
 				client = clients[k]
-				if 'peerSocket' in client and client['group'] is g:
-					client['peerSocket'].close()
+				if CLIENTSOCK in client and client[GROUP] is g:
+					client[CLIENTSOCK].close()
 					d.append(k)
 			for k in d: del clients[k]
 
@@ -90,7 +90,7 @@ class Group(Node, object):
 		peers = []
 		for k in clients.keys():
 			client = clients[k]
-			if 'peerSocket' in client and client['group'] is self:
+			if CLIENTSOCK in client and client[GROUP] is self:
 				peers.append(k)
 		return peers
 
@@ -101,8 +101,8 @@ class Group(Node, object):
 
 		# Add the peer's info to the server's active clients list
 		app.server.clients[peer] = {
-			'peerSocket': sock,
-			'group': self.group
+			CLIENTSOCK: sock,
+			GROUP: self.group
 		}
 
 		# Since peers have changed, we need to know who's the server now
@@ -115,9 +115,9 @@ class Group(Node, object):
 			sock = app.server.connect((data['ip'], data['port']))
 
 			# Send data since peer's last data and the current peer info
-			data = {'peers': group.peers()}
+			data = {PEERS: group.peers()}
 			changes = group.changes(self.data['last'])
-			if len(changes) > 0: data['changes'] = changes
+			if len(changes) > 0: data[CHANGES] = changes
 			sock.push(json.dumps(data))
 			
 			# TODO: If this is a new member (not in member info), broadcast a message about it to the group
@@ -127,7 +127,7 @@ class Group(Node, object):
 	Delete a peer from the active peers list
 	"""
 	def delPeer(self, peer, close = True):
-		if close: app.server.clients[peer]['peerSocket'].close()
+		if close: app.server.clients[peer][CLIENTSOCK].close()
 		del app.server.clients[peer]
 		self.determineServer()
 

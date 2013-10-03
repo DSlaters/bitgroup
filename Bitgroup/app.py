@@ -75,10 +75,12 @@ class App:
 		self.loadGroups()
 
 		# Set up a simple HTTP server to handle requests from any interface on our port
-		self.server = http.server('', config.getint('interface', 'port'))
+		self.server = http.Server('127.0.0.1', config.getint('interface', 'port'))
 
 		# Call the regular interval timer
-		self.interval()
+		hw_thread = threading.Thread(target = self.interval)
+		hw_thread.daemon = True
+		hw_thread.start()
 
 		return None
 
@@ -86,26 +88,27 @@ class App:
 	Regular interval timer
 	"""
 	def interval(self):
-		threading.Timer(10.0, self.interval).start()
-		now = self.timestamp()
-		ts = self.lastInterval
-		self.lastInterval = now
+		while(True):
+			now = self.timestamp()
+			ts = self.lastInterval
+			self.lastInterval = now
 
-		# If we have no IP address, try and obtain it and if successful, broardcast our presence to our groups
-		if self.ip == None:
-			self.ip = self.getExternalIP()
-			if self.ip:
+			# If we have no IP address, try and obtain it and if successful, broardcast our presence to our groups
+			if self.ip is None:
+				self.ip = self.getExternalIP()
+				if self.ip:
+					for g in app.groups:
+						Presence(g).send()
+
+			# Check for new messages every 10 seconds
+			Message.getMessages(self.inbox)
+			
+			# TODO: Send outgoing queued changes messages every 10 minutes
+			if now - ts > 595000:
 				for g in app.groups:
-					Presence(g).send()
+					g.sendChanges()
 
-		# Check for new messages every 10 seconds
-		Message.getMessages(self.inbox)
-		
-		# TODO: Send outgoing queued changes messages every 10 minutes
-		if now - ts > 595000:
-			for g in app.groups:
-				g.sendChanges()
-
+			time.sleep(10)
 
 	"""
 	Update the config file and save it
@@ -147,13 +150,15 @@ class App:
 			# Is Bitmessage available?
 			try:
 				self.state['bm'] = self.api.add(2,3)
-				if self.state['bm'] == 5: self.state['bm'] = 'Connected'
-				else: self.state['bm'] = 'Error: ' + self.state['bm']
+				if self.state['bm'] == 5: self.state['bm'] = BM_CONNECTED
+				else:
+					self.state['bm_err'] = self.state['bm']
+					self.state['bm'] = BM_ERROR
 			except:
-				self.state['bm'] = 'Not running'
+				self.state['bm'] = BM_NOTCONNECTED
 
 			# If Bitmessage was available add the message list info
-			if self.state['bm'] == 'Connected':
+			if self.state['bm'] is BM_CONNECTED:
 				self.state['inbox'] = []
 				for msg in self.inbox:
 					data = {'from': msg.fromAddr, 'subject': msg.subject}

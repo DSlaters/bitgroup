@@ -9,7 +9,7 @@ import urllib
 import hashlib
 import json
 
-class server(asyncore.dispatcher):
+class Server(asyncore.dispatcher):
 	"""
 	Create a listening socket server for the interface JavaScript and SWF components to connect to
 	"""
@@ -30,28 +30,27 @@ class server(asyncore.dispatcher):
 		self.listen(5)
 		self.host = host
 		self.port = port
+		print "Server listening on port " + str(port)
 
-	# Accept a new incoming connection and set up a new handler instance for it
+	# Accept a new incoming connection and set up a new connection handler instance for it
 	def handle_accept(self):
 		sock, addr = self.accept()
-		handler(self, sock)
+		Connection(self, sock)
 
 
-class handler(asynchat.async_chat):
+class Connection(asynchat.async_chat):
 	"""
 	Handles incoming data requests for a single connection
 	"""
-
-	server = None  # Gives the handler access to the server properties such as the client data array
-	sock = None
-	data = ""      # Data accumulates here until a complete message has arrived
-
+	server = None  # Gives the connection handler access to the server properties such as the client data array
+	sock   = None
+	data   = ""    # Data accumulates here until a complete message has arrived
 	status = None  # HTTP status code returned to client
 	ctype  = None  # HTTP content type returned to client
-	clen = None    # HTTP content length returned to client
+	clen   = None  # HTTP content length returned to client
 
 	"""
-	Set up the handler (we use no terminator as we're detecting and removing completed messages manually)
+	Set up the connection handler (we use no terminator as we're detecting and removing completed messages manually)
 	"""
 	def __init__(self, server, sock):
 		asynchat.async_chat.__init__(self, sock)
@@ -70,12 +69,12 @@ class handler(asynchat.async_chat):
 			client = self.server.clients[k]
 
 			# Closing a SWF client
-			if 'swfSocket' in client and client['swfSocket'] is self:
+			if CLIENTSOCK in client and client[CLIENTSOCK] is self:
 				del self.server.clients[k]
 				print "Socket closed, client " + k + " removed from data"
 
 			# Closing a peer
-			elif 'peerSocket' in client and client['peerSocket'] is self:
+			elif PEERSOCK in client and client[PEERSOCK] is self:
 				client['group'].delPeer(k, False)
 
 	"""
@@ -315,7 +314,7 @@ class handler(asynchat.async_chat):
 			else:
 
 				# If we have a SWF socket for this client, bail as changes will already be sent
-				if 'swfSocket' in clients[client]: content = ''
+				if CLIENTSOCK in clients[client]: content = ''
 				else:
 					content = g.changes(ts - (now-ts), client) # TODO: messy doubling of period (bug#3)
 					if len(content) > 0: print "Sending to " + client + ': ' + json.dumps(content)
@@ -360,7 +359,8 @@ class handler(asynchat.async_chat):
 
 		# Check if this is the SWF asking for the connection policy, and if so, respond with a policy restricted to this host and port
 		if msg == '<policy-file-request/>\x00':
-			policy = '<allow-access-from domain="' + self.server.host + '" to-ports="' + str(self.server.port) + '" />'
+			#policy = '<allow-access-from domain="' + self.server.host + '" to-ports="' + str(self.server.port) + '" />'
+			policy = '<allow-access-from domain="*" to-ports="*" />'
 			policy = '<cross-domain-policy>' + policy + '</cross-domain-policy>'
 			self.push(policy)
 			self.close_when_done()
@@ -372,7 +372,7 @@ class handler(asynchat.async_chat):
 			clients = self.server.clients
 			client = match.group(1)
 			if not client in clients: clients[client] = {}
-			clients[client]['swfSocket'] = self
+			clients[client][CLIENTSOCK] = self
 			print "SWF socket identified for client " + client
 
 	"""
@@ -390,7 +390,7 @@ class handler(asynchat.async_chat):
 			return
 
 		# Get the group from the client entry
-		group = client['group']
+		group = client[GROUP]
 
 		# Peer known, try and decrypt its message
 		try:
@@ -403,9 +403,9 @@ class handler(asynchat.async_chat):
 		if msgType == 'Welcome':
 
 			# If the change-data was sent, merge into the local data
-			if 'changes' in data:
-				for item in data['changes']: group.set(item[0], item[1], item[2], peer)
-				print "Changes received from " + peer + str(data['changes']) 
+			if CHANGES in data:
+				for item in data[CHANGES]: group.set(item[0], item[1], item[2], peer)
+				print "Changes received from " + peer + str(data[CHANGES]) 
 
 			# If peer information was sent, store in the group data
-			if 'peers' in data: group.peers = data['peers']
+			if PEERS in data: group.peers = data[PEERS]

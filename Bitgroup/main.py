@@ -1,7 +1,17 @@
 #!/usr/bin/python2.7
-import os
-import sys
-import ConfigParser
+import __builtin__
+import os, sys, ConfigParser
+
+# Declare application-wide constants
+__builtin__.CLIENTSOCK = 1
+__builtin__.PEERSOCK = 2
+__builtin__.PEERS = 3
+__builtin__.CHANGES = 4
+__builtin__.GROUP = 5
+__builtin__.DATA = 6
+__builtin__.BM_NOTCONNECTED = 0
+__builtin__.BM_CONNECTED = 1
+__builtin__.BM_ERROR = 2
 
 # Read the configuration file
 configfile = os.path.dirname(__file__) + '/.config'

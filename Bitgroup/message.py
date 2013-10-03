@@ -75,12 +75,12 @@ class Message(object):
 	Send the message
 	"""
 	def send(self):
-		if 'bm' in app.state and app.state['bm'] == 'Connected':
+		if 'bm' in app.state and app.state['bm'] is BM_CONNECTED:
 			subject = self.subject.encode('base64')
 			body = self.body.encode('base64')
 			if self.toAddr: app.api.sendMessage(self.toAddr, self.fromAddr, subject, body)
 			else: app.api.sendBroadcast(self.fromAddr, subject, body)
-		else: print "Not sending " + (self.__class__.__name__) + " message, Bitmessage not running"
+		else: print "Not sending " + (self.__class__.__name__) + " message to " + self.group.name + ", Bitmessage not running"
 
 	"""
 	Reply to the messge
@@ -93,8 +93,8 @@ class Message(object):
 	"""
 	@staticmethod
 	def getMessages(mailbox):
-		if mailbox == None:
-			if 'bm' in app.state and app.state['bm'] == 'Connected':
+		if mailbox is None:
+			if 'bm' in app.state and app.state['bm'] is BM_CONNECTED:
 				messages = json.loads(app.api.getAllInboxMessages())
 				mailbox = []
 				for msgID in range(len(messages['inboxMessages'])):
@@ -147,7 +147,7 @@ class BitgroupMessage(Message):
 
 			# Bail if we don't have an instance for this group
 			# - this could only happen if we're subscribed to a group's private address that we're not a member of
-			if self.group == None:
+			if self.group is None:
 				print "Message received for a group we're not a member of!"
 				# TODO: should unsubscribe from this group's private address
 				self.invalid = True
@@ -229,7 +229,7 @@ class Changes(BitgroupMessage):
 		else:
 
 			# Get the changes since the last changes for this group were sent (or since passed timestamp)
-			if ts == None:
+			if ts is None:
 				ts = self.lastSync
 				self.lastSync = app.timestamp()
 			self.data = self.group.changes(ts)
