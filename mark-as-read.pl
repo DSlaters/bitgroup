@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 $sender = $ENV{SENDER};
 $id = $ENV{MESSAGE_ID};
-@recipients = $ARG[0] =~ /([0-9a-z_.&-]+@[0-9a-z_.&-]+)/gi;
+@recipients = $ARGV[0] =~ /([0-9a-z_.&-]+@[0-9a-z_.&-]+)/gi;
 $file = "/etc/exim4/virtual.users";
 if( open FH,'<', $file ) {
 	sysread FH, $users, -s $file;
