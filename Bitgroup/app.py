@@ -11,6 +11,7 @@ from pyelliptic.openssl import OpenSSL
 from bitmessagemain import pointMult
 
 # Bitgroup modules
+from dev import *
 from user import *
 from group import *
 from message import *
@@ -25,6 +26,8 @@ class App:
 	title = name + "-" + version
 	peer = None
 	ip = None
+
+	dev = False
 
 	docroot = os.path.dirname(__file__) + '/interface'
 	datapath = os.getenv("HOME") + '/.Bitgroup'
@@ -49,6 +52,9 @@ class App:
 		self.config = config
 		self.configfile = configfile
 
+		# If dev arg in the command line, set dev
+		if sys.argv[0] == 'dev': app.dev = sys.argv[1]
+
 		# Make the app a "superglobal"
 		__builtin__.app = self
 
@@ -63,7 +69,13 @@ class App:
 		interface = config.get('bitmessage', 'interface')
 		username = config.get('bitmessage', 'username')
 		password = config.get('bitmessage', 'password')
-		self.api = xmlrpclib.ServerProxy("http://"+username+":"+password+"@"+interface+":"+str(port)+"/")
+
+		# If in dev mode, use the fake Bitmessage class, otherwise set up the API connection to the real thing
+		if app.dev: self.api = fakeBitmessage()
+		else: self.api = xmlrpclib.ServerProxy("http://"+username+":"+password+"@"+interface+":"+str(port)+"/")
+
+		# Change the port if in dev mode
+		if self.dev: port += (dev - 1)
 
 		# Initialise the current user
 		self.user = User()

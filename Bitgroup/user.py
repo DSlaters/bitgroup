@@ -1,3 +1,4 @@
+import hashlib
 from node import *
 
 class User(Node):
@@ -22,12 +23,20 @@ class User(Node):
 
 		# If no address given, then instantiate local user from config
 		if addr is None:
-			self.addr = app.config.get('user', 'bmaddr')
-			self.addr = app.config.get('user', 'nickname')
-			self.addr = app.config.get('user', 'firstname')
-			self.addr = app.config.get('user', 'surname')
-			self.addr = app.config.get('user', 'email')
-			self.addr = app.config.get('user', 'website')
+
+			# If in dev mode, add a number index number to the user name and use a random BM address
+			if app.dev:
+				self.nickname = app.config.get('user', 'nickname')
+				if dev > 1: self.nickname += str(dev - 1)
+				self.addr = 'BM-' + hashlib.md5(self.nickname).hexdigest()
+
+			else:
+				self.addr      = app.config.get('user', 'bmaddr')
+				self.nickname  = app.config.get('user', 'nickname')
+				self.firstname = app.config.get('user', 'firstname')
+				self.surname   = app.config.get('user', 'surname')
+				self.email     = app.config.get('user', 'email')
+				self.website   = app.config.get('user', 'website')
 
 			# User's just have one address, so set the private address to the same as the public
 			self.prvaddr = addr

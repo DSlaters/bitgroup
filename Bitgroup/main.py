@@ -1,6 +1,7 @@
 #!/usr/bin/python2.7
 import os, sys, ConfigParser
 import constants
+import dev
 
 # Read the configuration file
 configfile = os.path.dirname(__file__) + '/.config'
