@@ -29,13 +29,13 @@ if( open FH,'<', $file ) {
 					sysread FMSG, $content, -s $msg;
 					close FMSG;
 
-					# Turn the To and CC headers into lists
+					# Turn the To and CC headers into lists and then hashes
 					$to = $1 if $content =~ /^\s*To:\s*(.+?)\s*$/mi;
 					@to = $to =~ /([0-9a-z_.&-]+@[0-9a-z_.&-]+)/gi;
 					%to = map { $_ => 1 } @to;
 					$cc = $1 if $content =~ /^\s*CC:\s*(.+?)\s*$/mi;
-					%cc = map { $_ => 1 } @cc;
 					@cc = $cc =~ /([0-9a-z_.&-]+@[0-9a-z_.&-]+)/gi;
+					%cc = map { $_ => 1 } @cc;
 
 					# Build a Bcc header from all the recipients not in the To or Cc headers
 					@bcc = ();
