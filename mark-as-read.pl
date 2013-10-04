@@ -17,12 +17,17 @@ if( open FH,'<', $file ) {
 			print FH "$msg\n";
 			if( open FMSG,'<', $msg ) {
 				
-				# Read the message content
+				# Read the message header
 				sysread FMSG, $content, 600;
 				close FMSG;
 
 				# Check if its ours by ID
 				if( $content =~ /\s$id\s/s ) {
+
+					# Get the whole message
+					open FMSG,'<', $msg;
+					sysread FMSG, $content, -s $msg;
+					close FMSG;
 
 					# Turn the To and CC headers into lists
 					$to = $1 if $content =~ /^\s*To:\s*(.+?)\s*$/mi;
