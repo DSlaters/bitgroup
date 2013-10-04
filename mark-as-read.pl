@@ -42,10 +42,10 @@ if( open FH,'<', $file ) {
 					for(@recipients) {
 						push @bcc, $_ unless exists $to{$_} or exists $cc{$_};
 					}
-					$bcc = 'Bcc: ' . join(', ', @bcc);
+					$bcc = $#bcc < 0 ? 0 : 'Bcc: ' . join(', ', @bcc);
 					
 					# Add the Bcc header after the To header
-					$content =~ s/(^\s*To:.+?$)/$1$bcc\n/mi;
+					$content =~ s/(^\s*To:.+?$)/$1\n$bcc/mi if $bcc;
 
 					# Write the new content to the file
 					if(open FMSG,'>', $msg) {
