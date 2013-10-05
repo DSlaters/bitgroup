@@ -1,8 +1,6 @@
 #!/usr/bin/python2.7
 import json
 
-# TODO: launch more instance of the program if dev set
-
 class fakeBitmessage:
 	"""
 	A fake Bitmessage daemon for testing locally without needing the real thing running
@@ -10,10 +8,25 @@ class fakeBitmessage:
 	messages = {}
 	subscriptions = {}
 
+	def __init__(self):
+
+		# TODO: run multiple instances
+		
+		# TODO: load the messages and subscriptions
+		
+		pass
+
 	def deliver(self, k, msg):
 		if not k in self.messages: self.messages[k] = { 'inboxMessages': {} }
 		msgID = len(self.messages[k])
 		self.messages[k][msgID] = msg
+		# TODO: store this to disk
+
+	def addSubscription(self, addr, label = None):
+		k = app.user.addr
+		if not k in self.subscriptions: self.subscriptions[k] = []
+		self.subscriptions[k].append(addr)
+		# TODO: store this to disk
 
 	def sendMessage(self, toAddr, fromAddr, subject, body):
 		self.deliver(toAddr, {
@@ -36,11 +49,6 @@ class fakeBitmessage:
 		k = app.user.addr
 		if not k in self.messages: self.messages[k] = { 'inboxMessages': {} }
 		return json.dumps(self.messages[k])
-
-	def addSubscription(self, addr, label = None):
-		k = app.user.addr
-		if not k in self.subscriptions: self.subscriptions[k] = []
-		self.subscriptions[k].append(addr)
 		
 	def createDeterministicAddresses(self, passwd, num):
 		addr = { 'addresses': [] }
