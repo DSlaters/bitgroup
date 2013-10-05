@@ -15,10 +15,11 @@ class SingleInstance:
 
 	Remember that this works by creating a lock file with a filename based on the full path to the script file.
 	"""
-	def __init__(self):
+	def __init__(self, port):
+		import sys
 		self.lockfile = os.path.normpath(tempfile.gettempdir() + '/' +
 		    os.path.splitext(os.path.abspath(__file__))[0].replace("/","-").replace(":","").replace("\\","-") +
-		    '.' + str(app.port) + '.lock')
+		    '.' + str(port) + '.lock')
 		logging.debug("SingleInstance lockfile: " + self.lockfile)
 		if sys.platform == 'win32':
 			try:
@@ -28,7 +29,7 @@ class SingleInstance:
 				self.fd =  os.open(self.lockfile, os.O_CREAT|os.O_EXCL|os.O_RDWR)
 			except OSError as e:
 				if e.errno == 13:
-					logging.error("Another instance is already running on port " + str(app.port) + ", quitting.")
+					logging.error("Another instance is already running on port " + str(port) + ", quitting.")
 					sys.exit(-1)
 				print(e.errno)
 				raise
@@ -42,6 +43,7 @@ class SingleInstance:
 				sys.exit(-1)
 
 	def __del__(self):
+		import sys
 		if sys.platform == 'win32':
 			if hasattr(self, 'fd'):
 				os.close(self.fd)

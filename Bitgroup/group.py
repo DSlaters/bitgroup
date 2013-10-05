@@ -37,10 +37,10 @@ class Group(Node, object):
 		# Instantiating by name, create a new group
 		else:
 			if not passwd:
-				print "Invalid Group instantiation, \"" + param + "\" and no passwd"
+				app.log("Invalid Group instantiation, \"" + param + "\" and no passwd")
 				return None
 			if not app.bmConnected():
-				print "Not creating group \"" + param + "\", Bitmessage not connected"
+				app.log("Not creating group \"" + param + "\", Bitmessage not connected")
 				return None
 
 			self.name = param

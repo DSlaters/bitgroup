@@ -45,7 +45,7 @@ class Node:
 			if type(j) == dict and i in j: j = j[i]
 			else:
 				if not type(j) == dict:
-					print "Failed to set " + key + " as a value already exists at path element '" + i + "'"
+					app.log("Failed to set " + key + " as a value already exists at path element '" + i + "'")
 					return None
 				j[i] = {}
 				j = j[i]
@@ -133,7 +133,7 @@ class Node:
 				if CLIENTSOCK in data:
 					change = [key,val,ts]
 					data[CLIENTSOCK].push(json.dumps(change) + '\0')
-					print "Sending to SWF:" + client + ": " + str(change)
+					app.log("Sending to SWF:" + client + ": " + str(change))
 
 				# Client is a remote member peer
 				elif PEERSOCK in data:

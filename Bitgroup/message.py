@@ -62,7 +62,7 @@ class Message(object):
 			c = match.group(2)
 			if c in globals():
 				if Message in inspect.getmro(globals()[c]): return globals()[c]
-			print "Class '" + c + "' is not a Message sub-class"
+			app.log("Class '" + c + "' is not a Message sub-class")
 		return Message
 
 	"""
@@ -80,8 +80,7 @@ class Message(object):
 			body = self.body.encode('base64')
 			if self.toAddr: app.api.sendMessage(self.toAddr, self.fromAddr, subject, body)
 			else: app.api.sendBroadcast(self.fromAddr, subject, body)
-		else: print "Not sending " + (self.__class__.__name__) + " message to " + self.group.name + ", Bitmessage not running"
-
+		else: app.log("Not sending " + (self.__class__.__name__) + " message to " + self.group.name + ", Bitmessage not running")
 	"""
 	Reply to the messge
 	"""
@@ -99,10 +98,8 @@ class Message(object):
 				mailbox = []
 				for msgID in range(len(messages['inboxMessages'])):
 					mailbox.append(Message(messages['inboxMessages'][msgID]))
-				print str(len(mailbox)) + ' messages retrieved.'
-			else: print "Not getting messages, Bitmessage not running"
-
-
+				app.log(str(len(mailbox)) + ' messages retrieved.')
+			else: app.log("Not getting messages, Bitmessage not running")
 class BitgroupMessage(Message):
 	"""
 	An "abstract" class representing a Bitgroup message that extends the basic Bitmessage message to exhibit properties
@@ -148,7 +145,7 @@ class BitgroupMessage(Message):
 			# Bail if we don't have an instance for this group
 			# - this could only happen if we're subscribed to a group's private address that we're not a member of
 			if self.group is None:
-				print "Message received for a group we're not a member of!"
+				app.log("Message received for a group we're not a member of!")
 				# TODO: should unsubscribe from this group's private address
 				self.invalid = True
 				return None
@@ -158,7 +155,7 @@ class BitgroupMessage(Message):
 			except:
 				try: self.data = json.loads(self.body)
 				except:
-					print "No valid data found (or couldn't decrypt it) in message content!"
+					app.log("No valid data found (or couldn't decrypt it) in message content!")
 					self.invalid = True
 					return None
 

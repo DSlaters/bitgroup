@@ -24,16 +24,17 @@ from app import *
 
 if __name__ == '__main__':
 
-	# Bail if this app is already running
-	singleton.SingleInstance()
+	# Bail if this app is already running on this port
+	singleton.SingleInstance(config.getint('interface', 'port'))
 
 	# Instantiate the main app instance
 	App(config, configfile)
 
 	# Wait for incoming connections and handle them forever
 	try:
-		print "Press Ctrl+C to exit."
+		app.log("Press Ctrl+C to exit.")
 		asyncore.loop()
 	except KeyboardInterrupt:
-		print "Exiting..."
+		app.log("Exiting...")
+		if app.dev: app.api.shutdown()
 		pass

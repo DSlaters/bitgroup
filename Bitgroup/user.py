@@ -27,13 +27,8 @@ class User(Node):
 			# If in dev mode, add a number index number to the user name and use a random BM address
 			if app.dev:
 				self.nickname = app.config.get('user', 'nickname')
-				if dev > 1: self.nickname += str(dev - 1)
+				if app.dev > 1: self.nickname += str(app.dev - 1)
 				self.addr = 'BM-' + hashlib.md5(self.nickname).hexdigest()
-
-				# Change the data path to the program dir/.dev/nickname
-				devdir = os.path.dirname(__file__) + '/.dev'
-				if not os.path.exists(devdir): os.mkdir(devdir)
-				app.datapath = devdir + '/' + self.nickname
 
 			else:
 				self.addr      = app.config.get('user', 'bmaddr')

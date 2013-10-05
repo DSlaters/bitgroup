@@ -27,13 +27,13 @@ class App:
 	peer = None
 	ip = None
 
-	dev = False
-
 	docroot = os.path.dirname(__file__) + '/interface'
 	datapath = os.getenv("HOME") + '/.Bitgroup'
 	config = None
 	configfile = None
 	api = None
+	dev = False
+	devnum = 0
 
 	server = None
 	inbox = None
@@ -52,11 +52,15 @@ class App:
 		self.config = config
 		self.configfile = configfile
 
-		# If dev arg in the command line, set dev
-		if sys.argv[0] == 'dev': app.dev = sys.argv[1]
-
 		# Make the app a "superglobal"
 		__builtin__.app = self
+
+		# If running in dev mode, define which instance we are and how many there are from the command line args
+		if len(sys.argv) > 2 and sys.argv[1] == 'dev':
+			self.devnum = int(sys.argv[2])
+			if len(sys.argv) == 3: self.dev = 1
+			elif len(sys.argv) == 4: self.dev = int(sys.argv[3])
+		else: self.dev = 0
 
 		# Give the local instance a unique session ID for real-time communication with peers
 		self.peerID = self.encrypt(str(uuid.uuid4()),str(uuid.uuid4())).encode('base64')[:8]
@@ -67,15 +71,12 @@ class App:
 		username = config.get('bitmessage', 'username')
 		password = config.get('bitmessage', 'password')
 
+		# Initialise the current user
+		self.user = User()
+
 		# If in dev mode, use the fake Bitmessage class, otherwise set up the API connection to the real thing
 		if app.dev: self.api = fakeBitmessage()
 		else: self.api = xmlrpclib.ServerProxy("http://"+username+":"+password+"@"+interface+":"+str(port)+"/")
-
-		# Change the port if in dev mode
-		if self.dev: port += (dev - 1)
-
-		# Initialise the current user
-		self.user = User()
 
 		# Load i18n messages
 		self.loadI18n()
@@ -84,7 +85,9 @@ class App:
 		self.loadGroups()
 
 		# Set up a simple HTTP server to handle requests from any interface on our port
-		self.server = http.Server('127.0.0.1', config.getint('interface', 'port'))
+		iport = config.getint('interface', 'port')
+		if self.dev: iport += (self.dev - 1)
+		self.server = http.Server('127.0.0.1', iport)
 
 		# Call the regular interval timer
 		hw_thread = threading.Thread(target = self.interval)
@@ -98,6 +101,7 @@ class App:
 	"""
 	def interval(self):
 		while(True):
+			app.getStateData()
 			now = self.timestamp()
 			ts = self.lastInterval
 			self.lastInterval = now
@@ -166,8 +170,8 @@ class App:
 			except:
 				self.state['bm'] = NOTCONNECTED
 
-			# If Bitmessage was available add the message list info
-			if self.state['bm'] is CONNECTED:
+			# If Bitmessage was available add the message list info if loaded
+			if self.inbox and self.state['bm'] is CONNECTED:
 				self.state['inbox'] = []
 				for msg in self.inbox:
 					data = {'from': msg.fromAddr, 'subject': msg.subject}
@@ -229,9 +233,9 @@ class App:
 		
 		# If a Bitmessage address was created successfully, create the group's bitmessage addresses and add to the config
 		if re.match('BM-', group.addr):
-			print "new password created: " + group.passwd
-			print "new Bitmessage address created: " + group.addr
-			print "new private Bitmessage address created: " + group.prvaddr
+			app.log("new password created: " + group.passwd)
+			app.log("new Bitmessage address created: " + group.addr)
+			app.log("new private Bitmessage address created: " + group.prvaddr)
 			self.groups[group.prvaddr] = group
 			data = {'name':name, 'addr':group.addr, 'prvaddr':group.prvaddr}
 
@@ -263,7 +267,11 @@ class App:
 		html = urllib.urlopen("http://checkip.dyndns.org/").read()
 		match = re.search(r'(\d+\.\d+.\d+.\d+)', html)
 		if match:
-			print "External IP address of local host is " + match.group(1)
+			self.log("External IP address of local host is " + match.group(1))
 			return match.group(1)
-		print "Could not obtain external IP address"
+		self.log("Could not obtain external IP address")
 		return None
+
+	def log(self, msg):
+		if self.dev: msg = '[' + app.user.nickname + ']: ' + msg
+		print msg

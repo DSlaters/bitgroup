@@ -24,7 +24,7 @@ class Server(asyncore.dispatcher):
 		self.listen(5)
 		self.host = host
 		self.port = port
-		print "Server listening on port " + str(port)
+		app.log("Server listening on port " + str(port))
 
 	# Accept a new incoming connection and set up a new connection handler instance for it
 	def handle_accept(self):
@@ -65,7 +65,7 @@ class Connection(asynchat.async_chat):
 			# Closing a SWF client
 			if CLIENTSOCK in client and client[CLIENTSOCK] is self:
 				del self.server.clients[k]
-				print "Socket closed, client " + k + " removed from data"
+				app.log("Socket closed, client " + k + " removed from data")
 
 			# Closing a peer
 			elif PEERSOCK in client and client[PEERSOCK] is self:
@@ -197,7 +197,7 @@ class Connection(asynchat.async_chat):
 	def httpIsAuthenticated(self, head, method):
 		match = re.search(r'Authorization: Digest (.+?)\r\n', head)
 		if not match:
-			print "No authentication found in header"
+			app.log("No authentication found in header")
 			return False
 
 		# Get the client's auth info
@@ -223,7 +223,7 @@ class Connection(asynchat.async_chat):
 		ok = hashlib.md5(':'.join([A1,nonce,nc,cnonce,qop,A2])).hexdigest()
 		auth = res == ok
 		
-		if not auth: print "Authentication failed!"
+		if not auth: app.log("Authentication failed!")
 		return auth
 
 	"""
@@ -241,7 +241,7 @@ class Connection(asynchat.async_chat):
 		header += "Content-Length: " + str(len(content)) + "\r\n\r\n"
 		self.push(str(header + content))
 		self.close_when_done()
-		print "Authentication request sent to client"
+		app.log("Authentication request sent to client")
 
 	"""
 	Return the main default HTML document
@@ -301,7 +301,7 @@ class Connection(asynchat.async_chat):
 			if data:
 				cdata = json.loads(data)
 				for item in cdata: group.setData(item[0], item[1], item[2], client)
-				print "Changes received from " + client + " (last=" + str(ts) + "): " + str(cdata)
+				app.log("Changes received from " + client + " (last=" + str(ts) + "): " + str(cdata))
 
 			# Last sync was more than maxage seconds ago, send all data
 			if now - ts > app.maxage: content = group.json()
@@ -313,7 +313,7 @@ class Connection(asynchat.async_chat):
 				if CLIENTSOCK in clients[client]: content = ''
 				else:
 					content = group.changes(ts - (now-ts), client) # TODO: messy doubling of period (bug#3)
-					if len(content) > 0: print "Sending to " + client + ': ' + json.dumps(content)
+					if len(content) > 0: app.log("Sending to " + client + ': ' + json.dumps(content))
 
 					# Put an object on the end of the list containing the application state data
 					content.append(app.getStateData())
@@ -360,7 +360,7 @@ class Connection(asynchat.async_chat):
 			policy = '<cross-domain-policy>' + policy + '</cross-domain-policy>'
 			self.push(policy)
 			self.close_when_done()
-			print 'SWF policy sent.'
+			app.log('SWF policy sent.')
 
 		# Check if this is a SWF giving its client id so that we can associate the socket with it
 		match = re.match('<client-id>(.+?)</client-id>', msg)
@@ -369,7 +369,7 @@ class Connection(asynchat.async_chat):
 			client = match.group(1)
 			if not client in clients: clients[client] = {}
 			clients[client][CLIENTSOCK] = self
-			print "SWF socket identified for client " + client
+			app.log("SWF socket identified for client " + client)
 
 	"""
 	TODO: Process a completed JSON message from a peer
@@ -382,7 +382,7 @@ class Connection(asynchat.async_chat):
 		for k in clients.keys():
 			if k == peer: client = clients[k]
 		if client == None:
-			print "Message received from unknown peer \"" + peer + "\": " + str(self.sock)
+			app.log("Message received from unknown peer \"" + peer + "\": " + str(self.sock))
 			return
 
 		# Get the group from the client entry
@@ -392,7 +392,7 @@ class Connection(asynchat.async_chat):
 		try:
 			data = json.loads(app.decrypt(msg, group.passwd))
 		except:
-			print "Invalid data received from remote peer: " + str(self.sock)
+			app.log("Invalid data received from remote peer: " + str(self.sock))
 			return
 
 		# This is a Welcome message (repsonse to Presence)
@@ -401,7 +401,7 @@ class Connection(asynchat.async_chat):
 			# If the change-data was sent, merge into the local data
 			if CHANGES in data:
 				for item in data[CHANGES]: group.set(item[0], item[1], item[2], peer)
-				print "Changes received from " + peer + str(data[CHANGES]) 
+				app.log("Changes received from " + peer + str(data[CHANGES]) )
 
 			# If peer information was sent, store in the group data
 			if PEERS in data: group.peers = data[PEERS]
