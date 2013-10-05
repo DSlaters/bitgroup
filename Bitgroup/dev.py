@@ -11,7 +11,6 @@ class fakeBitmessage:
 	mfile = None     # Locations of all the messages
 	mlock = None     # Lock file for accessing the messages file
 	name = None      # The nickname on which all the dev instances are based
-	pids = []        # Process IDs of the other dev instances
 
 	# Local cache of the messages and subscriptions
 	messages = {}
@@ -35,9 +34,7 @@ class fakeBitmessage:
 		# Run multiple instances
 		if app.dev == 1:
 			for i in range(2, 1+app.devnum):
-				#pid = call([dirname(__file__) + '/Bitgroup.py', 'dev', self.n, i, '&'])
 				pid = Popen([os.path.dirname(__file__) + '/main.py', 'dev', str(app.devnum), str(i)]).pid
-				self.pids.append(pid)
 				app.log("Started dev instance #" + str(i) + " (" + str(pid) + ")")
 
 		# Set up message and subscription file locations
@@ -47,16 +44,6 @@ class fakeBitmessage:
 		# Load subscriptions
 		self.loadSubscriptions()
 
-	"""
-	Called on exit of application to close down the other instances
-	"""
-	def shutdown(self):
-		return
-		if app.dev == 1:
-			for i in range(0, len(self.pids)):
-				pid = self.pids[i]
-				call('kill', pid)
-				app.log("Killed instance #" + str(i) + " (" + str(pid) + ")")
 	"""
 	Store a message in a users mailbox
 	"""

@@ -36,5 +36,4 @@ if __name__ == '__main__':
 		asyncore.loop()
 	except KeyboardInterrupt:
 		app.log("Exiting...")
-		if app.dev: app.api.shutdown()
 		pass
