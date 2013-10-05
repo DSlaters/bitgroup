@@ -19,7 +19,9 @@
 		"type": "Type",
 		"authneeded": "Authentication is required to use Bitgroup.",
 		"authfail": "The username or password supplied were incorrect.",
-
+		"private-addr": "$1 Bitgroup private address",
+		"public-addr": "$1 Bitgroup public address",
+		
 		"status": "Status",
 		"con-status-1": "Not connected",
 		"con-status-2": "Connected",

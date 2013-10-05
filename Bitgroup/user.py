@@ -1,4 +1,4 @@
-import hashlib
+import os, hashlib
 from node import *
 
 class User(Node):
@@ -30,6 +30,11 @@ class User(Node):
 				if dev > 1: self.nickname += str(dev - 1)
 				self.addr = 'BM-' + hashlib.md5(self.nickname).hexdigest()
 
+				# Change the data path to the program dir/.dev/nickname
+				devdir = os.path.dirname(__file__) + '/.dev'
+				if not os.path.exists(devdir): os.mkdir(devdir)
+				app.datapath = devdir + '/' + self.nickname
+
 			else:
 				self.addr      = app.config.get('user', 'bmaddr')
 				self.nickname  = app.config.get('user', 'nickname')
@@ -37,6 +42,9 @@ class User(Node):
 				self.surname   = app.config.get('user', 'surname')
 				self.email     = app.config.get('user', 'email')
 				self.website   = app.config.get('user', 'website')
+
+			# Create the user data dir if it doesn't exist
+			if not os.path.exists(app.datapath): os.mkdir(app.datapath)
 
 			# User's just have one address, so set the private address to the same as the public
 			self.prvaddr = addr

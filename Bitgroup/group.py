@@ -53,6 +53,10 @@ class Group(Node, object):
 			self.addr = addrs['addresses'][0]
 			self.prvaddr = addrs['addresses'][1];
 
+			# Subscribe to both of the addresses
+			app.api.subscribe(self.addr, app.msg('private-addr', self.name))
+			app.api.subscribe(self.addr, app.msg('public-addr', self.name))
+
 			# Update the config file with the private address and password (all thats needed to be a member)
 			app.updateConfig('groups', self.passwd, self.prvaddr)
 

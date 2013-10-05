@@ -58,9 +58,6 @@ class App:
 		# Make the app a "superglobal"
 		__builtin__.app = self
 
-		# Create the dir if it doesn't exist
-		if not os.path.exists(self.datapath): os.mkdir(self.datapath)
-
 		# Give the local instance a unique session ID for real-time communication with peers
 		self.peerID = self.encrypt(str(uuid.uuid4()),str(uuid.uuid4())).encode('base64')[:8]
 
