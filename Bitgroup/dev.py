@@ -1,5 +1,5 @@
 #!/usr/bin/python2.7
-import os, sys, json, time
+import os, sys, json, time, glob, re
 from subprocess import Popen
 
 class fakeBitmessage:
@@ -14,7 +14,7 @@ class fakeBitmessage:
 
 	# Local cache of the messages and subscriptions
 	messages = {}
-	subscriptions = {}
+	subscriptions = []
 
 	def __init__(self):
 
@@ -25,7 +25,7 @@ class fakeBitmessage:
 		# Change the data path to the program dir/.dev/nickname
 		self.datapath = os.path.dirname(__file__) + '/.dev'
 		if not os.path.exists(self.datapath): os.mkdir(self.datapath)
-		app.datapath = self.datapath + '/' + app.user.nickname
+		app.datapath = self.datapath + '/' + app.user.addr
 
 		# Define the lock file for this group of dev users and delete if exists (and we-re the first instance)
 		self.mlock = self.datapath + '/.lock.' + self.name
@@ -37,9 +37,9 @@ class fakeBitmessage:
 				pid = Popen([os.path.dirname(__file__) + '/main.py', 'dev', str(app.devnum), str(i)]).pid
 				app.log("Started dev instance #" + str(i) + " (" + str(pid) + ")")
 
-		# Set up message and subscription file locations
-		self.sfile = self.datapath + '/subscriptions.' + app.user.nickname
-		self.mfile = self.datapath + '/messages.' + self.name
+		# Set up message and subscription file locations - not that getSubscribers() relies on this naming convention
+		self.sfile = self.datapath + '/' + app.user.addr + '/subscriptions.json'
+		self.mfile = self.datapath + '/messages.' + self.name + '.json'
 
 		# Load subscriptions
 		self.loadSubscriptions()
@@ -50,11 +50,11 @@ class fakeBitmessage:
 	def deliver(self, recipients, message):
 
 		# If the messages are in use by another dev user, wait until they've finished
-		while os.path.exists(self.mfile): time.sleep(0.1)
+		while os.path.exists(self.mlock): time.sleep(0.1)
 		
 		# Create the lock file so we now have exclusive use of the messages file
-		h = open(sfile, "w")
-		h.write(dev.i);
+		h = open(self.mlock, "w")
+		h.write(str(app.dev));
 		h.close()
 		
 		# Deliver the message to the recipients
@@ -63,7 +63,7 @@ class fakeBitmessage:
 			if not toAddr in messages: messages[toAddr] = { 'inboxMessages': {} }
 			msgID = len(messages[toAddr])
 			messages[toAddr][msgID] = message
-		h = open(mfile, "w")
+		h = open(self.mfile, "w")
 		h.write(json.dumps(messages));
 		h.close()
 
@@ -78,6 +78,7 @@ class fakeBitmessage:
 			h = open(self.sfile, "r")
 			self.subscriptions = json.loads(h.read())
 			h.close()
+			app.log(str(len(self.subscriptions)) + ' subscriptions loaded')
 		else: self.subscriptions = []
 
 	"""
@@ -88,6 +89,19 @@ class fakeBitmessage:
 			h = open(self.sfile, "w")
 			h.write(json.dumps(self.subscriptions));
 			h.close()
+
+	"""
+	Return a list of subscribers to the passed address
+	"""
+	def getSubscribers(self, addr):
+		users = []
+		for f in glob.glob(self.datapath + '/*/subscriptions.json'):
+			h = open(f, "r")
+			subs = json.loads(h.read())
+			h.close()
+			if addr in subs: users.append(re.search('/(BM-.+?)/', f).group(1))	
+		app.log(str(len(users)) + ' subscribers to ' + addr)		
+		return users
 		
 	"""
 	Read and return all dev user's messages
@@ -97,7 +111,7 @@ class fakeBitmessage:
 			h = open(self.mfile, "r")
 			messages = json.loads(h.read())
 			h.close()
-		else: messages = []
+		else: messages = {}
 		return messages
 
 	"""
@@ -118,12 +132,11 @@ class fakeBitmessage:
 		})
 
 	def sendBroadcast(self, fromAddr, subject, body):
-		if fromAddr in self.subscriptions:
-			self.deliver(self.subscriptions[fromAddr], {
-				'fromAddress': fromAddr,
-				'subject': subject,
-				'message': body
-			})
+		self.deliver(self.getSubscribers(fromAddr), {
+			'fromAddress': fromAddr,
+			'subject': subject,
+			'message': body
+		})
 
 	def getAllInboxMessages(self):
 		k = app.user.addr

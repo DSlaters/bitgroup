@@ -117,10 +117,10 @@ class App:
 						Presence(g).send()
 
 			# Check for new messages every 10 seconds
-			Message.getMessages(self.inbox)
+			self.inbox = Message.getMessages(self.inbox)
 			
-			# TODO: Send outgoing queued changes messages every 10 minutes
-			if now - ts > 595000:
+			# TODO: Send outgoing queued changes messages every 10 minutes (or 10 seconds if in dev mode)
+			if app.dev or now - ts > 595000:
 				for g in app.groups:
 					g.sendChanges()
 
@@ -270,6 +270,7 @@ class App:
 	- this should only be a backup to use if no peers are available to ask
 	"""
 	def getExternalIP(self):
+		if self.dev: return 'localhost'
 		try: html = urllib.urlopen("http://checkip.dyndns.org/").read()
 		except: return None
 		match = re.search(r'(\d+\.\d+.\d+.\d+)', html)

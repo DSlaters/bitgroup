@@ -78,9 +78,14 @@ class Message(object):
 		if app.bmConnected():
 			subject = self.subject.encode('base64')
 			body = self.body.encode('base64')
-			if self.toAddr: app.api.sendMessage(self.toAddr, self.fromAddr, subject, body)
-			else: app.api.sendBroadcast(self.fromAddr, subject, body)
-		else: app.log("Not sending " + (self.__class__.__name__) + " message to " + self.group.name + ", Bitmessage not running")
+			cls = self.__class__.__name__
+			if self.toAddr:
+				app.log('Sending ' + cls + ' message to '+ self.toAddr)
+				app.api.sendMessage(self.toAddr, self.fromAddr, subject, body)
+			else:
+				app.log('Broadcasting ' + cls + ' message to '+ self.fromAddr)
+				app.api.sendBroadcast(self.fromAddr, subject, body)
+		else: app.log("Not sending " + (cls) + " message to " + self.group.name + ", Bitmessage not running")
 	"""
 	Reply to the messge
 	"""
@@ -92,14 +97,16 @@ class Message(object):
 	"""
 	@staticmethod
 	def getMessages(mailbox):
-		if mailbox is None:
-			if app.bmConnected():
-				messages = json.loads(app.api.getAllInboxMessages())
-				mailbox = []
-				for msgID in range(len(messages['inboxMessages'])):
-					mailbox.append(Message(messages['inboxMessages'][msgID]))
-				app.log(str(len(mailbox)) + ' messages retrieved.')
-			else: app.log("Not getting messages, Bitmessage not running")
+		if app.bmConnected():
+			messages = json.loads(app.api.getAllInboxMessages())
+			mailbox = []
+			for msgID in range(len(messages['inboxMessages'])):
+				mailbox.append(Message(messages['inboxMessages'][msgID]))
+			app.log(str(len(mailbox)) + ' messages retrieved.')
+		else: app.log("Not getting messages, Bitmessage not running")
+		return mailbox
+
+
 class BitgroupMessage(Message):
 	"""
 	An "abstract" class representing a Bitgroup message that extends the basic Bitmessage message to exhibit properties
