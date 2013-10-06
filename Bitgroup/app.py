@@ -37,7 +37,7 @@ class App:
 
 	server = None
 	inbox = None
-	user = {}
+	user = None
 	groups = []
 	maxage = 600000   # Expiry time of queue items in milliseconds
 	i18n = {}         # i18n interface messages loaded from interface/i18n.json
@@ -60,7 +60,6 @@ class App:
 			self.devnum = int(sys.argv[2])
 			if len(sys.argv) == 3: self.dev = 1
 			elif len(sys.argv) == 4: self.dev = int(sys.argv[3])
-		else: self.dev = 0
 
 		# Give the local instance a unique session ID for real-time communication with peers
 		self.peerID = self.encrypt(str(uuid.uuid4()),str(uuid.uuid4())).encode('base64')[:8]
@@ -73,10 +72,14 @@ class App:
 
 		# Initialise the current user
 		self.user = User()
+		app.log("User \"" + self.user.nickname + "\" (" + self.user.addr + ") initialised")
 
 		# If in dev mode, use the fake Bitmessage class, otherwise set up the API connection to the real thing
 		if app.dev: self.api = fakeBitmessage()
 		else: self.api = xmlrpclib.ServerProxy("http://"+username+":"+password+"@"+interface+":"+str(port)+"/")
+
+		# Create the user data dir if it doesn't exist
+		if not os.path.exists(app.datapath): os.mkdir(app.datapath)
 
 		# Load i18n messages
 		self.loadI18n()
@@ -86,7 +89,7 @@ class App:
 
 		# Set up a simple HTTP server to handle requests from any interface on our port
 		iport = config.getint('interface', 'port')
-		if self.dev: iport += (self.dev - 1)
+		if self.dev: iport += self.dev
 		self.server = http.Server('127.0.0.1', iport)
 
 		# Call the regular interval timer
@@ -139,10 +142,13 @@ class App:
 		conf = dict(self.config.items('groups'))
 		for passwd in conf:
 			prvaddr = conf[passwd]
-			print "initialising group: " + prvaddr
+			app.log("initialising group: " + prvaddr)
 			group = Group(prvaddr, passwd)
-			self.groups.append(group)
-			print "    group initialised (" + group.name + ")"
+			if group.name:
+				self.groups.append(group)
+				app.log("    \"" + group.name + "\" initialised successfully")
+			else: app.log("    initialisation failed")
+				
 
 	"""
 	Return a millisecond timestamp - must match main.js's timestamp
@@ -264,7 +270,8 @@ class App:
 	- this should only be a backup to use if no peers are available to ask
 	"""
 	def getExternalIP(self):
-		html = urllib.urlopen("http://checkip.dyndns.org/").read()
+		try: html = urllib.urlopen("http://checkip.dyndns.org/").read()
+		except: return None
 		match = re.search(r'(\d+\.\d+.\d+.\d+)', html)
 		if match:
 			self.log("External IP address of local host is " + match.group(1))
@@ -272,6 +279,9 @@ class App:
 		self.log("Could not obtain external IP address")
 		return None
 
+	"""
+	Custom logging method so we can specify how to log output from dev main and sub-instances or non-dev
+	"""
 	def log(self, msg):
 		if self.dev: msg = '[' + app.user.nickname + ']: ' + msg
 		print msg

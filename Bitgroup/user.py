@@ -27,7 +27,7 @@ class User(Node):
 			# If in dev mode, add a number index number to the user name and use a random BM address
 			if app.dev:
 				self.nickname = app.config.get('user', 'nickname')
-				if app.dev > 1: self.nickname += str(app.dev - 1)
+				if app.dev > 1: self.nickname += str(app.dev)
 				self.addr = 'BM-' + hashlib.md5(self.nickname).hexdigest()
 
 			else:
@@ -37,9 +37,6 @@ class User(Node):
 				self.surname   = app.config.get('user', 'surname')
 				self.email     = app.config.get('user', 'email')
 				self.website   = app.config.get('user', 'website')
-
-			# Create the user data dir if it doesn't exist
-			if not os.path.exists(app.datapath): os.mkdir(app.datapath)
 
 			# User's just have one address, so set the private address to the same as the public
 			self.prvaddr = addr
@@ -66,11 +63,10 @@ class User(Node):
 	Return a record of the user data for use in Presence messages and in group member information
 	"""
 	def info(self):
-		return {
-			'bmAddr':    self.addr,
+		return {self.addr: {
 			'Nickname':  self.nickname,
 			'Firstname': self.firstname,
 			'Surname':   self.surname,
 			'Email':     self.email,
 			'Website':   self.website
-		}
+		}}

@@ -39,7 +39,7 @@ class SingleInstance:
 			try:
 				fcntl.lockf(self.fp, fcntl.LOCK_EX | fcntl.LOCK_NB)
 			except IOError:
-				logging.warning("Another instance is already running, quitting.")
+				logging.warning("Another instance is already running on port " + str(port) + ", quitting.")
 				sys.exit(-1)
 
 	def __del__(self):

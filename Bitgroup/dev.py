@@ -18,7 +18,7 @@ class fakeBitmessage:
 
 	def __init__(self):
 
-		app.log("Initialising development mode...")
+		app.log("Initialising fake Bitmessage API")
 		# Use the original nickname as the base name for all the dev users
 		self.name = app.config.get('user', 'nickname')
 

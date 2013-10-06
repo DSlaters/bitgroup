@@ -67,7 +67,9 @@ class Group(Node, object):
 			self.setData('settings.addr', self.addr)
 
 			# Add self as the only member
-			self.setData(settings.members, [app.user.info()])
+			info = app.user.info()
+			addr = info.keys()[0]
+			self.setData('members.' + addr, info[addr])
 
 		return None
 
