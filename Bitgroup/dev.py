@@ -139,8 +139,7 @@ class fakeBitmessage:
 	def getAllInboxMessages(self):
 		messages = self.loadMessages()
 		k = app.user.addr
-		if k in messages: app.log(str(len(messages[k]['inboxMessages'].keys())) + " messages loaded")
-		else: messages[k] = { 'inboxMessages': {} }
+		if not k in messages: messages[k] = { 'inboxMessages': {} }
 		return json.dumps(messages[k])
 		
 	def createDeterministicAddresses(self, passwd, num):

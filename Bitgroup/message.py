@@ -1,6 +1,7 @@
 import re,json, email.utils
 import datetime, time
 import inspect
+import group
 
 class Message(object):
 	"""
@@ -19,20 +20,28 @@ class Message(object):
 	invalid = False
 
 	"""
-	Determine the correct class for the message and instantiate it
+	If instantiating a plain Message with a message data structure, determine the correct class for the message first
 	"""
 	def __new__(self, msg):
-		if self.__class__.__name__ == 'Message':
 
-			# Determine what class it should be
+		# Test if its a plain message with data structure instantiation
+		isMsg = self.__name__ == 'Message' or self.__class__.__name__ == 'Message'
+		try:
+			if 'fromAddress' in msg: pass
+		except: isMsg = False
+
+		# If so, determine what class it should be
+		if isMsg:
+
 			cls = Message.getClass(msg)
-			if cls.__class__.__name__ != 'Message':
+			if cls.__name__ != 'Message':
 
 				# Change the Message class an instance of the returned class
 				self = cls(msg)
+				print "class: " + str(cls) + "  self: " + str(self)
 
 				# If the instance has determined it's not a valid message of it's type, return None
-				if bgmsg.invalid: return None
+				if self.invalid: return None
 
 		return object.__new__(self, msg)
 
@@ -54,7 +63,7 @@ class Message(object):
 	@staticmethod
 	def getClass(msg):
 		subject = msg['subject'].decode('base64')
-		match = re.match(app.name + "-([0-9.]+):(\w+) ", subject)
+		match = re.match(app.name + "-([0-9.]+): (\w+) ", subject)
 		if match:
 			c = match.group(2)
 			if c in globals():
@@ -97,11 +106,13 @@ class Message(object):
 		if app.bmConnected():
 			messages = json.loads(app.api.getAllInboxMessages())
 			mailbox = []
+			app.log('Retrieving ' + str(len(messages['inboxMessages'])) + ' messages')
 			for msgID in messages['inboxMessages']:
 				msg = messages['inboxMessages'][msgID]
 				msg['receivedTime'] = int(time.time())
-				mailbox.append(Message(msg))
-			app.log(str(len(mailbox)) + ' messages retrieved.')
+				msg = Message(msg)
+				print msg
+				mailbox.append(msg)
 		else: app.log("Not getting messages, Bitmessage not running")
 		return mailbox
 
@@ -143,10 +154,10 @@ class BitgroupMessage(Message):
 			# Only instantiate base-class and decode the body if it's an incoming message
 			Message.__init__(self, param)
 
-			# Set the message's group instance from the To address
+			# Set the message's group instance from the From address (i.e. the address it's broadcasting "to")
 			for g in app.groups:
-				if g.prvaddr == self.toAddr:
-					self.group = Group(self.toAddr)
+				if g.prvaddr == self.fromAddr:
+					self.group = group.Group(self.fromAddr)
 
 			# Bail if we don't have an instance for this group
 			# - this could only happen if we're subscribed to a group's private address that we're not a member of
@@ -249,14 +260,14 @@ class Presence(BitgroupMessage):
 		BitgroupMessage.__init__(self, param)
 		
 		# Incoming presence message from a newly connected peer
-		if self.incoming: self.group.addPeer(data)
+		if self.incoming: self.group.addPeer(self.data)
 
 		# Outgoing presence message, add our data to the message
 		else:
 			data = {
 				'peer': app.peer,
 				'user': app.user.info(),
-				'ip': app.ip,
+				'ip':   app.ip,
 				'port': app.server.port,
 				'last': 0 # timestamp of last data
 			}
