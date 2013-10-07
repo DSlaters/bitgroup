@@ -1,8 +1,5 @@
-import json
-import datetime
-import time
-import email.utils
-import re
+import re,json, email.utils
+import datetime, time
 import inspect
 
 class Message(object):
@@ -44,7 +41,7 @@ class Message(object):
 	"""
 	def __init__(self, msg):
 		self.date = email.utils.formatdate(time.mktime(datetime.datetime.fromtimestamp(float(msg['receivedTime'])).timetuple()))
-		self.toAddr = msg['toAddress']
+		if 'toAddress' in msg: self.toAddr = msg['toAddress']
 		self.fromAddr = msg['fromAddress']
 		self.subject = msg['subject'].decode('base64')
 		self.body = msg['message'].decode('base64')
@@ -100,7 +97,10 @@ class Message(object):
 		if app.bmConnected():
 			messages = json.loads(app.api.getAllInboxMessages())
 			mailbox = []
-			for msg in messages['inboxMessages']: mailbox.append(Message(msg))
+			for msgID in messages['inboxMessages']:
+				msg = messages['inboxMessages'][msgID]
+				msg['receivedTime'] = int(time.time())
+				mailbox.append(Message(msg))
 			app.log(str(len(mailbox)) + ' messages retrieved.')
 		else: app.log("Not getting messages, Bitmessage not running")
 		return mailbox
