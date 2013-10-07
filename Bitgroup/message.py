@@ -27,7 +27,7 @@ class Message(object):
 		# Test if its a plain message with data structure instantiation
 		isMsg = self.__name__ == 'Message' or self.__class__.__name__ == 'Message'
 		try:
-			if 'fromAddress' in msg: pass
+			if not 'fromAddress' in msg: isMsg = False
 		except: isMsg = False
 
 		# If so, determine what class it should be
