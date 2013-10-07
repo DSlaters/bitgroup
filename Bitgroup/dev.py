@@ -12,8 +12,7 @@ class fakeBitmessage:
 	mlock = None     # Lock file for accessing the messages file
 	name = None      # The nickname on which all the dev instances are based
 
-	# Local cache of the messages and subscriptions
-	messages = {}
+	# Local cache of the subscriptions
 	subscriptions = []
 
 	def __init__(self):
@@ -61,8 +60,9 @@ class fakeBitmessage:
 		messages = self.loadMessages()
 		for toAddr in recipients:
 			if not toAddr in messages: messages[toAddr] = { 'inboxMessages': {} }
+			if not 'inboxMessages' in messages[toAddr]: messages[toAddr]['inboxMessages'] = {}
 			msgID = len(messages[toAddr])
-			messages[toAddr][msgID] = message
+			messages[toAddr]['inboxMessages'][msgID] = message
 		h = open(self.mfile, "w")
 		h.write(json.dumps(messages));
 		h.close()
@@ -118,9 +118,7 @@ class fakeBitmessage:
 	The following methods are all replicas of the Bitmessage API methods
 	"""
 	def addSubscription(self, addr, label = None):
-		k = app.user.addr
-		if not k in self.subscriptions: self.subscriptions[k] = []
-		self.subscriptions[k].append(addr)
+		self.subscriptions.append(addr)
 		self.saveSubscriptions()
 
 	def sendMessage(self, toAddr, fromAddr, subject, body):
@@ -139,9 +137,11 @@ class fakeBitmessage:
 		})
 
 	def getAllInboxMessages(self):
+		messages = self.loadMessages()
 		k = app.user.addr
-		if not k in self.messages: self.messages[k] = { 'inboxMessages': {} }
-		return json.dumps(self.messages[k])
+		if k in messages: app.log(str(len(messages[k]['inboxMessages'].keys())) + " messages loaded")
+		else: messages[k] = { 'inboxMessages': {} }
+		return json.dumps(messages[k])
 		
 	def createDeterministicAddresses(self, passwd, num):
 		addr = { 'addresses': [] }

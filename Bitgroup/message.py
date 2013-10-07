@@ -100,8 +100,7 @@ class Message(object):
 		if app.bmConnected():
 			messages = json.loads(app.api.getAllInboxMessages())
 			mailbox = []
-			for msgID in range(len(messages['inboxMessages'])):
-				mailbox.append(Message(messages['inboxMessages'][msgID]))
+			for msg in messages['inboxMessages']: mailbox.append(Message(msg))
 			app.log(str(len(mailbox)) + ' messages retrieved.')
 		else: app.log("Not getting messages, Bitmessage not running")
 		return mailbox
