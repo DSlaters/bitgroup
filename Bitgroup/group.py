@@ -103,7 +103,7 @@ class Group(Node, object):
 		peers = []
 		for k in clients.keys():
 			client = clients[k]
-			if CLIENTSOCK in client and client[GROUP] is self:
+			if PEERSOCK in client and client[GROUP] is self:
 				peers.append(k)
 		return peers
 
@@ -112,10 +112,10 @@ class Group(Node, object):
 	"""
 	def addPeer(self, data):
 
-		# Add the peer's info to the server's active clients list
-		app.server.clients[peer] = {
-			CLIENTSOCK: sock,
-			GROUP: self.group
+		# Add an entry for the client even though we have no socket yet so that it's included in server determination
+		app.server.clients[data['peer']] = {
+			PEERSOCK: None,
+			GROUP: self
 		}
 
 		# Since peers have changed, we need to know who's the server now
@@ -126,6 +126,9 @@ class Group(Node, object):
 			
 			# Open a socket to the new peer
 			sock = app.server.connect((data['ip'], data['port']))
+
+			# Add the peer's info to the server's active clients list
+			app.server.clients[peer][PEERSOCK] = sock
 
 			# Send data since peer's last data and the current peer info
 			data = {PEERS: group.peers()}

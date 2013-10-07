@@ -175,7 +175,7 @@ class BitgroupMessage(Message):
 					app.log("No valid data found (or couldn't decrypt it) in message content!")
 					self.invalid = True
 					return None
-
+		print 'data: ' + str(self.group.passwd)
 		return None
 
 	"""
@@ -264,7 +264,7 @@ class Presence(BitgroupMessage):
 
 		# Outgoing presence message, add our data to the message
 		else:
-			data = {
+			self.data = {
 				'peer': app.peer,
 				'user': app.user.info(),
 				'ip':   app.ip,

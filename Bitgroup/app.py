@@ -56,9 +56,9 @@ class App:
 		__builtin__.app = self
 
 		# If running in dev mode, define which instance we are and how many there are from the command line args
-		if len(sys.argv) > 2 and sys.argv[1] == 'dev':
-			self.devnum = int(sys.argv[2])
-			if len(sys.argv) == 3: self.dev = 1
+		if len(sys.argv) > 1 and sys.argv[1] == 'dev':
+			self.devnum = int(sys.argv[2]) if len(sys.argv) > 2 else 3
+			if len(sys.argv) < 4: self.dev = 1
 			elif len(sys.argv) == 4: self.dev = int(sys.argv[3])
 
 		# Give the local instance a unique session ID for real-time communication with peers
@@ -72,10 +72,10 @@ class App:
 
 		# Initialise the current user
 		self.user = User()
-		app.log("User \"" + self.user.nickname + "\" (" + self.user.addr + ") initialised")
+		self.log("User \"" + self.user.nickname + "\" (" + self.user.addr + ") initialised")
 
 		# If in dev mode, use the fake Bitmessage class, otherwise set up the API connection to the real thing
-		if app.dev: self.api = fakeBitmessage()
+		if self.dev: self.api = fakeBitmessage()
 		else: self.api = xmlrpclib.ServerProxy("http://"+username+":"+password+"@"+interface+":"+str(port)+"/")
 
 		# Create the user data dir if it doesn't exist
@@ -142,12 +142,12 @@ class App:
 		conf = dict(self.config.items('groups'))
 		for passwd in conf:
 			prvaddr = conf[passwd]
-			app.log("initialising group: " + prvaddr)
+			self.log("initialising group: " + prvaddr)
 			group = Group(prvaddr, passwd)
 			if group.name:
 				self.groups.append(group)
-				app.log("    \"" + group.name + "\" initialised successfully")
-			else: app.log("    initialisation failed")
+				self.log("    \"" + group.name + "\" initialised successfully")
+			else: self.log("    initialisation failed")
 				
 
 	"""
@@ -239,9 +239,9 @@ class App:
 		
 		# If a Bitmessage address was created successfully, create the group's bitmessage addresses and add to the config
 		if re.match('BM-', group.addr):
-			app.log("new password created: " + group.passwd)
-			app.log("new Bitmessage address created: " + group.addr)
-			app.log("new private Bitmessage address created: " + group.prvaddr)
+			self.log("new password created: " + group.passwd)
+			self.log("new Bitmessage address created: " + group.addr)
+			self.log("new private Bitmessage address created: " + group.prvaddr)
 			self.groups[group.prvaddr] = group
 			data = {'name':name, 'addr':group.addr, 'prvaddr':group.prvaddr}
 
