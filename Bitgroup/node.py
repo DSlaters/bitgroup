@@ -130,13 +130,13 @@ class Node:
 			if client != excl:
 
 				# Client is a local SWF socket
-				if CLIENTSOCK in data:
+				if CLIENTCONN in data:
 					change = [key,val,ts]
-					data[CLIENTSOCK].push(json.dumps(change) + '\0')
+					data[CLIENTCONN].push(json.dumps(change) + '\0')
 					app.log("Sending to SWF:" + client + ": " + str(change))
 
 				# Client is a remote member peer
-				elif PEERSOCK in data:
+				elif PEERCONN in data:
 					data = {'peer': app.peerID}
 					pass
 

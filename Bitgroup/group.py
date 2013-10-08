@@ -1,5 +1,6 @@
 import uuid
 import re
+import http
 from node import *
 
 class Group(Node, object):
@@ -87,8 +88,8 @@ class Group(Node, object):
 			d = []
 			for k in clients.keys():
 				client = clients[k]
-				if CLIENTSOCK in client and client[GROUP] is g:
-					client[CLIENTSOCK].close()
+				if CLIENTCONN in client and client[GROUP] is g:
+					client[CLIENTCONN].close()
 					d.append(k)
 			for k in d: del clients[k]
 
@@ -103,7 +104,7 @@ class Group(Node, object):
 		peers = []
 		for k in clients.keys():
 			client = clients[k]
-			if PEERSOCK in client and client[GROUP] is self:
+			if PEERCONN in client and client[GROUP] is self:
 				peers.append(k)
 		return peers
 
@@ -115,7 +116,7 @@ class Group(Node, object):
 
 		# Add an entry for the client even though we have no socket yet so that it's included in server determination
 		app.server.clients[peer] = {
-			PEERSOCK: None,
+			PEERCONN: None,
 			GROUP: self
 		}
 
@@ -125,17 +126,18 @@ class Group(Node, object):
 		# If we are the group server,
 		if self.server:
 			
-			# Open a socket to the new peer
+			# Open a socket and connect to the new peer
 			sock = app.server.connect((data['ip'], data['port']))
+			conn = http.Connection(app.server, sock)
 
 			# Add the peer's info to the server's active clients list
-			app.server.clients[peer][PEERSOCK] = sock
+			app.server.clients[peer][PEERCONN] = conn
 
 			# Send data since peer's last data and the current peer info
-			data = {PEERS: self.peers()}
-			changes = self.changes(self.data['last'])
-			if len(changes) > 0: data[CHANGES] = changes
-			sock.push(json.dumps(data))
+			info = {PEERS: self.peers()}
+			changes = self.changes(data['last'])
+			if len(changes) > 0: info[CHANGES] = changes
+			conn.push(json.dumps(info))
 			
 			# TODO: If this is a new member (not in member info), broadcast a message about it to the group
 			Post(self.group, subject, body).send()		
@@ -144,7 +146,7 @@ class Group(Node, object):
 	Delete a peer from the active peers list
 	"""
 	def delPeer(self, peer, close = True):
-		if close: app.server.clients[peer][CLIENTSOCK].close()
+		if close: app.server.clients[peer][CLIENTCONN].close()
 		del app.server.clients[peer]
 		self.determineServer()
 

@@ -63,12 +63,12 @@ class Connection(asynchat.async_chat):
 			client = self.server.clients[k]
 
 			# Closing a SWF client
-			if CLIENTSOCK in client and client[CLIENTSOCK] is self:
+			if CLIENTCONN in client and client[CLIENTCONN] is self:
 				del self.server.clients[k]
 				app.log("Socket closed, client " + k + " removed from data")
 
 			# Closing a peer
-			elif PEERSOCK in client and client[PEERSOCK] is self:
+			elif PEERCONN in client and client[PEERCONN] is self:
 				client['group'].delPeer(k, False)
 
 	"""
@@ -310,7 +310,7 @@ class Connection(asynchat.async_chat):
 			else:
 
 				# If we have a SWF socket for this client, bail as changes will already be sent
-				if CLIENTSOCK in clients[client]: content = ''
+				if CLIENTCONN in clients[client]: content = ''
 				else:
 					content = group.changes(ts - (now-ts), client) # TODO: messy doubling of period (bug#3)
 					if len(content) > 0: app.log("Sending to " + client + ': ' + json.dumps(content))
@@ -368,7 +368,7 @@ class Connection(asynchat.async_chat):
 			clients = self.server.clients
 			client = match.group(1)
 			if not client in clients: clients[client] = {}
-			clients[client][CLIENTSOCK] = self
+			clients[client][CLIENTCONN] = self
 			app.log("SWF socket identified for client " + client)
 
 	"""

@@ -12,8 +12,8 @@ Application-wide 'constants' which are also available to the client side
 """
 
 # Connection types
-const('CLIENTSOCK', 1)
-const('PEERSOCK', 2)
+const('CLIENTCONN', 1)
+const('PEERCONN', 2)
 
 # Common data-structure keys
 const('PEERS', 3)
