@@ -79,7 +79,7 @@ class Group(Node, object):
 	def determineServer(self):
 
 		# TODO: who's server? - for now just sort by bm addresses and pick the first
-		gsrv = app.peer == self.peers().sort()[0]
+		gsrv = app.peer == sorted(self.peers())[0]
 
 		# if not server now, but was before, close all peer sockets for this group
 		if self.server and not gsrv:
@@ -92,7 +92,7 @@ class Group(Node, object):
 					d.append(k)
 			for k in d: del clients[k]
 
-		g.server = gsrv
+		self.server = gsrv
 		return gsrv
 
 	"""
@@ -111,9 +111,10 @@ class Group(Node, object):
 	Add a new peer and establish a connection with it - data is the format sent by a Presence message
 	"""
 	def addPeer(self, data):
+		peer = data['peer']
 
 		# Add an entry for the client even though we have no socket yet so that it's included in server determination
-		app.server.clients[data['peer']] = {
+		app.server.clients[peer] = {
 			PEERSOCK: None,
 			GROUP: self
 		}
@@ -122,7 +123,7 @@ class Group(Node, object):
 		self.determineServer()
 
 		# If we are the group server,
-		if self.group.server:
+		if self.server:
 			
 			# Open a socket to the new peer
 			sock = app.server.connect((data['ip'], data['port']))
@@ -131,8 +132,8 @@ class Group(Node, object):
 			app.server.clients[peer][PEERSOCK] = sock
 
 			# Send data since peer's last data and the current peer info
-			data = {PEERS: group.peers()}
-			changes = group.changes(self.data['last'])
+			data = {PEERS: self.peers()}
+			changes = self.changes(self.data['last'])
 			if len(changes) > 0: data[CHANGES] = changes
 			sock.push(json.dumps(data))
 			
