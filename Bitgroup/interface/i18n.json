@@ -38,6 +38,8 @@
 		"newgroup-noservice": "Both the <i>Bitgroup</i> and <i>Bitmessage</i> daemons must be running to create a new group.",
 		"newgroup-info": "First enter a name for your new group, then the group's private and public Bitmessage addresses will be created and you will be redirected to the new group's home page to begin adding content and inviting members and subscribers.",
 		"groupcreated": "<b>Group \"$1\" has been successfully created with public address <i>$2</i>!</b><br />You can now begin creating content for your group and inviting new members and subscribers.<br />Click <a href=\"$3\">here</a> to access your new group!",
+		"newmember-subject": "New member notification",
+		"newmember-body": "Please welcome new member, $1, who has joined the group today!",
 
 		"view": "view",
 		"views": "views",

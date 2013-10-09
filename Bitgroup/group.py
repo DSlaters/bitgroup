@@ -140,7 +140,7 @@ class Group(Node, object):
 			conn.push(json.dumps(info))
 			
 			# TODO: If this is a new member (not in member info), broadcast a message about it to the group
-			Post(self.group, subject, body).send()		
+			Post(self, app.msg('newmember-subject', data['Nickname']), app.msg('newmember-body', data['Nickname'])).send()		
 
 	"""
 	Delete a peer from the active peers list
