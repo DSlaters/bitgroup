@@ -22,7 +22,7 @@ class Message(object):
 	"""
 	If instantiating a plain Message with a message data structure, determine the correct class for the message first
 	"""
-	def __new__(self, msg):
+	def __new__(self, msg, arg2 = None, arg3 = None):
 
 		# Test if its a plain message with data structure instantiation
 		isMsg = self.__name__ == 'Message' or self.__class__.__name__ == 'Message'
@@ -40,8 +40,8 @@ class Message(object):
 				self = cls(msg)
 				print "class: " + str(cls) + "  self: " + str(self)
 
-				# If the instance has determined it's not a valid message of it's type, return None
-				if self.invalid: return None
+				# Return the new instance, or None if it's turned out to be invalid
+				return None if self.invalid else self
 
 		return object.__new__(self, msg)
 
