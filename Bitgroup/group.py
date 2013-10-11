@@ -115,7 +115,7 @@ class Group(Node, object):
 		peer = data['peer']
 
 		# Add an entry for the client even though we have no socket yet so that it's included in server determination
-		app.server.clients[peer] = server.NullPeerConnection(self)
+		app.server.clients[peer] = NullPeerConnection(self)
 
 		# Since peers have changed, we need to know who's the server now
 		self.determineServer()
@@ -150,6 +150,15 @@ class Group(Node, object):
 		del app.server.clients[peer]
 		self.determineServer()
 
+"""
+Dummy connection object so that a "connection" exists when determineServer is called but before a real connection is established
+"""
+class NullPeerConnection:
+	role = PEER
+	group = None
+	def __init__(self, group):
+		self.group = group
+		return None
 
 """
 Data structure of a newly created group

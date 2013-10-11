@@ -62,7 +62,7 @@ class Node:
 			j[leaf] = [val, ts]
 			self.save()
 			self.queue[key] = [val, ts, client]
-			self.pushChanges(key, val, ts, client)
+			app.server.pushChanges(key, val, ts, client)
 
 		# Return state of change
 		return changed
@@ -120,25 +120,6 @@ class Node:
 		for k in filter(lambda f: self.queue[f][1] > since and (excl == False or self.queue[f][2] != excl), self.queue):
 			changes.append([k, self.queue[k][0], self.queue[k][1]])
 		return changes
-
-	"""
-	Push a change to all real-time client's (local interface SWF sockets, and remote online members)
-	"""
-	def pushChanges(self, key, val, ts, excl = False):
-		for client in app.server.clients.keys():
-			data = app.server.clients[client]
-			if client != excl:
-
-				# Client is a local SWF socket
-				if CLIENTCONN in data:
-					change = [key,val,ts]
-					data[CLIENTCONN].push(json.dumps(change) + '\0')
-					app.log("Sending to SWF:" + client + ": " + str(change))
-
-				# Client is a remote member peer
-				elif PEERCONN in data:
-					data = {'peer': app.peerID}
-					pass
 
 	"""
 	TODO: Send queued changes since last send to the group's private Bitmessage address

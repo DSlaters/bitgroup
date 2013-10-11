@@ -106,14 +106,12 @@ class Message(object):
 	def getMessages(mailbox):
 		if app.bmConnected():
 			messages = json.loads(app.api.getAllInboxMessages())
-			mailbox = []
 			app.log('Retrieving ' + str(len(messages['inboxMessages'])) + ' messages')
 			for msgID in messages['inboxMessages']:
 				msg = messages['inboxMessages'][msgID]
-				app.api.trashMessage(msg['msgid'])
 				msg['receivedTime'] = int(time.time())
-				msg = Message(msg)
-				mailbox.append(msg)
+				app.api.trashMessage(msg['msgid'])
+				mailbox.append(Message(msg))
 		else: app.log("Not getting messages, Bitmessage not running")
 		return mailbox
 
@@ -233,7 +231,7 @@ class Changes(BitgroupMessage):
 	group = None
 	lastSync = 0
 
-	def __init__(self, param, ts = None):
+	def __init__(self, param, ts = None, data = None):
 		BitgroupMessage.__init__(self, param)
 
 		# TODO: Incoming changes
@@ -247,7 +245,7 @@ class Changes(BitgroupMessage):
 			if ts is None:
 				ts = self.lastSync
 				self.lastSync = app.timestamp()
-			self.data = self.group.changes(ts)
+			self.data = { CHANGES: self.group.changes(ts) }
 
 		return None
 

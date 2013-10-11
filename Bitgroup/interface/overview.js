@@ -41,9 +41,9 @@ Overview.prototype.render = function(app) {
 	// Render the data
 	if(data) {
 		var rows = '';
-		for( i in data ) {
-			var v = (typeof data[i] == 'object' && '0' in data[i]) ? data[i][0] : data[i];
-			if(typeof v == 'object' && 'type' in v) {
+		for( var i in data ) {
+			var v = (data[i] && typeof data[i] == 'object' && '0' in data[i]) ? data[i][0] : data[i];
+			if(v && typeof v == 'object' && 'type' in v) {
 				v = v.type[0];
 				i = '<a href="#' + i + '">' + i + '</a>';
 			}

@@ -31,13 +31,6 @@ class Server(asyncore.dispatcher):
 		sock, addr = self.accept()
 		Connection(self, sock)
 
-class NullPeerConnection:
-	role = PEER
-	group = None
-	def __init__(self, group):
-		self.group = group
-		return None
-
 class Connection(asynchat.async_chat):
 	"""
 	Handles incoming data requests for a single connection
@@ -404,3 +397,32 @@ class Connection(asynchat.async_chat):
 
 			# If peer information was sent, store in the group data
 			if PEERS in data: group.peers = data[PEERS]
+
+	"""
+	Push a change to all persistent connections
+	"""
+	def pushChanges(self, key, val, ts, excl = False):
+		for k in app.server.clients.keys():
+			client = app.server.clients[k]
+			if k != excl:
+
+				# Client is a local SWF socket
+				if client.role is INTERFACE:
+					change = [key, val, ts]
+					client.push(json.dumps(change) + '\0')
+					app.log("Sending to INTERFACE:" + k + ": " + str(change))
+
+				# TODO: Client is a remote member peer
+				elif client.role is PEER:
+					data = { PEER: app.peerID }
+					app.log("(TODO) Send to PEER:" + k + ": " + str(change))
+
+	"""
+	Push the application status to interface connections
+	"""
+	def pushStatus(self, json):
+		for k in app.server.clients.keys():
+			client = app.server.clients[k]
+			if client.role is INTERFACE:
+				client.push(json + '\0')
+				app.log("Sending status to INTERFACE:" + k + ": " + str(json))

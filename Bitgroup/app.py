@@ -37,7 +37,7 @@ class App:
 	devnum = 0
 
 	server = None
-	inbox = None
+	inbox = []
 	user = None
 	groups = []
 	maxage = 600000   # Expiry time of queue items in milliseconds
@@ -105,10 +105,12 @@ class App:
 	"""
 	def interval(self):
 		while(True):
-			app.getStateData()
 			now = self.timestamp()
 			ts = self.lastInterval
 			self.lastInterval = now
+
+			# Check state and push any changes to peers
+			self.server.pushStatus(json)
 
 			# If we have no IP address, try and obtain it and if successful, broardcast our presence to our groups
 			if self.ip is None:
@@ -116,9 +118,6 @@ class App:
 				if self.ip:
 					for g in app.groups:
 						Presence(g).send()
-
-			# Check for new messages every 10 seconds
-			self.inbox = Message.getMessages(self.inbox)
 			
 			# TODO: Send outgoing queued changes messages every 10 minutes (or 10 seconds if in dev mode)
 			if app.dev or now - ts > 595000:
@@ -178,8 +177,9 @@ class App:
 				self.state['bm'] = NOTCONNECTED
 
 			# If Bitmessage was available add the message list info if loaded
-			if self.inbox and self.state['bm'] is CONNECTED:
+			if self.state['bm'] is CONNECTED:
 				self.state['inbox'] = []
+				self.inbox = Message.getMessages(self.inbox)
 				for msg in self.inbox:
 					data = {'from': msg.fromAddr, 'subject': msg.subject}
 					cls = str(msg.__class__.__name__)
