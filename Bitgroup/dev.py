@@ -6,18 +6,18 @@ class fakeBitmessage:
 	"""
 	A fake Bitmessage daemon for testing locally without needing the real thing running
 	"""
-	datapath = None  # Where the data for all dev instances is stored
-	sfile = None     # Location of this instance's subscriptions file
-	mfile = None     # Locations of all the messages
-	mlock = None     # Lock file for accessing the messages file
-	name = None      # The nickname on which all the dev instances are based
+	datapath = None    # Where the data for all dev instances is stored
+	sfile    = None    # Location of this instance's subscriptions file
+	mfile    = None    # Locations of all the messages
+	mlock    = None    # Lock file for accessing the messages file
+	name     = None    # The nickname on which all the dev instances are based
 
 	# Local cache of the subscriptions
 	subscriptions = []
 
 	def __init__(self):
-
 		app.log("Initialising fake Bitmessage API")
+
 		# Use the original nickname as the base name for all the dev users
 		self.name = app.config.get('user', 'nickname')
 
@@ -28,7 +28,6 @@ class fakeBitmessage:
 
 		# Define the lock file for this group of dev users and delete if exists (and we-re the first instance)
 		self.mlock = self.datapath + '/.lock.' + self.name
-		print app.dev
 		if app.dev == 1: self.lock(False)
 
 		# Run multiple instances
