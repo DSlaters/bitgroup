@@ -140,7 +140,6 @@ class Group(Node, object):
 			conn.push(json.dumps(info))
 			
 			# TODO: If this is a new member (not in member info), broadcast a message about it to the group
-			print data
 			nick = data['user'][data['user'].keys()[0]]['Nickname']
 			Post(self, app.msg('newmember-subject', nick), app.msg('newmember-body', nick)).send()		
 

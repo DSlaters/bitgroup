@@ -28,7 +28,8 @@ class fakeBitmessage:
 
 		# Define the lock file for this group of dev users and delete if exists (and we-re the first instance)
 		self.mlock = self.datapath + '/.lock.' + self.name
-		if app.dev == 1 and os.path.exists(self.mlock): os.remove(self.mlock)
+		print app.dev
+		if app.dev == 1: self.lock(False)
 
 		# Run multiple instances
 		if app.dev == 1:
@@ -44,19 +45,24 @@ class fakeBitmessage:
 		self.loadSubscriptions()
 
 	"""
-	Store a message in a users mailbox
+	Lock (Wait until nobody's using the mailbox then lock it) or unlock the mailboxes file
+	"""
+	def lock(self, state):
+		if state:
+			while os.path.exists(self.mlock): time.sleep(0.1)
+			h = open(self.mlock, "w")
+			h.write(str(app.dev));
+			h.close()
+		else:
+			if os.path.exists(self.mlock): os.remove(self.mlock)
+
+	"""
+	Store messages in recipient users mailbox
 	"""
 	def deliver(self, recipients, message):
-
-		# If the messages are in use by another dev user, wait until they've finished
-		while os.path.exists(self.mlock): time.sleep(0.1)
-		
-		# Create the lock file so we now have exclusive use of the messages file
-		h = open(self.mlock, "w")
-		h.write(str(app.dev));
-		h.close()
-		
-		# Deliver the message to the recipients
+		self.lock(True)
+		message['msgid'] = app.guid()
+		app.log("Delivering message with ID \"" + message['msgid'] + "\"")
 		messages = self.loadMessages()
 		for toAddr in recipients:
 			if not toAddr in messages: messages[toAddr] = { 'inboxMessages': {} }
@@ -66,9 +72,7 @@ class fakeBitmessage:
 		h = open(self.mfile, "w")
 		h.write(json.dumps(messages));
 		h.close()
-
-		# Remove the lock file
-		os.remove(self.mlock)
+		self.lock(False)
 
 	"""
 	Load this dev user's subscriptions list into the local cache
@@ -150,3 +154,12 @@ class fakeBitmessage:
 	def add(self, a, b):
 		return a + b
 
+	def trashMessage(self, msgRef):
+		self.lock(True)
+		messages = self.loadMessages()
+		for msgID in messages[app.user.addr]['inboxMessages'].keys():
+			if messages[app.user.addr]['inboxMessages'][msgID]['msgid'] == msgRef:
+				del messages[app.user.addr]['inboxMessages'][msgID]
+				app.log("Message \"" + msgRef + "\" deleted")
+		self.lock(False)
+		

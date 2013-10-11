@@ -62,7 +62,7 @@ class App:
 			elif len(sys.argv) == 4: self.dev = int(sys.argv[3])
 
 		# Give the local instance a unique session ID for real-time communication with peers
-		self.peer = self.encrypt(str(uuid.uuid4()),str(uuid.uuid4())).encode('base64')[:8]
+		self.peer = self.guid()
 
 		# Build the Bitmessage RPC URL from the key and password
 		port = config.getint('bitmessage', 'port')
@@ -279,6 +279,12 @@ class App:
 			return match.group(1)
 		self.log("Could not obtain external IP address")
 		return None
+
+	"""
+	Create a general purpose GUID
+	"""
+	def guid(self):
+		return self.encrypt(str(uuid.uuid4()),str(uuid.uuid4())).encode('base64')[:8]
 
 	"""
 	Custom logging method so we can specify how to log output from dev main and sub-instances or non-dev

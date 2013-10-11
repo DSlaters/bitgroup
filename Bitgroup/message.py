@@ -32,16 +32,17 @@ class Message(object):
 
 		# If so, determine what class it should be
 		if isMsg:
-
 			cls = Message.getClass(msg)
 			if cls.__name__ != 'Message':
 
-				# Change the Message class an instance of the returned class
+				# Change the Message class to an instance of the returned class
 				self = cls(msg)
-				print "class: " + str(cls) + "  self: " + str(self)
 
 				# Return the new instance, or None if it's turned out to be invalid
-				return None if self.invalid else self
+				if self.invalid: return None 
+				
+				app.log(cls.__name__ + ' message received and instantiated')
+				return self
 
 		return object.__new__(self, msg)
 
@@ -109,9 +110,9 @@ class Message(object):
 			app.log('Retrieving ' + str(len(messages['inboxMessages'])) + ' messages')
 			for msgID in messages['inboxMessages']:
 				msg = messages['inboxMessages'][msgID]
+				app.api.trashMessage(msg['msgid'])
 				msg['receivedTime'] = int(time.time())
 				msg = Message(msg)
-				print msg
 				mailbox.append(msg)
 		else: app.log("Not getting messages, Bitmessage not running")
 		return mailbox
