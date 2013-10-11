@@ -39,6 +39,10 @@ class Connection(asynchat.async_chat):
 	server = None  # Gives the connection handler access to the server properties such as the client data array
 	sock   = None
 	data   = ""    # Data accumulates here until a complete message has arrived
+
+	role   = None  # Whether this is a local SWF or remote peer (for persistent connections)
+	group  = None  # The group this connection is associated with (for persistent connections)
+
 	status = None  # HTTP status code returned to client
 	ctype  = None  # HTTP content type returned to client
 	clen   = None  # HTTP content length returned to client

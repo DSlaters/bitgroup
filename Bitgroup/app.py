@@ -1,6 +1,6 @@
 import __builtin__
 import os, sys, re, threading
-import uuid, http, urllib, xmlrpclib, json
+import uuid, urllib, xmlrpclib, json
 import time, datetime
 
 # Bitmessage modules
@@ -12,6 +12,7 @@ from bitmessagemain import pointMult
 
 # Bitgroup modules
 from dev import *
+from server import *
 from user import *
 from group import *
 from message import *
@@ -90,7 +91,7 @@ class App:
 		# Set up a simple HTTP server to handle requests from any interface on our port
 		iport = config.getint('interface', 'port')
 		if self.dev: iport += self.dev
-		self.server = http.Server('127.0.0.1', iport)
+		self.server = Server('127.0.0.1', iport)
 
 		# Call the regular interval timer
 		hw_thread = threading.Thread(target = self.interval)
