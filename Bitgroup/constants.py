@@ -11,11 +11,9 @@ def const(name, value):
 Application-wide 'constants' which are also available to the client side
 """
 
-# Connection types
-const('CLIENTCONN', 1)
-const('PEERCONN', 2)
-
-# Common data-structure keys
+# Array keys
+const('INTERFACE', 1)
+const('PEER', 2)
 const('PEERS', 3)
 const('CHANGES', 4)
 const('GROUP', 5)

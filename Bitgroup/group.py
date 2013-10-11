@@ -1,6 +1,6 @@
 import uuid
 import re
-import http
+import server
 from node import *
 
 class Group(Node, object):
@@ -88,8 +88,8 @@ class Group(Node, object):
 			d = []
 			for k in clients.keys():
 				client = clients[k]
-				if CLIENTCONN in client and client[GROUP] is g:
-					client[CLIENTCONN].close()
+				if client.role is PEER and client.group is self:
+					client.close()
 					d.append(k)
 			for k in d: del clients[k]
 
@@ -104,7 +104,7 @@ class Group(Node, object):
 		peers = []
 		for k in clients.keys():
 			client = clients[k]
-			if PEERCONN in client and client[GROUP] is self:
+			if client.role is PEER and client.group is self:
 				peers.append(k)
 		return peers
 
@@ -115,10 +115,7 @@ class Group(Node, object):
 		peer = data['peer']
 
 		# Add an entry for the client even though we have no socket yet so that it's included in server determination
-		app.server.clients[peer] = {
-			PEERCONN: None,
-			GROUP: self
-		}
+		app.server.clients[peer] = server.NullPeerConnection(self)
 
 		# Since peers have changed, we need to know who's the server now
 		self.determineServer()
@@ -128,13 +125,15 @@ class Group(Node, object):
 			
 			# Open a socket and connect to the new peer
 			sock = app.server.connect((data['ip'], data['port']))
-			conn = http.Connection(app.server, sock)
+			conn = server.Connection(app.server, sock)
 
 			# Add the peer's info to the server's active clients list
-			app.server.clients[peer][PEERCONN] = conn
+			app.server.clients[peer] = conn
+			conn.role = PEER
+			conn.group = self
 
 			# Send data since peer's last data and the current peer info
-			info = {PEERS: self.peers()}
+			info = { PEERS: self.peers() }
 			changes = self.changes(data['last'])
 			if len(changes) > 0: info[CHANGES] = changes
 			conn.push(json.dumps(info))
@@ -147,7 +146,7 @@ class Group(Node, object):
 	Delete a peer from the active peers list
 	"""
 	def delPeer(self, peer, close = True):
-		if close: app.server.clients[peer][CLIENTCONN].close()
+		if close: app.server.clients[peer].close()
 		del app.server.clients[peer]
 		self.determineServer()
 

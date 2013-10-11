@@ -31,6 +31,12 @@ class Server(asyncore.dispatcher):
 		sock, addr = self.accept()
 		Connection(self, sock)
 
+class NullPeerConnection:
+	role = PEER
+	group = None
+	def __init__(self, group):
+		self.group = group
+		return None
 
 class Connection(asynchat.async_chat):
 	"""
@@ -65,15 +71,10 @@ class Connection(asynchat.async_chat):
 		asyncore.dispatcher.handle_close(self)
 		for k in self.server.clients.keys():
 			client = self.server.clients[k]
-
-			# Closing a SWF client
-			if CLIENTCONN in client and client[CLIENTCONN] is self:
+			if client is self:
 				del self.server.clients[k]
 				app.log("Socket closed, client " + k + " removed from data")
-
-			# Closing a peer
-			elif PEERCONN in client and client[PEERCONN] is self:
-				client['group'].delPeer(k, False)
+				if client.role == PEER: client.group.delPeer(k, False)
 
 	"""
 	New data has arrived, accumulate the data and remove messages for processing as they're completed
@@ -371,8 +372,8 @@ class Connection(asynchat.async_chat):
 		if match:
 			clients = self.server.clients
 			client = match.group(1)
-			if not client in clients: clients[client] = {}
-			clients[client][CLIENTCONN] = self
+			if not client in clients: clients[client] = self
+			self.role = INTERFACE
 			app.log("SWF socket identified for client " + client)
 
 	"""
@@ -380,19 +381,13 @@ class Connection(asynchat.async_chat):
 	"""
 	def peerProcessMessage(self, peer, msgType, msg):
 		clients = self.server.clients
-
-		# Get the peer entry in the clients list
-		client = None
-		for k in clients.keys():
-			if k == peer: client = clients[k]
-		if client == None:
+		if peer in clients: client = clients[peer]
+		else:
 			app.log("Message received from unknown peer \"" + peer + "\": " + str(self.sock))
 			return
+		group = client.group
 
-		# Get the group from the client entry
-		group = client[GROUP]
-
-		# Peer known, try and decrypt its message
+		# Try and decrypt the peer's message
 		try:
 			data = json.loads(app.decrypt(msg, group.passwd))
 		except:
