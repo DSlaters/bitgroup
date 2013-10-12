@@ -63,11 +63,11 @@ class Server(asyncore.dispatcher):
 				client.push(json + '\0')
 				app.log("Sending status to INTERFACE:" + k + ": " + str(json))
 
-"""
-Class to contain the data aspect of a connection - also allows clients in the server.clients list that have no active connection
-"""
 class Client:
-
+	"""
+	Class to contain the data aspect of a connection
+	- also allows clients in the server.clients list that have no active connection if instantiated directly
+	"""
 	role   = None  # Whether this is a local SWF or remote peer (for persistent connections)
 	group  = None  # The group this connection is associated with (for persistent connections)
 
