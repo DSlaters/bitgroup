@@ -7,14 +7,15 @@ class Server(asyncore.dispatcher):
 	"""
 	Create a listening socket server for the interface JavaScript and SWF components to connect to
 	"""
-
 	host = None
 	port = None
 
 	# This contains a key for each active client ID, and each key can contain "lastSync", "swfSocket", "peerSocket", "group"
 	clients = {}
 
-	# Set up the listener
+	"""
+	Set up the listener
+	"""
 	def __init__(self, host, port):
 		asyncore.dispatcher.__init__(self)
 		self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -26,18 +27,46 @@ class Server(asyncore.dispatcher):
 		self.port = port
 		app.log("Server listening on port " + str(port))
 
-	# Accept a new incoming connection and set up a new connection handler instance for it
+	"""
+	Accept a new incoming connection and set up a new connection handler instance for it
+	"""
 	def handle_accept(self):
 		sock, addr = self.accept()
 		Connection(self, sock)
 
-class Connection(asynchat.async_chat):
 	"""
-	Handles incoming data requests for a single connection
+	Push a change to all persistent connections
 	"""
-	server = None  # Gives the connection handler access to the server properties such as the client data array
-	sock   = None
-	data   = ""    # Data accumulates here until a complete message has arrived
+	def pushChanges(self, key, val, ts, excl = False):
+		for k in app.server.clients.keys():
+			client = app.server.clients[k]
+			if k != excl:
+
+				# Client is a local SWF interface connection
+				if client.role is INTERFACE:
+					change = [key, val, ts]
+					client.push(json.dumps(change) + '\0')
+					app.log("Sending to INTERFACE:" + k + ": " + str(change))
+
+				# TODO: Client is a remote member peer
+				elif client.role is PEER:
+					data = { PEER: app.peerID }
+					app.log("(TODO) Send to PEER:" + k + ": " + str(change))
+
+	"""
+	Push the application status to interface connections
+	"""
+	def pushStatus(self, json):
+		for k in app.server.clients.keys():
+			client = app.server.clients[k]
+			if client.role is INTERFACE:
+				client.push(json + '\0')
+				app.log("Sending status to INTERFACE:" + k + ": " + str(json))
+
+"""
+Class to contain the data aspect of a connection - also allows clients in the server.clients list that have no active connection
+"""
+class Client:
 
 	role   = None  # Whether this is a local SWF or remote peer (for persistent connections)
 	group  = None  # The group this connection is associated with (for persistent connections)
@@ -45,6 +74,15 @@ class Connection(asynchat.async_chat):
 	status = None  # HTTP status code returned to client
 	ctype  = None  # HTTP content type returned to client
 	clen   = None  # HTTP content length returned to client
+	lastSync = 0   # Last data sync time for Ajax polling interface clients
+
+class Connection(asynchat.async_chat, Client):
+	"""
+	Handles incoming data requests for a single connection
+	"""
+	server = None  # Gives the connection handler access to the server properties such as the client data array
+	sock   = None
+	data   = ""    # Data accumulates here until a complete message has arrived
 
 	"""
 	Set up the connection handler (we use no terminator as we're detecting and removing completed messages manually)
@@ -287,19 +325,21 @@ class Connection(asynchat.async_chat):
 
 			# Identify the client stream using a unique ID in the header
 			match = re.search(r'X-Bitgroup-ID: (.+?)\s', head)
-			client = match.group(1) if match else ''
-			if not client in clients: clients[client] = {}
+			k = match.group(1) if match else ''
+			if not k in clients:
+				clients[k] = Client()
+				clients[k].role = HTTP
+			client = clients[k]
 
 			# Get the timestamp of the last time this client connected and update
-			if client in clients and 'lastSync' in clients[client]: ts = clients[client]['lastSync']
-			else: ts = 0
-			clients[client]['lastSync'] = now
+			ts = client.lastSync
+			client.lastSync = now
 
 			# If the client sent change-data merge into the local data
 			if data:
 				cdata = json.loads(data)
-				for item in cdata: group.setData(item[0], item[1], item[2], client)
-				app.log("Changes received from " + client + " (last=" + str(ts) + "): " + str(cdata))
+				for item in cdata: group.setData(item[0], item[1], item[2], k)
+				app.log("Changes received from " + k + " (last=" + str(ts) + "): " + str(cdata))
 
 			# Last sync was more than maxage seconds ago, send all data
 			if now - ts > app.maxage: content = group.json()
@@ -308,10 +348,10 @@ class Connection(asynchat.async_chat):
 			else:
 
 				# If we have a SWF socket for this client, bail as changes will already be sent
-				if CLIENTCONN in clients[client]: content = ''
+				if client.role is INTERFACE: content = ''
 				else:
-					content = group.changes(ts - (now-ts), client) # TODO: messy doubling of period (bug#3)
-					if len(content) > 0: app.log("Sending to " + client + ': ' + json.dumps(content))
+					content = group.changes(ts - (now-ts), k) # TODO: messy doubling of period (bug#3)
+					if len(content) > 0: app.log("Sending to " + k + ': ' + json.dumps(content))
 
 					# Put an object on the end of the list containing the application state data
 					content.append(app.getStateData())
@@ -398,31 +438,4 @@ class Connection(asynchat.async_chat):
 			# If peer information was sent, store in the group data
 			if PEERS in data: group.peers = data[PEERS]
 
-	"""
-	Push a change to all persistent connections
-	"""
-	def pushChanges(self, key, val, ts, excl = False):
-		for k in app.server.clients.keys():
-			client = app.server.clients[k]
-			if k != excl:
 
-				# Client is a local SWF socket
-				if client.role is INTERFACE:
-					change = [key, val, ts]
-					client.push(json.dumps(change) + '\0')
-					app.log("Sending to INTERFACE:" + k + ": " + str(change))
-
-				# TODO: Client is a remote member peer
-				elif client.role is PEER:
-					data = { PEER: app.peerID }
-					app.log("(TODO) Send to PEER:" + k + ": " + str(change))
-
-	"""
-	Push the application status to interface connections
-	"""
-	def pushStatus(self, json):
-		for k in app.server.clients.keys():
-			client = app.server.clients[k]
-			if client.role is INTERFACE:
-				client.push(json + '\0')
-				app.log("Sending status to INTERFACE:" + k + ": " + str(json))

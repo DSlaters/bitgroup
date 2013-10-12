@@ -82,10 +82,10 @@ class Message(object):
 	Send the message
 	"""
 	def send(self):
+		cls = self.__class__.__name__
 		if app.bmConnected():
 			subject = self.subject.encode('base64')
 			body = self.body.encode('base64')
-			cls = self.__class__.__name__
 			if self.toAddr:
 				app.log('Sending ' + cls + ' message to '+ self.toAddr)
 				app.api.sendMessage(self.toAddr, self.fromAddr, subject, body)

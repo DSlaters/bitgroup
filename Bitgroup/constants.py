@@ -18,6 +18,7 @@ const('PEERS', 3)
 const('CHANGES', 4)
 const('GROUP', 5)
 const('DATA', 6)
+const('HTTP', 7)
 
 # Connectivity states
 const('NOTCONNECTED', 1)

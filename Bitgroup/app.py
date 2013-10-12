@@ -105,6 +105,7 @@ class App:
 	"""
 	def interval(self):
 		while(True):
+			self.getStateData()
 			now = self.timestamp()
 			ts = self.lastInterval
 			self.lastInterval = now
