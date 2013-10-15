@@ -310,6 +310,7 @@ class Connection(asynchat.async_chat, Client):
 		content += "<script type=\"text/javascript\" src=\"/main.js\"></script>\n"
 		content += "<script type=\"text/javascript\" src=\"/overview.js\"></script>\n"
 		content += "<script type=\"text/javascript\" src=\"/newgroup.js\"></script>\n"
+		content += "<script type=\"text/javascript\" src=\"/discussion.js\"></script>\n"
 		content += "</head>\n<body>\n</body>\n</html>\n"
 		return str(content)
 
