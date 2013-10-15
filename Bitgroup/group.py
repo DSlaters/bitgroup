@@ -134,11 +134,11 @@ class Group(Node, object):
 			conn.role = PEER
 			conn.group = self
 
-			# Send data since peer's last data and the current peer info
+			# TODO: Respond to the newly connected peer with a Welcome message
 			info = { PEERS: self.peers() }
 			changes = self.changes(data['last'])
 			if len(changes) > 0: info[CHANGES] = changes
-			conn.push(json.dumps(info))
+			conn.sendMessage(WELCOME, info)
 			
 			# TODO: If this is a new member (not in member info), broadcast a message about it to the group
 			nick = data['user'][data['user'].keys()[0]]['Nickname']

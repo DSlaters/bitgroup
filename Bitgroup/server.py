@@ -1,6 +1,6 @@
 import os, re, time, struct
 import socket, asyncore, asynchat
-import urllib, hashlib, json, mimetypes
+import urllib, hashlib, json, mimetypes, email.utils
 from group import *
 
 class Server(asyncore.dispatcher):
@@ -418,24 +418,33 @@ class Connection(asynchat.async_chat, Client):
 		else:
 			app.log("Message received from unknown peer \"" + peer + "\": " + str(self.sock))
 			return
-		group = client.group
+		if not client.role is PEER:
+			app.log("Message received from a non-peer client \"" + peer + "\": " + str(self.sock))
+			return
 
 		# Try and decrypt the peer's message
 		try:
-			data = json.loads(app.decrypt(msg, group.passwd))
+			data = json.loads(app.decrypt(msg.decode('base64'), client.group.passwd))
 		except:
 			app.log("Invalid data received from remote peer: " + str(self.sock))
 			return
 
-		# This is a Welcome message (repsonse to Presence)
-		if msgType == 'Welcome':
+		# This is a Welcome message (repsonse to a Presence message we sent)
+		if msgType is WELCOME:
 
 			# If the change-data was sent, merge into the local data
 			if CHANGES in data:
-				for item in data[CHANGES]: group.set(item[0], item[1], item[2], peer)
+				for item in data[CHANGES]: client.group.set(item[0], item[1], item[2], peer)
 				app.log("Changes received from " + peer + str(data[CHANGES]) )
 
 			# If peer information was sent, store in the group data
-			if PEERS in data: group.peers = data[PEERS]
+			if PEERS in data: client.group.peers = data[PEERS]
 
-
+	"""
+	Send a message to a peer
+	"""
+	def peerSendMessage(self, msgType, msg):
+		if not self.role is PEER:
+			app.log("Non-peer cannot use sendPeerMessage: \"" + peer + "\": " + str(self.sock))
+			return
+		self.push(app.title + ': ' + msgType + '\n' + app.encrypt(json.dumps(msg), self.group.passwd).encode('base64') + '\0')

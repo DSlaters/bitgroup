@@ -75,6 +75,10 @@ Overview.prototype.render = function(app) {
 		} else $(this).html(app.msg('nomessages'));
 	};
 	app.componentConnect('_inbox', inbox);
+
+
+	// TODO: Render a live table of members and their online information
+	
 };
 
 // Create a singleton instance of our new view in the app's available views list

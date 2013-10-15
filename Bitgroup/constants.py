@@ -20,6 +20,9 @@ const('GROUP', 5)
 const('DATA', 6)
 const('HTTP', 7)
 
+# Message types
+const('WELCOME', 'Welcome')
+
 # Connectivity states
 const('NOTCONNECTED', 1)
 const('CONNECTED', 2)
