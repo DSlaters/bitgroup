@@ -7,7 +7,7 @@ function App() {
 	this.id = Math.uuid(5)
 
 	this.user;       // the current user data
-	this.group;      // the current group name
+	this.group;      // the current group private BM address
 	this.views = []; // the availabe view classes - this first is the default if no view is specified by the current node
 	this.view;       // the current view instance
 	this.node;       // the current node name
@@ -118,10 +118,7 @@ App.prototype.run = function() {
 
 		// If the SWF is available and we haven't sent our client ID to it yet, do it now
 		if(app.swfConnected) {
-			if(!app.swfIdSent) {
-				app.swfGetObject().data(app.id, window.location.port);
-				app.swfIdSent = true;
-			}
+			if(!app.swfIdSent) app.swfIdentify();
 		}
 
 		// Otherwise if the SWF isn't available, call the Ajax syncData method instead
@@ -431,6 +428,14 @@ App.prototype.swfGetObject = function() {
 		if(document.embeds && document.embeds[swf]) return document.embeds[swf]; 
 	}
 	return document.getElementById(swf);
+}
+
+/**
+ * Send our ID and group to the SWF
+ */
+App.prototype.swfIdentify = function() {
+	this.swfGetObject().data(this.id, this.group, window.location.port);
+	this.swfIdSent = true;
 }
 
 /**

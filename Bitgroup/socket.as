@@ -6,6 +6,7 @@ class App {
 	var sock:XMLSocket = new XMLSocket();
 	var connected = false;
 	var id;
+	var group;
 	var idSent = false;
 	var port = false;
 	var ctr = 1;
@@ -44,10 +45,11 @@ class App {
 			ExternalInterface.call("window.app.swfData", json);
 		};
  
-		// Receive the client ID and connection port from the JS
-		ExternalInterface.addCallback("data", null, function(id, port) {
+		// Receive the client ID, group and connection port from the JS
+		ExternalInterface.addCallback("data", null, function(id, group, port) {
 			var app = _root.app;
 			app.id = id;
+			app.group = group;
 			app.port = port;
 			app.sock.connect(null, port);
 			app.ctr = 1;
@@ -61,7 +63,7 @@ class App {
 
 				// If the ID hasn't been sent to the server on this connection yet do it now
 				if(!app.idSent) {
-					app.sock.send('<client-id>' + app.id + '</client-id>')
+					app.sock.send('<client-id>' + app.id + '</client-id><group>' + (app.group ? app.group : '') + '</group>')
 					app.idSent = true;
 				}
 			}

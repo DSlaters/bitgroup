@@ -126,13 +126,13 @@ class Group(Node, object):
 			# Connect to the new peer
 			self.peerConnect(peer)
 
-			# TODO: Respond to the newly connected peer with a Welcome message
+			# Respond to the newly connected peer with a Welcome message
 			info = { PEERS: self.peers() }
 			changes = self.changes(data['last'])
 			if len(changes) > 0: info[CHANGES] = changes
 			conn.sendMessage(WELCOME, info)
 			
-			# TODO: If this is a new member (not in member info), broadcast a message about it to the group
+			# TODO: If this is a new member (not in member info), broadcast a message about it to the group (not just the peers)
 			nick = data['user'][data['user'].keys()[0]]['Nickname']
 			Post(self, app.msg('newmember-subject', nick), app.msg('newmember-body', nick)).send()		
 
@@ -157,7 +157,8 @@ class Group(Node, object):
 		del self.peers[peer]
 
 		# If we're the server, tell the other peers that this peer has gone offline
-		if self.server == app.peer: app.server.peerSendMessage(STATUS, {PEERS: {peer: None} })
+		# - we send a standard PEERS structure with just the removed peer ID for key and None for value indicating it should be removed
+		if self.server == app.peer: app.server.groupBroadcast(self, STATUS, {PEERS: {peer: None} })
 
 		# Determine who's the server now
 		self.determineServer()
@@ -178,6 +179,8 @@ class Group(Node, object):
 		app.server.clients[peer] = conn
 		conn.role = PEER
 		conn.group = self
+
+
 
 """
 Data structure of a newly created group

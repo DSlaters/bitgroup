@@ -62,7 +62,7 @@ class Node:
 			j[leaf] = [val, ts]
 			self.save()
 			self.queue[key] = [val, ts, client]
-			app.server.pushChanges(key, val, ts, client)
+			app.server.pushChanges(self, key, val, ts, client)
 
 		# Return state of change
 		return changed
@@ -115,9 +115,9 @@ class Node:
 	"""
 	Return a list of changes since a specified time and, (if a client is specified) that did not originate from that client
 	"""
-	def changes(self, since, excl = False):
+	def changes(self, since, excl = -1):
 		changes = []
-		for k in filter(lambda f: self.queue[f][1] > since and (excl == False or self.queue[f][2] != excl), self.queue):
+		for k in filter(lambda f: self.queue[f][1] > since and (excl == -1 or self.queue[f][2] != excl), self.queue):
 			changes.append([k, self.queue[k][0], self.queue[k][1]])
 		return changes
 

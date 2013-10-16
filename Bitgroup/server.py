@@ -35,35 +35,41 @@ class Server(asyncore.dispatcher):
 		Connection(self, sock)
 
 	"""
-	Push a change to all persistent connections
+	Push a change to all persistent connections for th passed group
 	"""
-	def pushChanges(self, key, val, ts, excl = False):
+	def pushChanges(self, group, key, val, ts, excl = -1):
 		change = [key, val, ts]
+		app.log("Broadcasting change to peers and interface clients in group \"" + group.name + "\": " + str(change))
 		for k in app.server.clients.keys():
 			client = app.server.clients[k]
-			if k != excl:
+			if client.group is group and k != excl:
 
 				# Client is a local SWF interface connection
-				if client.role is INTERFACE:
-					app.log("Sending to INTERFACE:" + k + ": " + str(change))
-					client.push(json.dumps(change) + '\0')
+				if client.role is INTERFACE: client.push(json.dumps(change) + '\0')
 
-				# TODO: Client is a remote member peer
-				elif client.role is PEER:
-					app.log("Sending to PEER:" + k + ": " + str(change))
-					client.peerSendMessage(CHANGES, [change])
+				# Client is a remote member peer
+				elif client.role is PEER: client.peerSendMessage(CHANGES, [change])
 
 	"""
 	Push the application status to interface connections
 	"""
 	def pushStatus(self, data):
-		for k in app.server.clients.keys():
+		for k in self.clients.keys():
 			client = app.server.clients[k]
 			if client.role is INTERFACE:
 				client.push(data + '\0')
 				app.log("Sending status to INTERFACE:" + k + ": " + str(data))
 
-
+	"""
+	Send a message to all peers in the passed group
+	"""
+	def groupBroadcast(self, group, msgType, msg, excl = -1):
+		app.log("Broadcasting type " + msgType + " message to \"" + group.name + "\"")
+		for k in self.clients.keys():
+			client = app.server.clients[k]
+			if client.role is PEER and client.group is group and k != excl:
+				client.conn.peerSendMessage(msgType, msg)
+					
 class Client:
 	"""
 	Class to contain the data aspect of a connection
@@ -105,7 +111,7 @@ class Connection(asynchat.async_chat, Client):
 			client = self.server.clients[k]
 			if client is self:
 				del self.server.clients[k]
-				app.log("Connection closed from remote end, client " + k + " removed from active client data")
+				app.log("Connection closed from remote end, client \"" + k + "\" removed from active client data")
 				if client.role == PEER: client.group.peerDel(k, False)
 
 	"""
@@ -403,13 +409,15 @@ class Connection(asynchat.async_chat, Client):
 			app.log('SWF policy sent.')
 
 		# Check if this is a SWF giving its client id so that we can associate the socket with it
-		match = re.match('<client-id>(.+?)</client-id>', msg)
+		match = re.match('<client-id>(.+?)</client-id><group>(.*?)</group>', msg)
 		if match:
 			clients = self.server.clients
 			client = match.group(1)
+			group = match.group(2)
 			if not client in clients: clients[client] = self
 			self.role = INTERFACE
-			app.log("SWF socket identified for client " + client)
+			if group: self.group = Group(group)
+			app.log("SWF connection identified for client \"" + client + "\" in group \"" + (self.group.name if self.group else '') + "\"")
 
 	"""
 	TODO: Process a completed JSON message from a peer
@@ -472,7 +480,6 @@ class Connection(asynchat.async_chat, Client):
 			app.log("Non-peer cannot use sendPeerMessage: \"" + peer + "\": " + str(self.sock))
 			return
 		self.push(app.title + ': ' + msgType + '\n' + app.encrypt(json.dumps(msg), self.group.passwd).encode('base64') + '\0')
-
 
 		
 
