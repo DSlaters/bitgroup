@@ -259,7 +259,7 @@ class Presence(BitgroupMessage):
 		BitgroupMessage.__init__(self, param)
 		
 		# Incoming presence message from a newly connected peer
-		if self.incoming: self.group.addPeer(self.data)
+		if self.incoming: self.group.peerAdd(self.data)
 
 		# Outgoing presence message, add our data to the message
 		else:

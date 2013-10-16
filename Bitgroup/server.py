@@ -56,12 +56,13 @@ class Server(asyncore.dispatcher):
 	"""
 	Push the application status to interface connections
 	"""
-	def pushStatus(self, json):
+	def pushStatus(self, data):
 		for k in app.server.clients.keys():
 			client = app.server.clients[k]
 			if client.role is INTERFACE:
-				client.push(json + '\0')
-				app.log("Sending status to INTERFACE:" + k + ": " + str(json))
+				client.push(data + '\0')
+				app.log("Sending status to INTERFACE:" + k + ": " + str(data))
+
 
 class Client:
 	"""
@@ -96,7 +97,7 @@ class Connection(asynchat.async_chat, Client):
 		self.shutdown = 0
 
 	"""
-	When the socket closes, remove self from the swfSocket list if in there
+	When the socket closes (from the remote end), remove self from the swfSocket list if in there
 	"""
 	def handle_close(self):
 		asyncore.dispatcher.handle_close(self)
@@ -104,8 +105,8 @@ class Connection(asynchat.async_chat, Client):
 			client = self.server.clients[k]
 			if client is self:
 				del self.server.clients[k]
-				app.log("Socket closed, client " + k + " removed from data")
-				if client.role == PEER: client.group.delPeer(k, False)
+				app.log("Connection closed from remote end, client " + k + " removed from active client data")
+				if client.role == PEER: client.group.peerDel(k, False)
 
 	"""
 	New data has arrived, accumulate the data and remove messages for processing as they're completed
@@ -422,30 +423,46 @@ class Connection(asynchat.async_chat, Client):
 		if not client.role is PEER:
 			app.log("Message received from a non-peer client \"" + peer + "\": " + str(self.sock))
 			return
+		group = client.group
 
 		# Try and decrypt the peer's message
 		try:
-			data = json.loads(app.decrypt(msg.decode('base64'), client.group.passwd))
+			data = json.loads(app.decrypt(msg.decode('base64'), group.passwd))
 		except:
 			app.log("Invalid data received from remote peer: " + str(self.sock))
 			return
 
 		# This is a changes messge, or another message type that contains changes
 		if CHANGES in data:
-			for item in data[CHANGES]: client.group.set(item[0], item[1], item[2], peer)
+			for item in data[CHANGES]: group.set(item[0], item[1], item[2], peer)
 			app.log("Changes received from " + peer + str(data[CHANGES]) )
 
 		# This is a Welcome message (repsonse to a Presence message we sent)
 		if msgType is WELCOME:
 
 			# If peer information was sent, store in the group data
-			if PEERS in data: client.group.peers = data[PEERS]
+			if PEERS in data: group.peers = data[PEERS]
 
 		# This is a change of status message (e.g. availability change etc) from another peer, or from the server regarding a peer
 		if msgType is STATUS:
 			# TODO: save in client data, and if we're the server, send the updated info to the other peers
-			pass
+			
+			# Information has been sent for one or more peers to be updated
+			if PEERS in data:
+				for k in data[PEERS].keys():
+					if k in group.peers:
+						info = data[PEERS][k]
 
+						# A peer with no info means that it shouls be removed
+						if info is None: group.peerDel(k)
+							
+						# Otherwise just update this peers data
+						else: group.peers[k] = info
+
+					# We log an error if the peer isn't in the groups list becasue all should have the peers info either from the
+					# Presence message it sent when it came online, or from the Welcome message we received in response to our
+					# initial Presence message when we went online
+					else: app.log("We were sent a message by \"" + peer + "\" to update peer \"" + k + "\" for group \"" + group.name + "\", but that peer isn't in the peers array")
 
 	"""
 	Send a message to a peer
@@ -455,3 +472,7 @@ class Connection(asynchat.async_chat, Client):
 			app.log("Non-peer cannot use sendPeerMessage: \"" + peer + "\": " + str(self.sock))
 			return
 		self.push(app.title + ': ' + msgType + '\n' + app.encrypt(json.dumps(msg), self.group.passwd).encode('base64') + '\0')
+
+
+		
+

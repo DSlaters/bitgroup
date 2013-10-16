@@ -9,7 +9,7 @@ class Group(Node, object):
 	name = None     # The textual name for the group (can be changed any time)
 	addr = None     # The public Bitmessage address for the group (anyone can subscribe to this)
 	prvaddr = None  # The private Bitmessage address for the group (only members can read info from this address)
-	server = False  # Whether or not we are the server for this group
+	server = None   # The current server-peer for the group
 	peers = {}      # All the online members in the group (note that we may not be connected with them since the peers form a client-server topology)
 
 	"""
@@ -76,23 +76,25 @@ class Group(Node, object):
 		return None
 
 	"""
-	Determine and set which peer (online member) in the group is the server and establish/remove connections accordingly
-	TODO - the peer list for the group is not the servers client list!
+	TODO: Determine and set which peer (online member) in the group is the server
 	"""
 	def determineServer(self):
+		self.server = sorted(self.peers.keys())[0]
 
-		# TODO: who's server? - for now just sort by bm addresses and pick the first
-		gsrv = sorted(self.peers.keys())[0]
+	"""
+	Ensure that the connections amongst the group's peers form a client-server topology
+	"""
+	def updateConnections(self):
 
-		# Are we the server?
-		self.server = app.peer == gsrv
+		# If we're the server, we don't do anything since the peers will all connect with us
+		if self.server == app.peer:
+			pass
 
 		# If we're not the server, make sure we have no connections to peers except for with the server peer
-		# - if we are the server, we don't do anything since the peers will all connect with us
-		if not self.server:
+		else:
 			clients = app.server.clients
 
-			# Close any non-server peer connections
+			# Close any non-server peer connections (closing here does not trigger handle_close, so the peers won't be deleted)
 			d = []
 			for k in clients.keys():
 				client = clients[k]
@@ -102,37 +104,27 @@ class Group(Node, object):
 			for k in d: del clients[k]
 
 			# Make sure we have a connection to the server
-			if not gsrv in clients.keys():
-
-		return gsrv
+			if not self.server in clients.keys(): self.peerConnect(self.server)
 
 	"""
 	Add a new peer and establish a connection with it - data is the format sent by a Presence message
 	TODO - we only connect if we're not the server and it is
 	     - the peer list for the group is not the servers client list!
 	"""
-	def addPeer(self, data):
+	def peerAdd(self, data):
 		peer = data['peer']
 
-		# Add an entry for the client even though we have no socket yet so that it's included in server determination
-		app.server.clients[peer] = server.Client()
-		app.server.clients[peer].group = self
-		app.server.clients[peer].role = PEER
+		# Add an entry in the group's peer array for the new peer
+		self.peers[peer] = data
 
 		# Since peers have changed, we need to know who's the server now
 		self.determineServer()
 
 		# If we are the group server,
-		if self.server:
-			
-			# Create a socket and connect to the new peer
-			sock = app.server.connect((data['ip'], data['port']))
-			conn = server.Connection(app.server, sock)
+		if self.server == app.peer:
 
-			# Add the peer's info to the server's active clients list
-			app.server.clients[peer] = conn
-			conn.role = PEER
-			conn.group = self
+			# Connect to the new peer
+			self.peerConnect(peer)
 
 			# TODO: Respond to the newly connected peer with a Welcome message
 			info = { PEERS: self.peers() }
@@ -144,21 +136,48 @@ class Group(Node, object):
 			nick = data['user'][data['user'].keys()[0]]['Nickname']
 			Post(self, app.msg('newmember-subject', nick), app.msg('newmember-body', nick)).send()		
 
+		# Ensure we're connected in accord with the client-server topology since the server may have changed
+		self.updateConnections()
+
 	"""
-	Delete a peer from the active peers list
+	Delete a peer from the peers list and close any active connection to it
 	"""
-	def delPeer(self, peer, close = True):
-		if close: app.server.clients[peer].close()
-		del app.server.clients[peer]
+	def peerDel(self, peer, close = True):
+		if not peer in self.peers:
+			app.log("peerDel called for peer \"" + peer + "\" in group \"" + self.name + "\" but that peer is not in the peers array")
+			return
 
-		if self.server:
+		# CLose any active connection to the peer
+		if close and peer in app.server.clients:
+			app.server.clients[peer].close()
+			del app.server.clients[peer]
 
-			# TODO: Tell the other peers that this peer has gone offline
-			pass
+		# Remove the peer from the group's peer array
+		app.log("Removing peer \"" + peer + "\" from \"" + group.name + "\" group's peers array")
+		del self.peers[peer]
 
+		# If we're the server, tell the other peers that this peer has gone offline
+		if self.server == app.peer: app.server.peerSendMessage(STATUS, {PEERS: {peer: None} })
+
+		# Determine who's the server now
 		self.determineServer()
-		
-	
+
+		# Ensure we're connected in accord with the client-server topology since the server may have changed
+		self.updateConnections()
+
+	"""
+	Establish a connection with a peer in the peers list
+	"""
+	def peerConnect(self, peer):
+
+		# Create a socket and connect to the new peer
+		sock = app.server.connect((self.peers[peer]['ip'], self.peers[peer]['port']))
+		conn = server.Connection(app.server, sock)
+
+		# Add the peer's info to the server's active clients list
+		app.server.clients[peer] = conn
+		conn.role = PEER
+		conn.group = self
 
 """
 Data structure of a newly created group

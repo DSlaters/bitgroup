@@ -110,8 +110,16 @@ class App:
 			ts = self.lastInterval
 			self.lastInterval = now
 
-			# Check state and push any changes to peers
-			self.server.pushStatus(json)
+			# TODO: Check state and push any changes to peers
+			#self.server.pushStatus(json)
+
+			"""
+			Test closing from local end to see if handle_close is called
+			for i in app.server.clients:
+				if app.server.clients[i].role is INTERFACE:
+					app.log('Closing ' + i)
+					app.server.clients[i].close()
+			"""
 
 			# If we have no IP address, try and obtain it and if successful, broardcast our presence to our groups
 			if self.ip is None:
