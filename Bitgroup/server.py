@@ -441,6 +441,11 @@ class Connection(asynchat.async_chat, Client):
 			# If peer information was sent, store in the group data
 			if PEERS in data: client.group.peers = data[PEERS]
 
+		# This is a change of status message (e.g. availability change etc) from another peer, or from the server regarding a peer
+		if msgType is STATUS:
+			# TODO: save in client data, and if we're the server, send the updated info to the other peers
+			pass
+
 	"""
 	Send a message to a peer
 	"""

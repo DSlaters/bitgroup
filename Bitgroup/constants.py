@@ -22,6 +22,7 @@ const('HTTP', 7)
 
 # Message types
 const('WELCOME', 'Welcome')
+const('STATUS', 'Status')
 
 # Connectivity states
 const('NOTCONNECTED', 1)

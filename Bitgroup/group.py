@@ -125,7 +125,7 @@ class Group(Node, object):
 		# If we are the group server,
 		if self.server:
 			
-			# Open a socket and connect to the new peer
+			# Create a socket and connect to the new peer
 			sock = app.server.connect((data['ip'], data['port']))
 			conn = server.Connection(app.server, sock)
 
@@ -150,7 +150,15 @@ class Group(Node, object):
 	def delPeer(self, peer, close = True):
 		if close: app.server.clients[peer].close()
 		del app.server.clients[peer]
+
+		if self.server:
+
+			# TODO: Tell the other peers that this peer has gone offline
+			pass
+
 		self.determineServer()
+		
+	
 
 """
 Data structure of a newly created group
