@@ -10,6 +10,7 @@ class Group(Node, object):
 	addr = None     # The public Bitmessage address for the group (anyone can subscribe to this)
 	prvaddr = None  # The private Bitmessage address for the group (only members can read info from this address)
 	server = False  # Whether or not we are the server for this group
+	peers = {}      # All the online members in the group (note that we may not be connected with them since the peers form a client-server topology)
 
 	"""
 	Instantiate a new group instance, return the existing instance if the passed group already has one
@@ -75,41 +76,40 @@ class Group(Node, object):
 		return None
 
 	"""
-	Determine and set which peer (online member) in the group is the server
+	Determine and set which peer (online member) in the group is the server and establish/remove connections accordingly
+	TODO - the peer list for the group is not the servers client list!
 	"""
 	def determineServer(self):
 
 		# TODO: who's server? - for now just sort by bm addresses and pick the first
-		gsrv = app.peer == sorted(self.peers())[0]
+		gsrv = sorted(self.peers.keys())[0]
 
-		# if not server now, but was before, close all peer sockets for this group
-		if self.server and not gsrv:
+		# Are we the server?
+		self.server = app.peer == gsrv
+
+		# If we're not the server, make sure we have no connections to peers except for with the server peer
+		# - if we are the server, we don't do anything since the peers will all connect with us
+		if not self.server:
 			clients = app.server.clients
+
+			# Close any non-server peer connections
 			d = []
 			for k in clients.keys():
 				client = clients[k]
-				if client.role is PEER and client.group is self:
+				if client.role is PEER and client.group is self and k != gsrv:
 					client.close()
 					d.append(k)
 			for k in d: del clients[k]
 
-		self.server = gsrv
+			# Make sure we have a connection to the server
+			if not gsrv in clients.keys():
+
 		return gsrv
 
 	"""
-	Return the ID's for all the current peers from the server's active clients list
-	"""
-	def peers(self):
-		clients = app.server.clients
-		peers = []
-		for k in clients.keys():
-			client = clients[k]
-			if client.role is PEER and client.group is self:
-				peers.append(k)
-		return peers
-
-	"""
 	Add a new peer and establish a connection with it - data is the format sent by a Presence message
+	TODO - we only connect if we're not the server and it is
+	     - the peer list for the group is not the servers client list!
 	"""
 	def addPeer(self, data):
 		peer = data['peer']

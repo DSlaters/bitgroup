@@ -19,10 +19,8 @@ const('CHANGES', 4)
 const('GROUP', 5)
 const('DATA', 6)
 const('HTTP', 7)
-
-# Message types
-const('WELCOME', 'Welcome')
-const('STATUS', 'Status')
+const('WELCOME', 8)
+const('STATUS', 9)
 
 # Connectivity states
 const('NOTCONNECTED', 1)

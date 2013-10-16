@@ -38,20 +38,20 @@ class Server(asyncore.dispatcher):
 	Push a change to all persistent connections
 	"""
 	def pushChanges(self, key, val, ts, excl = False):
+		change = [key, val, ts]
 		for k in app.server.clients.keys():
 			client = app.server.clients[k]
 			if k != excl:
 
 				# Client is a local SWF interface connection
 				if client.role is INTERFACE:
-					change = [key, val, ts]
-					client.push(json.dumps(change) + '\0')
 					app.log("Sending to INTERFACE:" + k + ": " + str(change))
+					client.push(json.dumps(change) + '\0')
 
 				# TODO: Client is a remote member peer
 				elif client.role is PEER:
-					data = { PEER: app.peerID }
-					app.log("(TODO) Send to PEER:" + k + ": " + str(change))
+					app.log("Sending to PEER:" + k + ": " + str(change))
+					client.peerSendMessage(CHANGES, [change])
 
 	"""
 	Push the application status to interface connections
@@ -430,13 +430,13 @@ class Connection(asynchat.async_chat, Client):
 			app.log("Invalid data received from remote peer: " + str(self.sock))
 			return
 
+		# This is a changes messge, or another message type that contains changes
+		if CHANGES in data:
+			for item in data[CHANGES]: client.group.set(item[0], item[1], item[2], peer)
+			app.log("Changes received from " + peer + str(data[CHANGES]) )
+
 		# This is a Welcome message (repsonse to a Presence message we sent)
 		if msgType is WELCOME:
-
-			# If the change-data was sent, merge into the local data
-			if CHANGES in data:
-				for item in data[CHANGES]: client.group.set(item[0], item[1], item[2], peer)
-				app.log("Changes received from " + peer + str(data[CHANGES]) )
 
 			# If peer information was sent, store in the group data
 			if PEERS in data: client.group.peers = data[PEERS]
@@ -445,6 +445,7 @@ class Connection(asynchat.async_chat, Client):
 		if msgType is STATUS:
 			# TODO: save in client data, and if we're the server, send the updated info to the other peers
 			pass
+
 
 	"""
 	Send a message to a peer
