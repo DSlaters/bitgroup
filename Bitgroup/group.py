@@ -108,8 +108,6 @@ class Group(Node, object):
 
 	"""
 	Add a new peer and establish a connection with it - data is the format sent by a Presence message
-	TODO - we only connect if we're not the server and it is
-	     - the peer list for the group is not the servers client list!
 	"""
 	def peerAdd(self, data):
 		peer = data['peer']
@@ -132,7 +130,7 @@ class Group(Node, object):
 			if len(changes) > 0: info[CHANGES] = changes
 			conn.sendMessage(WELCOME, info)
 			
-			# TODO: If this is a new member (not in member info), broadcast a message about it to the group (not just the peers)
+			# If this is a new member (not in member info), broadcast a message about it to the group (not just the peers)
 			nick = data['user'][data['user'].keys()[0]]['Nickname']
 			Post(self, app.msg('newmember-subject', nick), app.msg('newmember-body', nick)).send()		
 

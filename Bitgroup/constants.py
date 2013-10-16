@@ -23,7 +23,7 @@ const('WELCOME', 8)
 const('STATUS', 9)
 
 # Connectivity states
-const('NOTCONNECTED', 1)
-const('CONNECTED', 2)
-const('ERROR', 3)
-const('UNKNOWN', 4)
+const('NOTCONNECTED', 10)
+const('CONNECTED', 11)
+const('ERROR', 12)
+const('UNKNOWN', 13)

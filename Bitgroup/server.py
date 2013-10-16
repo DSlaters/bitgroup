@@ -64,7 +64,7 @@ class Server(asyncore.dispatcher):
 	Send a message to all peers in the passed group
 	"""
 	def groupBroadcast(self, group, msgType, msg, excl = -1):
-		app.log("Broadcasting type " + msgType + " message to \"" + group.name + "\"")
+		app.log("Broadcasting " + app.cname(msgType) + " message to \"" + group.name + "\"")
 		for k in self.clients.keys():
 			client = app.server.clients[k]
 			if client.role is PEER and client.group is group and k != excl:

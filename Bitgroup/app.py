@@ -256,7 +256,7 @@ class App:
 			data = {'name':name, 'addr':group.addr, 'prvaddr':group.prvaddr}
 
 		# No address was created, return the error (TODO: exceptions not handled during creation)
-		else: data = {'err':group.addr}
+		else: data = {'err': group.addr}
 
 		return data
 
@@ -302,3 +302,11 @@ class App:
 	def log(self, msg):
 		if self.dev: msg = '[' + app.user.nickname + ']: ' + msg
 		print msg
+
+	"""
+	Convert a constant value back to its defined identifier - used in logging only
+	"""
+	def cname(self, val):
+		for k in constants:
+			if constants[k] == val: return k
+		return 'UNDEFINED'
