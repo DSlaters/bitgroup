@@ -61,16 +61,18 @@ Overview.prototype.render = function(app) {
 	// Connect the table to the state data so it populates when it arrives
 	var inbox = document.getElementById('inbox');
 	inbox.setValue = function(val) {
-		if(typeof val == 'object' && val.keys().length > 0) {
-			var rows = '<tr><th>' + app.msg('from') + '</th>'
-			             + '<th>' + app.msg('subject') + '</th>'
-			             + '<th>' + app.msg('type') + '</th></tr>\n';
-			for( var i in val ) {
-				var msg = val[i];
-				rows += '<tr><td>' + msg.from + '</td>'
-				          + '<td>' + msg.subject + '</td>'
-				          + '<td>' + ('data' in msg ? msg.data.type : '') + '</td></tr>\n';
-			}
+		var rows = '';
+		for( var i in val ) {
+			var msg = val[i];
+			rows += '<tr><td>' + msg.from + '</td>'
+					  + '<td>' + msg.subject + '</td>'
+					  + '<td>' + ('data' in msg ? msg.data.type : '') + '</td></tr>\n';
+		}
+		if(rows) {
+			rows = '<tr><th>' + app.msg('from') + '</th>'
+				 + '<th>' + app.msg('subject') + '</th>'
+				 + '<th>' + app.msg('type') + '</th></tr>\n'
+				 + rows;
 			$(this).html('<table>' + rows + '</table>');
 		} else $(this).html(app.msg('nomessages'));
 	};

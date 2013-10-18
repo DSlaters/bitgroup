@@ -447,11 +447,9 @@ App.prototype.swfData = function(data) {
 	if(data) {
 		console.info("Data received from SWF: " + data);
 		data = JSON.parse(data);
-		var k = false
-		for(k in data) break;
 
 		// Data is application state array
-		if(k == 'state') {
+		if('state' in data) {
 			for(k in data['state']) this.setState(k, data['state'][k]);
 		}
 
@@ -466,6 +464,7 @@ App.prototype.swfData = function(data) {
  */
 App.prototype.setState = function(key, val) {
 	if(val != this.state[key]) {
+		console.info('"' + key + '" state change to "' + val + '"');
 		this.state[key] = val;
 		$.event.trigger({type: "bgDataChange-_" + key, args: {app:this, val:val}});
 	}	
@@ -479,7 +478,7 @@ App.prototype.setState = function(key, val) {
 App.prototype.getData = function(key, ts) {
 	if(key.substr(0,1) == '_') return this.state[key.substr(1)]; // if the key starts with an underscore, it's an application state value
 	var val = eval('this.data.' + key);
-	if(val === undefined) console.info( 'undefined value for ' + key );
+	if(val === undefined) console.info('undefined value for ' + key);
 	return ts === true ? val : val[0];
 };
 

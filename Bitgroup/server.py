@@ -60,7 +60,7 @@ class Server(asyncore.dispatcher):
 			for k in self.clients.keys():
 				client = app.server.clients[k]
 				if client.role is INTERFACE:
-					app.log("Sending status to INTERFACE:" + k + ": " + str(data))
+					app.log("Sending status to INTERFACE:" + k)
 					client.push(state + '\0')
 					self.lastState = state
 
