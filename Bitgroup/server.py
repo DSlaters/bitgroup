@@ -55,7 +55,7 @@ class Server(asyncore.dispatcher):
 	Push the application status to interface connections
 	"""
 	def pushStatus(self):
-		state = json.dumps(app.state)
+		state = json.dumps({'state': app.state})
 		if self.lastState != state:
 			for k in self.clients.keys():
 				client = app.server.clients[k]

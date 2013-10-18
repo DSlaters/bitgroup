@@ -447,7 +447,16 @@ App.prototype.swfData = function(data) {
 	if(data) {
 		console.info("Data received from SWF: " + data);
 		data = JSON.parse(data);
-		this.setData(data[0], data[1], false, data[2]);
+		var k = false
+		for(k in data) break;
+
+		// Data is application state array
+		if(k == 'state') {
+			for(k in data['state']) this.setState(k, data['state'][k]);
+		}
+
+		// Data is a single change item
+		else this.setData(data[0], data[1], false, data[2]);
 	}
 };
 
