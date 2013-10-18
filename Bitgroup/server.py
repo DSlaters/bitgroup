@@ -312,18 +312,26 @@ class Connection(asynchat.async_chat, Client):
 		content += "<title>" + ( group.name + " - " if group else '' ) + app.name + "</title>\n"
 		content += "<meta charset=\"UTF-8\" />\n"
 		content += "<meta name=\"generator\" content=\"" + app.title + "\" />\n"
-		content += "<script type=\"text/javascript\">window.tmp = " + json.dumps(tmp) + ";</script>\n"
-		content += "<script type=\"text/javascript\" src=\"/resources/jquery-1.10.2.min.js\"></script>\n"
-		content += "<link rel=\"stylesheet\" href=\"/resources/jquery-ui-1.10.3/themes/base/jquery-ui.css\" />\n"
-		content += "<script type=\"text/javascript\" src=\"/resources/jquery-ui-1.10.3/ui/jquery-ui.js\"></script>\n"
-		content += "<script type=\"text/javascript\" src=\"/resources/jquery.observehashchange.min.js\"></script>\n"
-		content += "<script type=\"text/javascript\" src=\"/resources/math.uuid.js\"></script>\n"
-		content += "<script type=\"text/javascript\" src=\"/main.js\"></script>\n"
-		content += "<script type=\"text/javascript\" src=\"/overview.js\"></script>\n"
-		content += "<script type=\"text/javascript\" src=\"/newgroup.js\"></script>\n"
-		content += "<script type=\"text/javascript\" src=\"/discussion.js\"></script>\n"
+		content += self.addScript("window.tmp = " + json.dumps(tmp) + ";", True)
+		content += self.addScript("/resources/jquery-1.10.2.min.js")
+		content += self.AddStyle("/resources/jquery-ui-1.10.3/themes/base/jquery-ui.css")
+		content += self.addScript("/resources/jquery-ui-1.10.3/ui/jquery-ui.js")
+		content += self.addScript("/resources/jquery.observehashchange.min.js")
+		content += self.addScript("/resources/math.uuid.js")
+		content += self.addScript("/main.js")
+		for f in glob.glob(app.docroot + '/views/*.js'): content += self.addScript("/views/" + os.path.basename(f))
 		content += "</head>\n<body>\n</body>\n</html>\n"
 		return str(content)
+
+	def addScript(self, js, inline = False):
+		html = "<script type=\"text/javascript\""
+		if inline: html += ">" + js
+		else: html += " src=\"" + js + "\">"
+		html += "</script>\n"
+		return html
+
+	def addStyle(self, css):
+		return "<link rel=\"stylesheet\" href=\"" + css + "\" />\n"
 
 	"""
 	Process a DataSync request from an HTTP client
