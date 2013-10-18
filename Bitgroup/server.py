@@ -9,6 +9,7 @@ class Server(asyncore.dispatcher):
 	"""
 	host = None
 	port = None
+	lastState = None    # The last application state that was sent to the interface clients (json)
 
 	# This contains a key for each active client ID, and each key can contain "lastSync", "swfSocket", "peerSocket", "group"
 	clients = {}
@@ -53,12 +54,15 @@ class Server(asyncore.dispatcher):
 	"""
 	Push the application status to interface connections
 	"""
-	def pushStatus(self, data):
-		for k in self.clients.keys():
-			client = app.server.clients[k]
-			if client.role is INTERFACE:
-				client.push(data + '\0')
-				app.log("Sending status to INTERFACE:" + k + ": " + str(data))
+	def pushStatus(self):
+		state = json.dumps(app.state)
+		if self.lastState != state:
+			for k in self.clients.keys():
+				client = app.server.clients[k]
+				if client.role is INTERFACE:
+					app.log("Sending status to INTERFACE:" + k + ": " + str(data))
+					client.push(state + '\0')
+					self.lastState = state
 
 	"""
 	Send a message to all peers in the passed group

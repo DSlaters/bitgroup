@@ -61,7 +61,7 @@ Overview.prototype.render = function(app) {
 	// Connect the table to the state data so it populates when it arrives
 	var inbox = document.getElementById('inbox');
 	inbox.setValue = function(val) {
-		if(typeof val == 'object' && val.length > 0) {
+		if(typeof val == 'object' && val.keys().length > 0) {
 			var rows = '<tr><th>' + app.msg('from') + '</th>'
 			             + '<th>' + app.msg('subject') + '</th>'
 			             + '<th>' + app.msg('type') + '</th></tr>\n';

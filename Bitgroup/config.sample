@@ -1,3 +1,6 @@
+[settings]
+firewall = 0
+
 [bitmessage]
 port = 8442
 interface = 127.0.0.1

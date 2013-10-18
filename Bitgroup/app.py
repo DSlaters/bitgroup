@@ -37,7 +37,6 @@ class App:
 	devnum = 0
 
 	server = None
-	inbox = []
 	user = None
 	groups = []
 	maxage = 600000   # Expiry time of queue items in milliseconds
@@ -111,7 +110,7 @@ class App:
 			self.lastInterval = now
 
 			# TODO: Check state and push any changes to peers
-			#self.server.pushStatus(json)
+			self.server.pushStatus()
 
 			"""
 			Test closing from local end to see if handle_close is called
@@ -187,15 +186,18 @@ class App:
 
 			# If Bitmessage was available add the message list info if loaded
 			if self.state['bm'] is CONNECTED:
-				self.state['inbox'] = []
-				self.inbox = Message.getMessages(self.inbox)
-				for msg in self.inbox:
-					data = {'from': msg.fromAddr, 'subject': msg.subject}
-					cls = str(msg.__class__.__name__)
-					if cls != 'Message':
-						data['data'] = msg.data
-						data['data']['type'] = cls
-					self.state['inbox'].append(data)
+				if not 'inbox' in self.state: self.state['inbox'] = {}
+				for msg in Message.getMessages():
+					if not msg.uid in self.state['inbox']:
+						data = {
+							'from': msg.fromAddr,
+							'subject': msg.subject
+						}
+						cls = str(msg.__class__.__name__)
+						if cls != 'Message':
+							data['data'] = msg.data
+							data['data']['type'] = cls
+						self.state['inbox'][msg.uid] = data
 
 		return self.state
 

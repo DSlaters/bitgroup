@@ -1,5 +1,5 @@
 import re, json, email.utils
-import datetime, time
+import datetime, time, hashlib
 import inspect
 import group
 
@@ -55,6 +55,7 @@ class Message(object):
 		self.fromAddr = msg['fromAddress']
 		self.subject = msg['subject'].decode('base64')
 		self.body = msg['message'].decode('base64')
+		self.uid = hashlib.md5(str(self.date) + self.subject + self.fromAddr + str(self.toAddr) + msg['msgid']).hexdigest()
 		return None
 
 	"""
@@ -103,7 +104,8 @@ class Message(object):
 	TODO: this just reads all messages and replaces all in the local box, it should update not replace
 	"""
 	@staticmethod
-	def getMessages(mailbox):
+	def getMessages():
+		mailbox = []
 		if app.bmConnected():
 			messages = json.loads(app.api.getAllInboxMessages())
 			app.log('Retrieving ' + str(len(messages['inboxMessages'])) + ' messages')
