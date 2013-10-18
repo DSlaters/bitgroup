@@ -1,4 +1,4 @@
-import os, re, time, struct
+import os, re, time, struct, glob
 import socket, asyncore, asynchat
 import urllib, hashlib, json, mimetypes, email.utils
 from group import *
@@ -314,12 +314,12 @@ class Connection(asynchat.async_chat, Client):
 		content += "<meta name=\"generator\" content=\"" + app.title + "\" />\n"
 		content += self.addScript("window.tmp = " + json.dumps(tmp) + ";", True)
 		content += self.addScript("/resources/jquery-1.10.2.min.js")
-		content += self.AddStyle("/resources/jquery-ui-1.10.3/themes/base/jquery-ui.css")
+		content += self.addStyle("/resources/jquery-ui-1.10.3/themes/base/jquery-ui.css")
 		content += self.addScript("/resources/jquery-ui-1.10.3/ui/jquery-ui.js")
 		content += self.addScript("/resources/jquery.observehashchange.min.js")
 		content += self.addScript("/resources/math.uuid.js")
 		content += self.addScript("/main.js")
-		for f in glob.glob(app.docroot + '/views/*.js'): content += self.addScript("/views/" + os.path.basename(f))
+		for js in glob.glob(app.docroot + '/views/*.js'): content += self.addScript("/views/" + os.path.basename(js))
 		content += "</head>\n<body>\n</body>\n</html>\n"
 		return str(content)
 
