@@ -7,12 +7,12 @@ class Server(asyncore.dispatcher):
 	"""
 	Create a listening socket server for the interface JavaScript and SWF components to connect to
 	"""
-	host = None
-	port = None
+	host      = None
+	port      = None
 	lastState = None    # The last application state that was sent to the interface clients (json)
 
 	# This contains a key for each active client ID, and each key can contain "lastSync", "swfSocket", "peerSocket", "group"
-	clients = {}
+	clients   = {}
 
 	"""
 	Set up the listener
@@ -52,17 +52,35 @@ class Server(asyncore.dispatcher):
 				elif client.role is PEER: client.peerSendMessage(CHANGES, [change])
 
 	"""
-	Push the application status to interface connections
+	Push the application state to interface connections
 	"""
-	def pushStatus(self):
-		state = json.dumps({'state': app.state})
-		if self.lastState != state:
-			for k in self.clients.keys():
-				client = app.server.clients[k]
-				if client.role is INTERFACE:
+	def pushState(self):
+		state = json.dumps({"state": app.state})
+		changed = self.lastState != state
+		self.lastState = state
+		for k in self.clients.keys():
+			client = app.server.clients[k]
+			if client.role is INTERFACE:
+
+				# Send the application state to this interface client if it changed since last sent
+				if changed:
 					app.log("Sending status to INTERFACE:" + k)
 					client.push(state + '\0')
-					self.lastState = state
+				
+				# Extract any unsent messages that are for this interface client's group
+				data = {}
+				for msgID in app.inbox:
+					msg = app.inbox[msgID]
+					if not msg['sent']:
+						if msg['group'] is None: data[msgID] = msg
+						elif client.group and msg['group'] is client.group.prvaddr: data[msgID] = msg
+				
+				# Send the extracted messages to this interface client if any and mark as sent
+				messages = len(data.keys())
+				if messages > 0:
+					app.log("Sending " + str(messages) + " new messages to INTERFACE:" + k)
+					client.push(json.dumps({"state":{"inbox":data}}) + '\0')
+					for msgID in app.inbox: app.inbox[msgID]['sent'] = True
 
 	"""
 	Send a message to all peers in the passed group

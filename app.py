@@ -22,28 +22,29 @@ class App:
 	The main top-level class for all teh functionality of the Bitgroup application
 	"""
 
-	name = 'Bitgroup'
-	version = '0.0.0'
-	title = name + "-" + version
-	peer = None
-	ip = None
+	name         = 'Bitgroup'
+	version      = '0.0.0'
+	title        = name + "-" + version
+	peer         = None
+	ip           = None
 
-	docroot = os.path.dirname(__file__) + '/interface'
-	datapath = os.getenv("HOME") + '/.Bitgroup'
-	config = None
-	configfile = None
-	api = None
-	dev = False
-	devnum = 0
+	docroot      = os.path.dirname(__file__) + '/interface'
+	datapath     = os.getenv("HOME") + '/.Bitgroup'
+	config       = None
+	configfile   = None
+	api          = None
+	dev          = False
+	devnum       = 0
 
-	server = None
-	user = None
-	groups = []
-	maxage = 600000   # Expiry time of queue items in milliseconds
-	i18n = {}         # i18n interface messages loaded from interface/i18n.json
-	state = {}        # Dynamic application state information
-	stateAge = 0      # Last time the dynamic application state data was updated
-	lastInterval = 0  # Last time the interval timer was called
+	server       = None
+	user         = None
+	groups       = []
+	inbox        = {}
+	maxage       = 600000  # Expiry time of queue items in milliseconds
+	i18n         = {}      # i18n interface messages loaded from interface/i18n.json
+	state        = {}      # Dynamic application state information
+	stateAge     = 0       # Last time the dynamic application state data was updated
+	lastInterval = 0       # Last time the interval timer was called
 
 	"""
 	Initialise the application
@@ -110,7 +111,7 @@ class App:
 			self.lastInterval = now
 
 			# TODO: Check state and push any changes to peers
-			self.server.pushStatus()
+			self.server.pushState()
 
 			"""
 			Test closing from local end to see if handle_close is called
@@ -184,20 +185,23 @@ class App:
 			except:
 				self.state['bm'] = NOTCONNECTED
 
-			# If Bitmessage was available add the message list info if loaded
+			# If Bitmessage was available add any new messages
+			# - these are in app.inbox, not app.state, but are sent in Server.pushState
 			if self.state['bm'] is CONNECTED:
-				if not 'inbox' in self.state: self.state['inbox'] = {}
 				for msg in Message.getMessages():
-					if not msg.uid in self.state['inbox']:
+					if not msg.uid in self.inbox:
 						data = {
-							'from': msg.fromAddr,
-							'subject': msg.subject
+							'type':    msg.__class__.__name__,
+							'group':   None,
+							'from':    msg.fromAddr,
+							'subject': msg.subject,
+							'sent':    False
 						}
-						cls = str(msg.__class__.__name__)
-						if cls != 'Message':
+						if data['type'] != 'Message':
 							data['data'] = msg.data
-							data['data']['type'] = cls
-						self.state['inbox'][msg.uid] = data
+							data['group'] = msg.group.prvaddr
+							data['subject'] = ''
+						self.inbox[msg.uid] = data
 
 		return self.state
 

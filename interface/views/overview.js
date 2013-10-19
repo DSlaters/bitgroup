@@ -66,7 +66,7 @@ Overview.prototype.render = function(app) {
 			var msg = val[i];
 			rows += '<tr><td>' + msg.from + '</td>'
 					  + '<td>' + msg.subject + '</td>'
-					  + '<td>' + ('data' in msg ? msg.data.type : '') + '</td></tr>\n';
+					  + '<td>' + msg.type + '</td></tr>\n';
 		}
 		if(rows) {
 			rows = '<tr><th>' + app.msg('from') + '</th>'
