@@ -1,9 +1,0 @@
-function $j(n,f){v=$v(n,function(v){$j[n]={};
-try{j=$.parseJSON(v)}catch(e){j={}}
-if('map'in j){
-	for(i in j.map)$j[n][i]=j.map[i]};
-	f($j[n])})
-}
-// this should check if there's code and declare as an init function in $j
-
-// should these items all be closures? or is that done by $n?
