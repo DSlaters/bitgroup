@@ -8,6 +8,9 @@ class User(Node):
 
 	# Name used to refer to the user if instanitiating from a group (nickname if supplied, full name if none given)
 	name = None 
+	
+	# To distinguish between users and groups
+	isUser = True
 
 	# User's language preference
 	lang = None
@@ -58,6 +61,12 @@ class User(Node):
 				if not self.name: self.name = u.Firstname + ' ' + u.Surname
 
 		return None
+
+	"""
+	Override this to ensure that user's data is never sent to peers
+	"""
+	def sendChanges(self):
+		app.log("ERROR: Attempt to call sendChanges() for app.user")
 
 	"""
 	Return a record of the user data for use in Presence messages and in group member information

@@ -36,13 +36,11 @@ class App:
 	dev          = False
 	devnum       = 0
 
-	server       = None
-	user         = None
-	groups       = []
-	inbox        = {}
+	server       = None    # Singleton instance of the server for communicating with interface clients and peers
+	user         = None    # Singleton instance of the user
+	groups       = []      # Instances of groups the user belongs to
 	maxage       = 600000  # Expiry time of queue items in milliseconds
 	i18n         = {}      # i18n interface messages loaded from interface/i18n.json
-	state        = {}      # Dynamic application state information
 	stateAge     = 0       # Last time the dynamic application state data was updated
 	lastInterval = 0       # Last time the interval timer was called
 
@@ -110,9 +108,6 @@ class App:
 			ts = self.lastInterval
 			self.lastInterval = now
 
-			# TODO: Check state and push any changes to peers
-			self.server.pushState()
-
 			"""
 			Test closing from local end to see if handle_close is called
 			for i in app.server.clients:
@@ -166,7 +161,7 @@ class App:
 		return (int(time.strftime('%s'))-1378723000)*1000 + int(datetime.datetime.now().microsecond/1000)
 
 	"""
-	Return data about the dynamic state of the application
+	Update the dynamic application state data
 	"""
 	def getStateData(self):
 
@@ -177,17 +172,16 @@ class App:
 
 			# Is Bitmessage available?
 			try:
-				self.state['bm'] = self.api.add(2,3)
-				if self.state['bm'] == 5: self.state['bm'] = CONNECTED
-				else:
-					self.state['bm_err'] = self.state['bm']
-					self.state['bm'] = ERROR
+				state = self.api.add(2,3)
+				if state == 5: state = CONNECTED
+				else: state = ERROR
 			except:
-				self.state['bm'] = NOTCONNECTED
+				state = NOTCONNECTED
+			self.user.setData(str(INTERFACE) + '.bm', data)
 
 			# If Bitmessage was available add any new messages
 			# - these are in app.inbox, not app.state, but are sent in Server.pushState
-			if self.state['bm'] is CONNECTED:
+			if state is CONNECTED:
 				for msg in Message.getMessages():
 					if not msg.uid in self.inbox:
 						data = {
@@ -201,15 +195,13 @@ class App:
 							data['data'] = msg.data
 							data['group'] = msg.group.prvaddr
 							data['subject'] = ''
-						self.inbox[msg.uid] = data
-
-		return self.state
+						self.user.setData(str(INTERFACE) + '.inbox.' + msg.uid, data)
 
 	"""
 	Return whether or not Bitmessage is connected
 	"""
 	def bmConnected(self):
-		return 'bm' in app.state and app.state['bm'] is CONNECTED
+		return app.user.getData(str(INTERFACE) + '.bm') is CONNECTED
 
 	"""
 	Load the i18n messages

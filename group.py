@@ -7,6 +7,7 @@ class Group(Node, object):
 	"""This is the class that messages from the Bitmessage inbox are returned as if they're for our app"""
 
 	name = None     # The textual name for the group (can be changed any time)
+	isUser = False  # To distinguish between users and groups
 	addr = None     # The public Bitmessage address for the group (anyone can subscribe to this)
 	prvaddr = None  # The private Bitmessage address for the group (only members can read info from this address)
 	server = None   # The current server-peer for the group

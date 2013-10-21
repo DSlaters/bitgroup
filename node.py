@@ -70,8 +70,8 @@ class Node:
 			#   but we need to filter these when sending the change to peers via Bitmessage
 			if not root is PEER: self.queue[key] = [val, ts, client]
 
-			# Push the change to all peers unless it's specifically for interfaces only
-			if not root is INTERFACE: app.server.pushPeerChange(self, key, val, ts, client)
+			# Push the change to all peers unless it's specifically for interfaces only or its not in group context (a user change)
+			if not ( root is INTERFACE or self.isUser ): app.server.pushPeerChange(self, key, val, ts, client)
 
 			# Update the stored data and queue for periodic sending only if it's not online peer info or application state data
 			if not ( root is PEER or root is INTERFACE ): self.save()

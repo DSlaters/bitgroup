@@ -58,7 +58,7 @@ class Server(asyncore.dispatcher):
 				client.peerSendMessage(CHANGES, [change])
 
 	"""
-	Push the application state to interface connections
+	TODO: OBSOLETE - this should be handled by the normal changes propagation
 	"""
 	def pushState(self):
 		state = json.dumps({"state": app.state})
@@ -488,6 +488,7 @@ class Connection(asynchat.async_chat, Client):
 			if PEERS in data: group.peers = data[PEERS]
 
 		# This is a change of status message (e.g. availability change etc) from another peer, or from the server regarding a peer
+		# TODO: This will be processed in normal changes messages now
 		if msgType is STATUS:
 			# TODO: save in client data, and if we're the server, send the updated info to the other peers
 			
