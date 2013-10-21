@@ -36,20 +36,26 @@ class Server(asyncore.dispatcher):
 		Connection(self, sock)
 
 	"""
-	Push a change to all persistent connections for th passed group
+	Push a change to interface connections
 	"""
-	def pushChanges(self, group, key, val, ts, excl = -1):
+	def pushInterfaceChange(self, group, key, val, ts, excl = -1):
 		change = [key, val, ts]
-		app.log("Broadcasting change to peers and interface clients in group \"" + group.name + "\": " + str(change))
+		app.log("Broadcasting change to INTERFACE clients in group \"" + group.name + "\": " + str(change))
 		for k in app.server.clients.keys():
 			client = app.server.clients[k]
-			if client.group is group and k != excl:
+			if client.role is INTERFACE and client.group is group and k != excl:
+				client.push(json.dumps(change) + '\0')
 
-				# Client is a local SWF interface connection
-				if client.role is INTERFACE: client.push(json.dumps(change) + '\0')
-
-				# Client is a remote member peer
-				elif client.role is PEER: client.peerSendMessage(CHANGES, [change])
+	"""
+	Push a change to peer connections
+	"""
+	def pushPeerChange(self, group, key, val, ts, excl = -1):
+		change = [key, val, ts]
+		app.log("Broadcasting change to PEER clients in group \"" + group.name + "\": " + str(change))
+		for k in app.server.clients.keys():
+			client = app.server.clients[k]
+			if client.role is PEER and client.group is group and k != excl:
+				client.peerSendMessage(CHANGES, [change])
 
 	"""
 	Push the application state to interface connections

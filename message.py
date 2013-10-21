@@ -247,7 +247,10 @@ class Changes(BitgroupMessage):
 			if ts is None:
 				ts = self.lastSync
 				self.lastSync = app.timestamp()
-			self.data = { CHANGES: self.group.changes(ts) }
+
+			# Only include changes that are not specifically for peer or interface clients
+			changes = self.group.changes(ts)
+			self.data = { CHANGES: filter(lambda k: not k.split('.')[0] is INTERFACE, changes) }
 
 		return None
 

@@ -33,14 +33,15 @@ class Node:
 	"""
 	def setData(self, key, val, ts = None, client = ''):
 		if ts == None: ts = app.timestamp()
+		path = key.split('.')
+		leaf = path.pop()
+		root = path[0]
 
 		# Load the data if the cache is uninitialised
 		if self.data == None: self.load()
 
 		# Split key path and walk data path to set value, create non-existent items
 		j = self.data
-		path = key.split('.')
-		leaf = path.pop()
 		for i in path:
 			if type(j) == dict and i in j: j = j[i]
 			else:
@@ -57,12 +58,23 @@ class Node:
 			else: changed = False
 		else: changed = True
 
-		# If the data should change, store the new value in the local cache, update the persistent data and update the client-queue
+		# If the data should change, propagate/store/queue the change depending on the root element of the key
 		if changed:
+
+			# Update the local cache, and interface clients unconditionally
 			j[leaf] = [val, ts]
-			self.save()
-			self.queue[key] = [val, ts, client]
-			app.server.pushChanges(self, key, val, ts, client)
+			app.server.pushInterfaceChange(self, key, val, ts, client)
+
+			# Queue the change for periodic sending unless its specific to online peers
+			# - we include interface-only data because the interface may be Ajax-only,
+			#   but we need to filter these when sending the change to peers via Bitmessage
+			if not root is PEER: self.queue[key] = [val, ts, client]
+
+			# Push the change to all peers unless it's specifically for interfaces only
+			if not root is INTERFACE: app.server.pushPeerChange(self, key, val, ts, client)
+
+			# Update the stored data and queue for periodic sending only if it's not online peer info or application state data
+			if not ( root is PEER or root is INTERFACE ): self.save()
 
 		# Return state of change
 		return changed
