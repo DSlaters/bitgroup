@@ -337,7 +337,7 @@ App.prototype.syncData = function() {
 	$.ajax({
 		type: 'POST',
 		url: (this.group ? '/' + this.group : '' ) + '/_sync.json',
-		data: data.length > 0 ? JSON.stringify(data) : '', 
+		data: data.length > 0 ? $.getJSON(data) : '', 
 		contentType: "application/json; charset=utf-8",
 		headers: { 'X-Bitgroup-ID': this.id },
 		dataType: 'json',
@@ -394,7 +394,7 @@ App.prototype.sendData = function(key, val, ts) {
 	$.ajax({
 		type: 'POST',
 		url: (this.group ? '/' + this.group : '' ) + '/_sync.json',
-		data: JSON.stringify([[key, val, ts]]),
+		data: $.getJSON([[key, val, ts]]),
 		contentType: "application/json; charset=utf-8",
 		headers: { 'X-Bitgroup-ID': this.id },
 		dataType: 'html',
@@ -446,7 +446,7 @@ App.prototype.swfData = function(data) {
 	this.setState('swf', CONNECTED);
 	if(data) {
 		console.info("Data received from SWF: " + data);
-		data = JSON.parse(data);
+		data = $.parseJSON(data);
 
 		// Data is application state array
 		if('state' in data) {
@@ -494,7 +494,7 @@ App.prototype.setData = function(key, val, send, ts) {
 	oldval = oldval[0]
 
 	// Bail now if the value hasn't changed
-	if(JSON.stringify(oldval) == JSON.stringify(val)) return false;
+	if($.getJSON(oldval) == $.getJSON(val)) return false;
 
 	// Bail if the new data is older than the current data
 	if(ts === undefined) ts = this.timestamp();
@@ -765,28 +765,6 @@ App.prototype.componentConnect = function(key, element) {
  */
 String.prototype.ucfirst = function() {
     return this.charAt(0).toUpperCase() + this.slice(1);
-}
-
-/**
- * Add JSON support for older browsers that don't have it
- */
-if(!window.JSON) {
-	window.JSON = {
-		parse: function (sJSON) { return eval("(" + sJSON + ")"); },
-		stringify: function (vContent) {
-			if(vContent instanceof Object) {
-				var sOutput = "";
-				if(vContent.constructor === Array) {
-					for(var nId = 0; nId < vContent.length; sOutput += this.stringify(vContent[nId]) + ",", nId++);
-					return "[" + sOutput.substr(0, sOutput.length - 1) + "]";
-				}
-				if(vContent.toString !== Object.prototype.toString) { return "\"" + vContent.toString().replace(/"/g, "\\$&") + "\""; }
-				for(var sProp in vContent) { sOutput += "\"" + sProp.replace(/"/g, "\\$&") + "\":" + this.stringify(vContent[sProp]) + ","; }
-				return "{" + sOutput.substr(0, sOutput.length - 1) + "}";
-			}
-			return typeof vContent === "string" ? "\"" + vContent.replace(/"/g, "\\$&") + "\"" : String(vContent);
-		}
-	};
 }
 
 // Create a new instance of the application
