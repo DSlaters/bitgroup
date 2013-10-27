@@ -21,6 +21,8 @@ const('DATA', 6)
 const('HTTP', 7)
 const('WELCOME', 8)
 const('STATUS', 9)
+const('SWF', 100)
+const('WEBSOCKET', 101)
 
 # Connectivity states
 const('NOTCONNECTED', 10)

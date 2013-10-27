@@ -18,6 +18,7 @@ function App() {
 	this.queue = {};           // queue of data updates to send to the background service in the form keypath : [val, timestamp]
 	this.syncTime = 1000;      // milliseconds between each sync request
 	this.syncLock = false;     // prevents syncs from occurring if another is still in progress
+	this.ws = false;           // WebSocket object
 	this.wsIdSent = false;     // this client's ID has been sent to the WebSocket
 	this.wsConnected = false;  // whether the WebSocket is available for receiving data
 	this.swfIdSent = false;    // this client's ID has been sent to the SWF
@@ -118,6 +119,9 @@ App.prototype.run = function() {
 	setInterval( function() {
 		var app = window.app;
 
+		// Establish a WebSocket connection with the Python service if available	
+		if('WebSocket' in window && !app.wsConnected) app.wsConnect();
+
 		// If the SWF is available and we haven't sent our client ID to it yet, do it now
 		if(app.swfConnected && !app.swfIdSent) app.swfIdentify();
 
@@ -155,17 +159,8 @@ App.prototype.renderPage = function() {
 	page += '<div id="content"></div>';
 	page += '</div>\n';
 
-	// Establish a WebSocket connection with the Python service if available
-	if(window.WebSocket) {
-		websocket = new WebSocket('ws://localhost:' + window.location.port + '/' + this.id);
-		websocket.onopen = function(e) { this.wsConnected = true; };
-		websocket.onclose = function(e) { this.wsConnected = false; console.log('WebSocket closed'); };
-		websocket.onmessage = this.wsData;
-		websocket.onerror = function(e) { console.log('WebSocket error: ' + e); };
-	}
-
 	// There's no WebSocket available, add our SWF for asynchronous incoming data instead
-	else page += this.swfRender();
+	if(!'WebSocket' in window) page += this.swfRender();
 
 	// Add the completed page structure to the HTML document body
 	$('body').html(page);
@@ -342,6 +337,24 @@ App.prototype.sendData = function(key, val, ts) {
 			this.setState('bm', CONNECTED);
 		}
 	});
+};
+
+/**
+ * Send a WebSocket connection request to the server side
+ */
+App.prototype.wsConnect = function() {
+	this.ws = new WebSocket('ws://localhost:' + window.location.port + '/' + this.id + '/' + (this.group ? this.group : ''));
+	this.ws.onopen = function(e) { this.wsConnected = true; };
+	this.ws.onclose = function(e) { this.wsConnected = false; console.log('WebSocket closed'); };
+	this.ws.onmessage = this.wsData;
+	this.ws.onerror = function(e) { console.log('WebSocket Error: ' + $.getJSON(e)); };
+};
+
+/**
+ * Receive data from a WebSocket connection
+ */
+App.prototype.wsData = function(e) {
+	app.log($.getJSON(e));
 };
 
 /**
