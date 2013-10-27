@@ -14,7 +14,7 @@ Application-wide 'constants' which are also available to the client side
 # Array keys
 const('INTERFACE', 1)
 const('PEER', 2)
-const('PEERS', 3)
+const('LOCAL', 2)
 const('CHANGES', 4)
 const('GROUP', 5)
 const('DATA', 6)

@@ -382,7 +382,7 @@ class Connection(asynchat.async_chat, Client):
 			# If the client sent change-data merge into the local data
 			if data:
 				cdata = json.loads(data)
-				for item in cdata: group.setData(item[0], item[1], item[2], k)
+				for item in cdata: group.setData(DATA, item[0], item[1], item[2], k)
 				app.log("Changes received from " + k + " (last=" + str(ts) + "): " + str(cdata))
 
 			# Last sync was more than maxage seconds ago, send all data
@@ -485,7 +485,7 @@ class Connection(asynchat.async_chat, Client):
 		if msgType is WELCOME:
 
 			# If peer information was sent, store in the group data
-			if PEERS in data: group.peers = data[PEERS]
+			if PEER in data: group.peers = data[PEER]
 
 		# This is a change of status message (e.g. availability change etc) from another peer, or from the server regarding a peer
 		# TODO: This will be processed in normal changes messages now
@@ -493,10 +493,10 @@ class Connection(asynchat.async_chat, Client):
 			# TODO: save in client data, and if we're the server, send the updated info to the other peers
 			
 			# Information has been sent for one or more peers to be updated
-			if PEERS in data:
-				for k in data[PEERS].keys():
+			if PEER in data:
+				for k in data[PEER].keys():
 					if k in group.peers:
-						info = data[PEERS][k]
+						info = data[PEER][k]
 
 						# A peer with no info means that it shouls be removed
 						if info is None: group.peerDel(k)

@@ -31,11 +31,10 @@ class Node:
 	"""
 	Set a property in this nodes data structure
 	"""
-	def setData(self, key, val, ts = None, client = ''):
+	def setData(self, zone, key, val, ts = None, client = ''):
 		if ts == None: ts = app.timestamp()
 		path = key.split('.')
-		leaf = path.pop()
-		root = path[0]
+		leaf = path[-1]
 
 		# Load the data if the cache is uninitialised
 		if self.data == None: self.load()
@@ -68,13 +67,13 @@ class Node:
 			# Queue the change for periodic sending unless its specific to online peers
 			# - we include interface-only data because the interface may be Ajax-only,
 			#   but we need to filter these when sending the change to peers via Bitmessage
-			if not root is PEER: self.queue[key] = [val, ts, client]
+			if not zone is PEER: self.queue[key] = [val, ts, client]
 
 			# Push the change to all peers unless it's specifically for interfaces only or its not in group context (a user change)
-			if not ( root is INTERFACE or self.isUser ): app.server.pushPeerChange(self, key, val, ts, client)
+			if not ( zone is INTERFACE or self.isUser ): app.server.pushPeerChange(self, key, val, ts, client)
 
 			# Update the stored data and queue for periodic sending only if it's not online peer info or application state data
-			if not ( root is PEER or root is INTERFACE ): self.save()
+			if not ( zone is PEER or root is INTERFACE ): self.save()
 
 		# Return state of change
 		return changed

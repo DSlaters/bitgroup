@@ -66,13 +66,13 @@ class Group(Node, object):
 			# Initialise the group's data from the template
 			global template
 			for k in template: self.setData(k, template[k])
-			self.setData('settings.name', self.name)
-			self.setData('settings.addr', self.addr)
+			self.setData(DATA, 'settings.name', self.name)
+			self.setData(DATA, 'settings.addr', self.addr)
 
 			# Add self as the only member
 			info = app.user.info()
 			addr = info.keys()[0]
-			self.setData('members.' + addr, info[addr])
+			self.setData(DATA, 'members.' + addr, info[addr])
 
 		return None
 
@@ -126,7 +126,7 @@ class Group(Node, object):
 			self.peerConnect(peer)
 
 			# Respond to the newly connected peer with a Welcome message
-			info = { PEERS: self.peers() }
+			info = { PEER: self.peers() }
 			changes = self.changes(data['last'])
 			if len(changes) > 0: info[CHANGES] = changes
 			conn.sendMessage(WELCOME, info)
@@ -156,8 +156,8 @@ class Group(Node, object):
 		del self.peers[peer]
 
 		# If we're the server, tell the other peers that this peer has gone offline
-		# - we send a standard PEERS structure with just the removed peer ID for key and None for value indicating it should be removed
-		if self.server == app.peer: app.server.groupBroadcast(self, STATUS, {PEERS: {peer: None} })
+		# - we send a standard PEER structure with just the removed peer ID for key and None for value indicating it should be removed
+		if self.server == app.peer: app.server.groupBroadcast(self, STATUS, {PEER: {peer: None} })
 
 		# Determine who's the server now
 		self.determineServer()

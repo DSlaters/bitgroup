@@ -177,7 +177,7 @@ class App:
 				else: state = ERROR
 			except:
 				state = NOTCONNECTED
-			self.user.setData(str(INTERFACE) + '.bm', data)
+			self.user.setData(INTERFACE, 'bm', data)
 
 			# If Bitmessage was available add any new messages
 			# - these are in app.inbox, not app.state, but are sent in Server.pushState
@@ -201,7 +201,7 @@ class App:
 	Return whether or not Bitmessage is connected
 	"""
 	def bmConnected(self):
-		return app.user.getData(str(INTERFACE) + '.bm') is CONNECTED
+		return app.user.getData('bm') is CONNECTED
 
 	"""
 	Load the i18n messages
