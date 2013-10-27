@@ -13,7 +13,7 @@ class Node:
 	lastSend = None   # Last time this group's changes were broadcast to the members
 
 	"""
-	Get a property in this nodes data structure (with its timestamo if ts set)
+	Get a property in this nodes data structure (with its timestamp if ts set)
 	"""
 	def getData(self, key, ts = False):
 
@@ -34,7 +34,7 @@ class Node:
 	def setData(self, zone, key, val, ts = None, client = ''):
 		if ts == None: ts = app.timestamp()
 		path = key.split('.')
-		leaf = path[-1]
+		leaf = path.pop()
 
 		# Load the data if the cache is uninitialised
 		if self.data == None: self.load()
@@ -73,7 +73,7 @@ class Node:
 			if not ( zone is INTERFACE or self.isUser ): app.server.pushPeerChange(self, key, val, ts, client)
 
 			# Update the stored data and queue for periodic sending only if it's not online peer info or application state data
-			if not ( zone is PEER or root is INTERFACE ): self.save()
+			if not ( zone is PEER or zone is INTERFACE ): self.save()
 
 		# Return state of change
 		return changed

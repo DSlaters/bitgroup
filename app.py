@@ -177,7 +177,7 @@ class App:
 				else: state = ERROR
 			except:
 				state = NOTCONNECTED
-			self.user.setData(INTERFACE, 'bm', data)
+			self.user.setData(INTERFACE, 'bm', state)
 
 			# If Bitmessage was available add any new messages
 			# - these are in app.inbox, not app.state, but are sent in Server.pushState

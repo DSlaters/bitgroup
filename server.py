@@ -40,6 +40,7 @@ class Server(asyncore.dispatcher):
 	"""
 	def pushInterfaceChange(self, group, key, val, ts, excl = -1):
 		change = [key, val, ts]
+		print group
 		app.log("Broadcasting change to INTERFACE clients in group \"" + group.name + "\": " + str(change))
 		for k in app.server.clients.keys():
 			client = app.server.clients[k]
@@ -109,7 +110,6 @@ class Client:
 	status = None  # HTTP status code returned to client
 	ctype  = None  # HTTP content type returned to client
 	clen   = None  # HTTP content length returned to client
-	lastSync = 0   # Last data sync time for Ajax polling interface clients
 
 class Connection(asynchat.async_chat, Client):
 	"""
@@ -147,6 +147,11 @@ class Connection(asynchat.async_chat, Client):
 	"""
 	def collect_incoming_data(self, data):
 		self.data += data
+
+		# Check if the data is a WebSocket request
+		match = re.match('GET /(.+?) HTTP/1.1.+Sec-WebSocket-Key: (.+?)\s', self.data, re.S)
+		if match:
+			print "Websocket connection established from " + match.group(1) + " with key " + match.group(2)
 
 		# If the data starts with < and contains a zero byte, then it's an XML message from an interface SWF socket
 		match = re.match('<.+?\0', self.data, re.S)
@@ -240,9 +245,6 @@ class Connection(asynchat.async_chat, Client):
 			elif base == '_newgroup.json':
 				self.ctype = mimetypes.guess_type(base)[0]
 				content = json.dumps(app.newGroup(json.loads(data)['name']));
-
-			# If this is a for _sync.json merge the local and client change queues and return the changes
-			elif base == '_sync.json': content = self.httpSyncData(head, data, base, group)
 
 			# Serve the requested file if it exists and isn't a directory
 			elif os.path.exists(path) and not os.path.isdir(path): content = self.httpGetFile(uri, path)
@@ -343,7 +345,7 @@ class Connection(asynchat.async_chat, Client):
 		content += self.addScript("/resources/jquery.observehashchange.min.js")
 		content += self.addScript("/resources/math.uuid.js")
 		content += self.addScript("/main.js")
-		for js in glob.glob(app.docroot + '/views/*.js'): content += self.addScript("/views/" + os.path.basename(js))
+		for js in glob.glob(app.docroot + '/includes/*.js'): content += self.addScript("/includes/" + os.path.basename(js))
 		content += "</head>\n<body>\n</body>\n</html>\n"
 		return str(content)
 
@@ -356,56 +358,6 @@ class Connection(asynchat.async_chat, Client):
 
 	def addStyle(self, css):
 		return "<link rel=\"stylesheet\" href=\"" + css + "\" />\n"
-
-	"""
-	Process a DataSync request from an HTTP client
-	"""
-	def httpSyncData(self, head, data, base, group):
-		if group:
-			clients = self.server.clients
-			now  = app.timestamp()
-			self.ctype = mimetypes.guess_type(base)[0]
-			cdata = []
-
-			# Identify the client stream using a unique ID in the header
-			match = re.search(r'X-Bitgroup-ID: (.+?)\s', head)
-			k = match.group(1) if match else ''
-			if not k in clients:
-				clients[k] = Client()
-				clients[k].role = HTTP
-			client = clients[k]
-
-			# Get the timestamp of the last time this client connected and update
-			ts = client.lastSync
-			client.lastSync = now
-
-			# If the client sent change-data merge into the local data
-			if data:
-				cdata = json.loads(data)
-				for item in cdata: group.setData(DATA, item[0], item[1], item[2], k)
-				app.log("Changes received from " + k + " (last=" + str(ts) + "): " + str(cdata))
-
-			# Last sync was more than maxage seconds ago, send all data
-			if now - ts > app.maxage: content = group.json()
-
-			# Otherwise send the queue of changes that have occurred since the client's last sync request
-			else:
-
-				# If we have a SWF socket for this client, bail as changes will already be sent
-				if client.role is INTERFACE: content = ''
-				else:
-					content = group.changes(ts - (now-ts), k) # TODO: messy doubling of period (bug#3)
-					if len(content) > 0: app.log("Sending to " + k + ': ' + json.dumps(content))
-
-					# Put an object on the end of the list containing the application state data
-					content.append(app.getStateData())
-
-					# Convert the content to JSON ready for sending to the client
-					content = json.dumps(content)
-
-		# No group selected, send only the state data
-		else: content = json.dumps([app.getStateData()])
-		return content
 
 	"""
 	Get a file from the specified URI and path info

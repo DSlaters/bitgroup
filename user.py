@@ -42,7 +42,10 @@ class User(Node):
 				self.website   = app.config.get('user', 'website')
 
 			# User's just have one address, so set the private address to the same as the public
-			self.prvaddr = addr
+			self.prvaddr = self.addr
+
+			# Name property is needed
+			self.name = self.nickname if self.nickname else self.firstname + ' ' + self.surname
 
 			# Use the user's API password as their private key for now
 			self.passwd = app.config.get('bitmessage', 'password')

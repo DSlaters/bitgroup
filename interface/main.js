@@ -18,6 +18,8 @@ function App() {
 	this.queue = {};           // queue of data updates to send to the background service in the form keypath : [val, timestamp]
 	this.syncTime = 1000;      // milliseconds between each sync request
 	this.syncLock = false;     // prevents syncs from occurring if another is still in progress
+	this.wsIdSent = false;     // this client's ID has been sent to the WebSocket
+	this.wsConnected = false;  // whether the WebSocket is available for receiving data
 	this.swfIdSent = false;    // this client's ID has been sent to the SWF
 	this.swfConnected = false; // whether the SWF is available for receiving data
 
@@ -28,7 +30,7 @@ function App() {
 		} else this[i] = window.tmp[i];
 	}
 
-	// Dynamic application state data
+	// TODO - this is legacy - Dynamic application state data
 	this.state = {
 		bg: CONNECTED,    // State of connection to Bitgroup service
 		bm: UNKNOWN,      // State of connection to Bitmessage daemon
@@ -117,12 +119,7 @@ App.prototype.run = function() {
 		var app = window.app;
 
 		// If the SWF is available and we haven't sent our client ID to it yet, do it now
-		if(app.swfConnected) {
-			if(!app.swfIdSent) app.swfIdentify();
-		}
-
-		// Otherwise if the SWF isn't available, call the Ajax syncData method instead
-		else app.syncData();
+		if(app.swfConnected && !app.swfIdSent) app.swfIdentify();
 
 		// Allow other extensions to do something regularly too
 		$.event.trigger({type: "bgPoller"});
@@ -158,8 +155,17 @@ App.prototype.renderPage = function() {
 	page += '<div id="content"></div>';
 	page += '</div>\n';
 
-	// Add our SWF for asynchronous incoming data
-	page += this.swfRender();
+	// Establish a WebSocket connection with the Python service if available
+	if(window.WebSocket) {
+		websocket = new WebSocket('ws://localhost:' + window.location.port + '/' + this.id);
+		websocket.onopen = function(e) { this.wsConnected = true; };
+		websocket.onclose = function(e) { this.wsConnected = false; console.log('WebSocket closed'); };
+		websocket.onmessage = this.wsData;
+		websocket.onerror = function(e) { console.log('WebSocket error: ' + e); };
+	}
+
+	// There's no WebSocket available, add our SWF for asynchronous incoming data instead
+	else page += this.swfRender();
 
 	// Add the completed page structure to the HTML document body
 	$('body').html(page);
@@ -317,73 +323,6 @@ App.prototype.viewChange = function() {
 		view.render(this);
 		this.pageTitle();
 	}
-};
-
-/**
- * Send queued data to the Python service and receive any queued items (called on a regular interval if the SWF is not connected)
- */
-App.prototype.syncData = function() {
-
-	// If a sync is already in progress, bail
-	if(this.syncLock) return console.info('syncLock is set, exiting syncData without doing anything');
-	this.syncLock = true;
-
-	// Convert the queue from a hash into a list
-	var data = [];
-	for( var k in this.queue ) data.push([k, this.queue[k][0], this.queue[k][1]]);
-	var lastSync = this.timestamp();
-
-	// Send the sync request
-	$.ajax({
-		type: 'POST',
-		url: (this.group ? '/' + this.group : '' ) + '/_sync.json',
-		data: data.length > 0 ? $.getJSON(data) : '', 
-		contentType: "application/json; charset=utf-8",
-		headers: { 'X-Bitgroup-ID': this.id },
-		dataType: 'json',
-		context: this,
-		success: function(data) {
-
-			// If the result is an object, then it's the whole data structure
-			if(data.length === undefined) {
-				this.data = data;
-				this.renderPage(); // just rebuild the page instead of raising events for all the changes
-			}
-
-			// A list of changed keys was returned, update the local data and trigger change events
-			// - note these have no timestamp since we're not merging with another queue
-			// - note2 the data is set with queue set to false
-			else {
-
-				// The last item is an object contain application information
-				var state = data.pop();
-				for( var i in state ) this.setState(i, state[i]);
-				this.setState('bg', CONNECTED);
-
-				// The rest of the list is the change data
-				for( var i = 0; i < data.length; i++ ) {
-					var k = data[i][0];
-					var v = data[i][1];
-					var ts = data[i][2];
-					console.info('data received (@' + ts + '): ' + k + ' = "' + v + '"');
-					this.setData(k, v, false, ts);
-				}
-			}
-
-			// Remove all items queued before the sync request was made
-			var tmp = {};
-			for( var k in this.queue ) if(this.queue[k][1] > lastSync) tmp[k] = this.queue[k];
-			this.queue = tmp;
-
-			// Remove the sync lock
-			this.syncLock = false;
-		},
-		error: function(a,b,c) {
-			this.setState('bg', DISCONNECTED);
-			this.setState('bm', UNKNOWN);
-			this.syncLock = false;
-		}
-	});
 };
 
 /**
