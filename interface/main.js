@@ -352,6 +352,14 @@ App.prototype.wsConnect = function() {
 };
 
 /**
+ * Send changes through the WebSocket connection
+ */
+App.prototype.wsSend = function(changes) {
+	console.info("Sending changes through WebSocket" 
+	this.ws.send($.getJSON(changes));
+}
+
+/**
  * Receive data from a WebSocket connection
  */
 App.prototype.wsData = function(e) {
@@ -359,7 +367,7 @@ App.prototype.wsData = function(e) {
 };
 
 /**
- * Close the WebSocket connectin
+ * Close the WebSocket connection
  */
 App.prototype.wsClose = function() {
 	app.wsConnected = false;
@@ -396,9 +404,17 @@ App.prototype.swfGetObject = function() {
  * Send our ID and group to the SWF
  */
 App.prototype.swfIdentify = function() {
-	this.swfGetObject().data(this.id, this.group, window.location.port);
+	this.swfGetObject().identify(this.id, this.group, window.location.port);
 	this.swfIdSent = true;
 }
+
+/**
+ * Send changes through the SWF XmlSocket
+ */
+App.prototype.swfSend = function(changes) {
+	console.info("Sending changes through XmlSocket" 
+	this.swfGetObject().send($.getJSON(changes));
+};
 
 /**
  * Receive data from the SWF

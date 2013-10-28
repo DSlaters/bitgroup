@@ -45,8 +45,13 @@ class App {
 			ExternalInterface.call("window.app.swfData", json);
 		};
  
+		// Receive data from the JS and send it through the XmlSocket
+		ExternalInterface.addCallback("send", null, function(json) {
+			_root.app.sock.send('<data>' + json + '</data>')
+		});
+
 		// Receive the client ID, group and connection port from the JS
-		ExternalInterface.addCallback("data", null, function(id, group, port) {
+		ExternalInterface.addCallback("identify", null, function(id, group, port) {
 			var app = _root.app;
 			app.id = id;
 			app.group = group;

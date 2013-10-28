@@ -115,6 +115,7 @@ class Connection(asynchat.async_chat, Client):
 	Handles incoming data requests for a single connection
 	"""
 	server = None  # Gives the connection handler access to the server properties such as the client data array
+	client = None  # Client ID for persistent connections
 	sock   = None
 	data   = ""    # Data accumulates here until a complete message has arrived
 
@@ -398,6 +399,7 @@ class Connection(asynchat.async_chat, Client):
 			self.push(policy)
 			self.close_when_done()
 			app.log('SWF policy sent.')
+			return
 
 		# Check if this is a SWF giving its client id so that we can associate the socket with it
 		match = re.match('<client-id>(.+?)</client-id><group>(.*?)</group>', msg)
@@ -408,8 +410,18 @@ class Connection(asynchat.async_chat, Client):
 			if not client in clients: clients[client] = self
 			self.role = INTERFACE
 			self.protocol = SWF
+			self.client = client
 			if group: self.group = Group(group)
-			app.log("SWF connection identified for client \"" + client + "\" in group \"" + (self.group.name if self.group else '') + "\"")
+			app.log("XmlSocket identified for client \"" + client + "\" in group \"" + (self.group.name if self.group else '') + "\"")
+			return
+
+		# Check if this is data being sent from an interface through the XmlSocket
+		match = re.match('<data>(.+?)</data>', msg)
+		if match:
+			data = json.loads(match.group(1));
+			app.log("Changes received from XmlSocket \"" + self.client + "\"")
+			
+
 
 	"""
 	TODO: Process a completed JSON message from a peer
@@ -489,6 +501,13 @@ class Connection(asynchat.async_chat, Client):
 		if not client in clients: clients[client] = self
 		self.role = INTERFACE
 		self.protocol = WEBSOCKET
+		self.client = client
 		if group: self.group = Group(group)
 		app.log("WebSocket connection identified for client \"" + client + "\" in group \"" + (self.group.name if self.group else '') + "\"")
 
+	"""
+	Data received fron a WebSocket connection
+	"""
+	def wsData(self, data):
+		data = json.loads(data);
+		app.log("Changes received from WebSocket \"" + self.client + "\"")
