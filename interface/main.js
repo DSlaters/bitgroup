@@ -321,25 +321,6 @@ App.prototype.viewChange = function() {
 };
 
 /**
- * Sends a single change to the Python service (used if the SWF is connected)
- * - sends as a normal sync request, but don't expect anything back as it's going to the SWF instead
- */
-App.prototype.sendData = function(key, val, ts) {
-	$.ajax({
-		type: 'POST',
-		url: (this.group ? '/' + this.group : '' ) + '/_sync.json',
-		data: $.getJSON([[key, val, ts]]),
-		contentType: "application/json; charset=utf-8",
-		headers: { 'X-Bitgroup-ID': this.id },
-		dataType: 'html',
-		error: function() {
-			this.setState('bg', NOTCONNECTED);
-			this.setState('bm', CONNECTED);
-		}
-	});
-};
-
-/**
  * Send a WebSocket connection request to the server side
  */
 App.prototype.wsConnect = function() {
@@ -425,14 +406,7 @@ App.prototype.swfData = function(data) {
 	if(data) {
 		console.info("Data received from SWF: " + data);
 		data = $.parseJSON(data);
-
-		// Data is application state array
-		if('state' in data) {
-			for(k in data['state']) this.setState(k, data['state'][k]);
-		}
-
-		// Data is a single change item
-		else this.setData(data[0], data[1], false, data[2]);
+		for( var item in data ) this.setData(data[0], data[1], data[2], data[3]);
 	}
 };
 
@@ -464,7 +438,7 @@ App.prototype.getData = function(key, ts) {
  * Set the data for the passed key to the passed value
  * TODO: don't use eval for this, make a path walking function like node.py
  */
-App.prototype.setData = function(key, val, send, ts) {
+App.prototype.setData = function(zone, key, val, ts) {
 
 	// Get the current value and timestamp
 	var oldval = this.getData(key, true);
@@ -488,13 +462,23 @@ App.prototype.setData = function(key, val, send, ts) {
 	val = [val, ts];
 	eval('this.data.' + key + '=val');
 
-	// If the change originated in this page, then 
-	if(send === undefined) send = true;
-	if(send) {
+	// If the zone for the change is non-local, send it or queue for sending
+	var action = '';
+	if(zone != LOCAL) {
+		if(app.wsConnected) {
+			this.wsSend([zone, key, val[0], val[1]]);
+			action = ' - WebSocket';
+		}
 
-		// If the SWF is connected send the change directly now, otherwise add it to the outgoing sync queue
-		if(app.swfConnected) this.sendData(key, val[0], val[1]);
-		else this.queue[key] = val;
+		else if(app.swfConnected) {
+			this.swfSend([zone, key, val[0], val[1]]);
+			action = ' - XmlSocket';
+		}
+
+		else {
+			this.queue[key] = [zone, val[0], val[1]];
+			action = ' - Queued';
+		}
 	}
 
 	var action = send ? (app.swfConnected ? ' - sent' : ' - queued') : '';
@@ -726,14 +710,14 @@ App.prototype.componentConnect = function(key, element) {
 	var event = "bgDataChange-" + key.replace('.','-');
 	$(document).on(event, handler);
 
-	// When the element value changes (if an input), update the local data structure and queue the change for the next sync request
+	// When the element value changes (if an input), update the local data structure
 	if(this.componentIsInput(element, type)) {
 		var i = type == 'checklist' ? $('input',element) : $(element);
 		i.change(function() {
 			var app = window.app;
 			var val = app.componentGet(element);
 			var key = element.dataSource;
-			app.setData(key, val);
+			app.setData(DATA, key, val);
 		});
 	}
 };

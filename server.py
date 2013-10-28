@@ -419,6 +419,7 @@ class Connection(asynchat.async_chat, Client):
 		match = re.match('<data>(.+?)</data>', msg)
 		if match:
 			data = json.loads(match.group(1));
+			for item in data: self.group.setData(item[0], item[1], item[2], item[3], k)
 			app.log("Changes received from XmlSocket \"" + self.client + "\"")
 			
 
@@ -502,7 +503,7 @@ class Connection(asynchat.async_chat, Client):
 		self.role = INTERFACE
 		self.protocol = WEBSOCKET
 		self.client = client
-		if group: self.group = Group(group)
+		self.group = Group(group) if group else app.user
 		app.log("WebSocket connection identified for client \"" + client + "\" in group \"" + (self.group.name if self.group else '') + "\"")
 
 	"""
@@ -510,4 +511,5 @@ class Connection(asynchat.async_chat, Client):
 	"""
 	def wsData(self, data):
 		data = json.loads(data);
+		for item in data: self.group.setData(item[0], item[1], item[2], item[3], k)
 		app.log("Changes received from WebSocket \"" + self.client + "\"")
