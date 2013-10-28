@@ -154,6 +154,7 @@ class Connection(asynchat.async_chat, Client):
 			group = match.group(2)
 			key = match.group(3)
 			self.wsAcceptConnection(client, group, key)
+			return
 
 		# If the data starts with < and contains a zero byte, then it's an XML message from an interface SWF socket
 		match = re.match('<.+?\0', self.data, re.S)
@@ -164,6 +165,7 @@ class Connection(asynchat.async_chat, Client):
 			if dl > cl: self.data = data[cl:]
 			else: self.data = ""
 			self.swfProcessMessage(msg)
+			return
 
 		# If the data starts with Bitgroup:peer:type\nMSG\0, then it's a message from a peer
 		match = re.match(app.name + "-([0-9.]+):(.+?):(\w+)\n(.+?)\0", self.data)
@@ -176,6 +178,7 @@ class Connection(asynchat.async_chat, Client):
 			if dl > cl: self.data = data[cl:]
 			else: self.data = ""
 			self.peerProcessMessage(msgType, msg)
+			return
 
 		# Check if there's a full header in the content, and if so if content-length is specified and we have that amount
 		match = re.match(r'.+\r\n\r\n', self.data, re.S)
@@ -476,12 +479,11 @@ class Connection(asynchat.async_chat, Client):
 	"""
 	def wsAcceptConnection(self, client, group, key):
 		accept = hashlib.sha1(key + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11").digest().encode('base64').strip()
-		response = "HTTP/1.1 101 Switching Protocols\r\n"
+		response = "HTTP/1.1 101 Web Socket Protocol Handshake\r\n"
 		response += "Upgrade: websocket\r\n"
 		response += "Connection: Upgrade\r\n"
 		response += "Sec-WebSocket-Accept: " + accept + "\r\n"
-		response += "Sec-WebSocket-Protocol: chat\r\n\r\n"
-		print response
+		response += "Sec-WebSocket-Protocol: sample\r\n\r\n"
 		self.push(response)
 		clients = self.server.clients
 		if not client in clients: clients[client] = self

@@ -343,9 +343,10 @@ App.prototype.sendData = function(key, val, ts) {
  * Send a WebSocket connection request to the server side
  */
 App.prototype.wsConnect = function() {
+	if(this.ws) return;
 	this.ws = new WebSocket('ws://localhost:' + window.location.port + '/' + this.id + '/' + (this.group ? this.group : ''));
-	this.ws.onopen = function(e) { this.wsConnected = true; };
-	this.ws.onclose = function(e) { this.wsConnected = false; console.log('WebSocket closed'); };
+	this.ws.onopen = function(e) { app.wsConnected = true; console.log('WebSocket opened'); };
+	this.ws.onclose = this.wsClose;
 	this.ws.onmessage = this.wsData;
 	this.ws.onerror = function(e) { console.log('WebSocket Error: ' + $.getJSON(e)); };
 };
@@ -355,6 +356,15 @@ App.prototype.wsConnect = function() {
  */
 App.prototype.wsData = function(e) {
 	app.log($.getJSON(e));
+};
+
+/**
+ * Close the WebSocket connectin
+ */
+App.prototype.wsClose = function() {
+	app.wsConnected = false;
+	app.ws = false;
+	console.log('WebSocket closed');
 };
 
 /**
