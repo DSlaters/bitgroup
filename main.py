@@ -16,7 +16,7 @@ except:
 if os.path.exists(bmsrc):
 	sys.path.append(bmsrc)
 else:
-	raise Exception("Error: Couldn't find Bitmessage src directory.")
+	raise Exception("Error: Couldn't find Bitmessage src (" + bmsrc + ") directory.")
 
 import singleton
 import asyncore
