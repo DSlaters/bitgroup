@@ -50,9 +50,6 @@ function App() {
 				// Store the i18n messages
 				window.i18n = i18n;
 
-				// Load the extension scripts for this group
-				for( i in this.ext ) $.getScript('/extensions/' + this.ext[i] + '.js');
-
 				// Run the application
 				this.run();
 
@@ -113,7 +110,7 @@ App.prototype.run = function() {
 	this.locationChange();
 
 	// If there's no group, render the page now, otherwise wait for the group data from the first sync
-	if(this.group == '') this.renderPage();
+	this.renderPage();
 
 	// Initialise a poller for regular data transfers to and from the service
 	setInterval( function() {
@@ -336,7 +333,7 @@ App.prototype.wsConnect = function() {
  * Send changes through the WebSocket connection
  */
 App.prototype.wsSend = function(changes) {
-	console.info("Sending changes through WebSocket" 
+	console.info("Sending changes through WebSocket");
 	this.ws.send($.getJSON(changes));
 }
 
@@ -393,7 +390,7 @@ App.prototype.swfIdentify = function() {
  * Send changes through the SWF XmlSocket
  */
 App.prototype.swfSend = function(changes) {
-	console.info("Sending changes through XmlSocket" 
+	console.info("Sending changes through XmlSocket" );
 	this.swfGetObject().send($.getJSON(changes));
 };
 

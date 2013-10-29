@@ -238,12 +238,13 @@ class Connection(asynchat.async_chat, Client):
 						docroot = app.datapath
 						uri = '/' + group.prvaddr + '/files' + m.group(2)
 			else: group = None
+			self.group = group if group else app.user
 			uri = os.path.abspath(uri)
 			path = docroot + uri
 			base = os.path.basename(uri)
 
 			# Serve the main HTML document if its a root request
-			if uri == '/': content = self.httpDefaultDocument(group)
+			if uri == '/': content = self.httpDefaultDocument()
 
 			# If this is a new group creation request call the newgroup method and return the sanitised name
 			elif base == '_newgroup.json':
@@ -323,9 +324,9 @@ class Connection(asynchat.async_chat, Client):
 	"""
 	Return the main default HTML document
 	"""
-	def httpDefaultDocument(self, group):
+	def httpDefaultDocument(self):
 		tmp = {
-			'group': group.prvaddr if group else False,
+			'group': False if self.group.isUser else self.group.prvaddr,
 			'user': {'lang': app.user.lang, 'groups': {}},
 			'const': constants
 		}
@@ -333,13 +334,9 @@ class Connection(asynchat.async_chat, Client):
 		# Get the addresses and names of the user's groups
 		for g in app.groups: tmp['user']['groups'][g.prvaddr] = g.name
 
-		# Get the group's extensions
-		if group: tmp['ext'] = group.getData('settings.extensions')
-		else: tmp['ext'] = []
-
 		# Build the page content
 		content = "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n"
-		content += "<title>" + ( group.name + " - " if group else '' ) + app.name + "</title>\n"
+		content += "<title>" + self.group.name + app.name + "</title>\n"
 		content += "<meta charset=\"UTF-8\" />\n"
 		content += "<meta name=\"generator\" content=\"" + app.title + "\" />\n"
 		content += self.addScript("window.tmp = " + json.dumps(tmp) + ";", True)
@@ -349,7 +346,7 @@ class Connection(asynchat.async_chat, Client):
 		content += self.addScript("/resources/jquery.observehashchange.min.js")
 		content += self.addScript("/resources/math.uuid.js")
 		content += self.addScript("/main.js")
-		for js in glob.glob(app.docroot + '/includes/*.js'): content += self.addScript("/includes/" + os.path.basename(js))
+		content += self.addExtensions()
 		content += "</head>\n<body>\n</body>\n</html>\n"
 		return str(content)
 
@@ -362,6 +359,22 @@ class Connection(asynchat.async_chat, Client):
 
 	def addStyle(self, css):
 		return "<link rel=\"stylesheet\" href=\"" + css + "\" />\n"
+
+	"""
+	Return the script head elements for all extensions for this group
+	"""
+	def addExtensions(self):
+		content = ''
+
+		# Built in extensions
+		for js in glob.glob(app.docroot + '/includes/*.js'):
+			content += self.addScript("/includes/" + os.path.basename(js))
+
+		# This group's extensions
+		for ext in self.group.getData('settings.extensions'):
+			content += self.addScript("/extensions/" + ext + '.js')
+			
+		return content
 
 	"""
 	Get a file from the specified URI and path info
@@ -407,6 +420,9 @@ class Connection(asynchat.async_chat, Client):
 			clients = self.server.clients
 			client = match.group(1)
 			group = match.group(2)
+
+			# TODO: check if this ID is registered (in a list of ID's from HTTP headers that have passed authentication)
+
 			if not client in clients: clients[client] = self
 			self.role = INTERFACE
 			self.protocol = SWF
@@ -421,8 +437,6 @@ class Connection(asynchat.async_chat, Client):
 			data = json.loads(match.group(1));
 			for item in data: self.group.setData(item[0], item[1], item[2], item[3], k)
 			app.log("Changes received from XmlSocket \"" + self.client + "\"")
-			
-
 
 	"""
 	TODO: Process a completed JSON message from a peer
@@ -498,6 +512,9 @@ class Connection(asynchat.async_chat, Client):
 		response += "Sec-WebSocket-Accept: " + accept + "\r\n"
 		response += "Sec-WebSocket-Protocol: sample\r\n\r\n"
 		self.push(response)
+
+		# TODO: check if this ID is registered (in a list of ID's from HTTP headers that have passed authentication)
+
 		clients = self.server.clients
 		if not client in clients: clients[client] = self
 		self.role = INTERFACE
