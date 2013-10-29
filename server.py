@@ -5,13 +5,13 @@ from group import *
 
 class Server(asyncore.dispatcher):
 	"""
-	Create a listening socket server for the interface JavaScript and SWF components to connect to
+	Create a listening socket server for the interfaces and peers to connect to
 	"""
 	host      = None
 	port      = None
 	lastState = None    # The last application state that was sent to the interface clients (json)
 
-	# This contains a key for each active client ID, and each key can contain "lastSync", "swfSocket", "peerSocket", "group"
+	# This contains a key for each active client ID, each is a Client or Connection object
 	clients   = {}
 
 	"""
@@ -103,7 +103,7 @@ class Client:
 	Class to contain the data aspect of a connection
 	- also allows clients in the server.clients list that have no active connection if instantiated directly
 	"""
-	role   = None  # Whether this is a local SWF or remote peer (for persistent connections)
+	role   = None  # Whether this is a local interface or remote peer (for persistent connections)
 	group  = None  # The group this connection is associated with (for persistent connections)
 
 	status = None  # HTTP status code returned to client
@@ -131,7 +131,7 @@ class Connection(asynchat.async_chat, Client):
 		self.shutdown = 0
 
 	"""
-	When the socket closes (from the remote end), remove self from the swfSocket list if in there
+	When the socket closes (from the remote end), remove self from the active clients list
 	"""
 	def handle_close(self):
 		asyncore.dispatcher.handle_close(self)
@@ -149,15 +149,14 @@ class Connection(asynchat.async_chat, Client):
 		self.data += data
 
 		# Check if the data is a WebSocket connection request
-		match = re.match('GET /(.+?)/(.*?) HTTP/1.1.+Sec-WebSocket-Key: (.+?)\s', self.data, re.S)
+		match = re.match('GET /(.+?) HTTP/1.1.+Sec-WebSocket-Key: (.+?)\s', self.data, re.S)
 		if match:
 			client = match.group(1)
-			group = match.group(2)
-			key = match.group(3)
+			key = match.group(2)
 			self.wsAcceptConnection(client, group, key)
 			return
 
-		# If the data starts with < and contains a zero byte, then it's an XML message from an interface SWF socket
+		# If the data starts with < and contains a zero byte, then it's a message from on an interface XmlSocket
 		match = re.match('<.+?\0', self.data, re.S)
 		if match:
 			msg = match.group(0)
@@ -225,7 +224,7 @@ class Connection(asynchat.async_chat, Client):
 			self.clen = 0
 
 			# Check if the request is authorised and return auth request if not
-			if not self.httpIsAuthenticated(head, method): return self.httpSendAuthRequest()
+			if not self.httpAuthenticate(head, method): return self.httpSendAuthRequest()
 
 			# If the uri starts with a group addr, set group and change path to group's files
 			m = re.match('/(BM-.+?)($|/.*)', uri)
@@ -242,6 +241,19 @@ class Connection(asynchat.async_chat, Client):
 			uri = os.path.abspath(uri)
 			path = docroot + uri
 			base = os.path.basename(uri)
+
+			# Register the client if a Bitgroup header is included
+			match = re.search(r'X-Bitgroup-ID: (.+?)\s', head, re.S)
+			if match:
+				client = match.group(1)
+				clients = self.server.clients
+				if client in clients:
+					app.log("Warning client \"" + client + "\" is already registered")
+				else:
+					app.log("Client \"" + client + "\" is registered, waiting for XmlSocket or WebSocket connection")
+					clients[client] = Client()
+					clients[client].group = self.group
+					clients[client].role = INTERFACE
 
 			# Serve the main HTML document if its a root request
 			if uri == '/': content = self.httpDefaultDocument()
@@ -272,7 +284,7 @@ class Connection(asynchat.async_chat, Client):
 	"""
 	Check whether the HTTP request is authenticated
 	"""
-	def httpIsAuthenticated(self, head, method):
+	def httpAuthenticate(self, head, method):
 		match = re.search(r'Authorization: Digest (.+?)\r\n', head)
 		if not match:
 			app.log("No authentication found in header")
@@ -371,8 +383,10 @@ class Connection(asynchat.async_chat, Client):
 			content += self.addScript("/includes/" + os.path.basename(js))
 
 		# This group's extensions
-		for ext in self.group.getData('settings.extensions'):
-			content += self.addScript("/extensions/" + ext + '.js')
+		exts = self.group.getData('settings.extensions')
+		if exts:
+			for ext in exts:
+				content += self.addScript("/extensions/" + ext + '.js')
 			
 		return content
 
@@ -400,43 +414,65 @@ class Connection(asynchat.async_chat, Client):
 		return str(content)
 
 	"""
-	Process a completed XML message from an interface SWF instance
+	Process a completed message from an interface XmlSocket
 	"""
 	def swfProcessMessage(self, msg):
 
 		# Check if this is the SWF asking for the connection policy, and if so, respond with a policy restricted to this host and port
 		if msg == '<policy-file-request/>\x00':
-			#policy = '<allow-access-from domain="' + self.server.host + '" to-ports="' + str(self.server.port) + '" />'
-			policy = '<allow-access-from domain="*" to-ports="*" />'
-			policy = '<cross-domain-policy>' + policy + '</cross-domain-policy>'
-			self.push(policy)
-			self.close_when_done()
-			app.log('SWF policy sent.')
+			self.swfReturnPolicy()
 			return
 
 		# Check if this is a SWF giving its client id so that we can associate the socket with it
-		match = re.match('<client-id>(.+?)</client-id><group>(.*?)</group>', msg)
+		match = re.match('<client-id>(.+?)</client-id>', msg)
 		if match:
-			clients = self.server.clients
 			client = match.group(1)
-			group = match.group(2)
-
-			# TODO: check if this ID is registered (in a list of ID's from HTTP headers that have passed authentication)
-
-			if not client in clients: clients[client] = self
-			self.role = INTERFACE
-			self.protocol = SWF
-			self.client = client
-			if group: self.group = Group(group)
-			app.log("XmlSocket identified for client \"" + client + "\" in group \"" + (self.group.name if self.group else '') + "\"")
+			self.swfAcceptConnection(client)
 			return
 
 		# Check if this is data being sent from an interface through the XmlSocket
 		match = re.match('<data>(.+?)</data>', msg)
 		if match:
 			data = json.loads(match.group(1));
-			for item in data: self.group.setData(item[0], item[1], item[2], item[3], k)
-			app.log("Changes received from XmlSocket \"" + self.client + "\"")
+			self.swfData(data)
+
+	"""
+	A new XmlSocket connection has requested its policy file
+	"""
+	def swfReturnPolicy(self):
+		# TODO: policy = '<allow-access-from domain="' + self.server.host + '" to-ports="' + str(self.server.port) + '" />'
+		policy = '<allow-access-from domain="*" to-ports="*" />'
+		policy = '<cross-domain-policy>' + policy + '</cross-domain-policy>'
+		self.push(policy)
+		self.close_when_done()
+		app.log('SWF policy sent.')
+
+	"""
+	a new XmlSocket connection is identifying itself
+	"""
+	def swfAcceptConnection(self, client):
+		clients = self.server.clients
+
+		# Deny the connection if it's not registered
+		if not client in clients:
+			app.log("A new XmlSocket connection for client \"" + client + "\" was denied because the client is not registered.")
+			self.close()
+			return
+
+		# Set the group to that given in registration and replace the dummy client with the real connection
+		self.group = clients[client].group
+		clients[client] = self
+		self.role = INTERFACE
+		self.protocol = XMLSOCKET
+		self.client = client
+		app.log("XmlSocket identified for client \"" + client + "\" in group \"" + self.group.name + "\"")
+
+	"""
+	Changes data has been received on an XmlSocket
+	"""
+	def swfData(self, data):
+		app.log("Changes received from XmlSocket \"" + self.client + "\"")
+		for item in data: self.group.setData(item[0], item[1], item[2], item[3], k)
 
 	"""
 	TODO: Process a completed JSON message from a peer
@@ -505,6 +541,8 @@ class Connection(asynchat.async_chat, Client):
 	Respond to a WebSocket connection request from an interface client
 	"""
 	def wsAcceptConnection(self, client, group, key):
+
+		# Return the expected response to establish the WebSocket
 		accept = hashlib.sha1(key + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11").digest().encode('base64').strip()
 		response = "HTTP/1.1 101 Web Socket Protocol Handshake\r\n"
 		response += "Upgrade: websocket\r\n"
@@ -513,15 +551,20 @@ class Connection(asynchat.async_chat, Client):
 		response += "Sec-WebSocket-Protocol: sample\r\n\r\n"
 		self.push(response)
 
-		# TODO: check if this ID is registered (in a list of ID's from HTTP headers that have passed authentication)
-
+		# Check if this ID is registered (in a list of ID's from HTTP headers that have passed authentication)
 		clients = self.server.clients
-		if not client in clients: clients[client] = self
+		if not client in clients:
+			app.log("A new WebSocket connection for client \"" + client + "\" was denied because the client is not registered.")
+			self.close()
+			return
+
+		# Set the group to that given in registration and replace the dummy client with the real connection
+		self.group = clients[client].group
+		clients[client] = self
 		self.role = INTERFACE
 		self.protocol = WEBSOCKET
 		self.client = client
-		self.group = Group(group) if group else app.user
-		app.log("WebSocket connection identified for client \"" + client + "\" in group \"" + (self.group.name if self.group else '') + "\"")
+		app.log("WebSocket identified for client \"" + client + "\" in group \"" + self.group.name + "\"")
 
 	"""
 	Data received fron a WebSocket connection

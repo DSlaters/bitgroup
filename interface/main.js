@@ -39,10 +39,13 @@ function App() {
 		swf: NOTCONNECTED // Bitgroup connection type
 	}
 
-	// Run the app after the document is ready, load the i18n message and then run the app
+	// Run the app after the document is ready,
 	$(document).ready(function() {
+
+		// Load the i18n messages (this also registers the client ID since its the first request)
 		$.ajax({
 			url: '/i18n.json',
+			headers: { 'X-Bitgroup-ID': window.app.id },
 			dataType: "json",
 			context: window.app,
 			success: function(i18n) {
@@ -322,7 +325,7 @@ App.prototype.viewChange = function() {
  */
 App.prototype.wsConnect = function() {
 	if(this.ws) return;
-	this.ws = new WebSocket('ws://localhost:' + window.location.port + '/' + this.id + '/' + (this.group ? this.group : ''));
+	this.ws = new WebSocket('ws://localhost:' + window.location.port + '/' + this.id);
 	this.ws.onopen = function(e) { app.wsConnected = true; console.log('WebSocket opened'); };
 	this.ws.onclose = this.wsClose;
 	this.ws.onmessage = this.wsData;
@@ -382,7 +385,7 @@ App.prototype.swfGetObject = function() {
  * Send our ID and group to the SWF
  */
 App.prototype.swfIdentify = function() {
-	this.swfGetObject().identify(this.id, this.group, window.location.port);
+	this.swfGetObject().identify(this.id, window.location.port);
 	this.swfIdSent = true;
 }
 
