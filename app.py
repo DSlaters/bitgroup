@@ -177,7 +177,7 @@ class App:
 				else: state = ERROR
 			except:
 				state = NOTCONNECTED
-			self.user.setData(INTERFACE, 'bm', state)
+			self.user.setData(STATE, 'bm', state)
 
 			# If Bitmessage was available add any new messages
 			# - these are in app.inbox, not app.state, but are sent in Server.pushState
@@ -195,7 +195,7 @@ class App:
 							data['data'] = msg.data
 							data['group'] = msg.group.prvaddr
 							data['subject'] = ''
-						self.user.setData(str(INTERFACE) + '.inbox.' + msg.uid, data)
+						self.user.setData(STATE, 'inbox.' + msg.uid, data)
 
 	"""
 	Return whether or not Bitmessage is connected

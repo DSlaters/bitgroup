@@ -3,30 +3,30 @@
  */
 function App() {
 
-	// An identity for this client connection - python socket seems to be missing the ability to identify the stream
-	this.id = Math.uuid(5)
-
-	this.user;       // the current user data
-	this.group;      // the current group private BM address
-	this.views = []; // the availabe view classes - this first is the default if no view is specified by the current node
-	this.view;       // the current view instance
-	this.node;       // the current node name
-	this.sep = '/';  // separator character used in hash fragment
-	this.i18n = {};  // i18n messages loaded from /interface/i18n.json
-
+	
+	this.id = Math.uuid(5)     // An identity for this client connection
+	this.user;                 // the current user data
+	this.group;                // the current group private BM address
 	this.data = {};            // the current group's data
 	this.queue = {};           // queue of data updates to send to the background service in the form keypath : [val, timestamp]
+	this.views = [];           // the availabe view classes - this first is the default if no view is specified by the current node
+	this.view;                 // the current view instance
+	this.node;                 // the current node name
+	this.sep = '/';            // separator character used in hash fragment
+	this.i18n = {};            // i18n messages loaded from /interface/i18n.json
 	this.pollTime = 1000;      // milliseconds between each poll for things requiring regular checking
+
 	this.ws = false;           // WebSocket object
 	this.wsIdSent = false;     // this client's ID has been sent to the WebSocket
 	this.wsConnected = false;  // whether the WebSocket is available for receiving data
+
 	this.swfIdSent = false;    // this client's ID has been sent to the SWF
 	this.swfConnected = false; // whether the SWF is available for receiving data
 
 	// Populate the properties that were sent in the page
-	for( var i in window.tmp ) {
+	for(var i in window.tmp) {
 		if(i == 'const') {
-			for( var j in window.tmp['const'] ) window[j] = window.tmp['const'][j];
+			for(var j in window.tmp['const']) window[j] = window.tmp['const'][j];
 		} else this[i] = window.tmp[i];
 	}
 
@@ -62,19 +62,27 @@ function App() {
 						// Store the i18n messages
 						window.i18n = i18n;
 
-						// Load the extensions, then run the app after the last one has loaded
+						// Load the extensions, then run the app after the last one has loaded (or failed to load)
 						this.curExt = 0;
+						var runAppIfLast = function() {
+							var app = window.app;
+							if(++app.curExt == app.ext.length) {
+								console.info("No more extensions, calling app.run()");
+								app.run();
+							}
+						};
 						for(var i in this.ext) {
-							console.info("Loading extension \"" + this.ext[i] + "\"");
 							$.ajax({
 								url: this.ext[i],
 								dataType: "script",
-								context: this,
+								context: this.ext[i],
 								success: function() {
-									if(++this.curExt == this.ext.length) {
-										console.info("Last extension loaded, calling app.run()");
-										this.run();
-									}
+									console.info("Extension \"" + this + "\" loaded");
+									runAppIfLast();
+								},
+								error: function() {
+									console.warn("Extension \"" + this + "\" failed to load");
+									runAppIfLast();
 								}
 							});
 						}
@@ -99,7 +107,7 @@ App.prototype.locationChange = function() {
 	var oldview = this.view
 	var newview = false;
 	if(elements.length > 1) {
-		for( var i = 0; i < this.views.length; i++ ) {
+		for(var i = 0; i < this.views.length; i++) {
 			var view = this.views[i];
 			if(view.constructor.name.toLowerCase() == elements[1].toLowerCase()) newview = view;
 		}
@@ -162,6 +170,7 @@ App.prototype.renderPage = function() {
 
 	// Get the current skin and load it's styles
 	var skin = 'skin' in this.data ? this.data.skin : 'default';
+	console.info('Loading "' + skin + '" skin')
 	this.loadStyleSheet('/skins/' + skin + '/style.css');
 
 	// Render the top bar
@@ -204,16 +213,16 @@ App.prototype.renderPage = function() {
 		var bgElem = $('#state-bg-data')[0];
 		var bmElem = $('#state-bm-data')[0];
 		var ipElem = $('#state-ip-data')[0];
-		var swfElem = $('#state-sock-data')[0];
+		var sockElem = $('#state-sock-data')[0];
 		var fStatus = function(val) { $(this).html( val > 0 && val < 10 ? app.msg('con-status-'+val) : val ) };
 		bgElem.setValue = fStatus;
 		bmElem.setValue = fStatus;
 		ipElem.setValue = fStatus;
-		swfElem.setValue = function(val) { $(this).html(app.msg('sock-status-' + val)) };
-		this.componentConnect(STATE + '.bg', bgElem);
-		this.componentConnect(STATE + '.bm', bmElem);
-		this.componentConnect(STATE + '.ip', ipElem);
-		this.componentConnect(STATE + '.sock', swfElem);
+		sockElem.setValue = function(val) { $(this).html(app.msg('sock-status-' + val)) };
+		this.componentConnect('bg', bgElem);
+		this.componentConnect('bm', bmElem);
+		this.componentConnect('ip', ipElem);
+		this.componentConnect('sock', sockElem);
 
 		// Call the view's render method to populate the content area
 		this.view.render(this);
@@ -238,13 +247,12 @@ App.prototype.renderPersonal = function() {
 	html += '<li id="bitgroup"><a>Bitgroup</a><ul>\n'
 	html += '<li><a href="/">' + this.msg('about', 'Bitgroup') + '</a></li>\n';
 	html += '<li><a href="https://bitmessage.org">' + this.msg('about', 'Bitmessage') + '</a></li>\n';
-	html += '<li><a href="http://www.bitgroup.org">bitgroup.org</a></li>\n';
-	html += '<li><a href="http://www.organicdesign.co.nz/bitgroup">' + this.msg('documentation') + '</a></li>\n</ul></li>\n';
+	html += '<li><a href="http://www.bitgroup.org">' + this.msg('documentation') + '</a></li>\n</ul></li>\n';
 	html += '<li id="profile"><a id="user-page" href="/">' + this.msg('user-page') + '</a></li>\n';
 	html += '<li id="groups"><a>' + this.msg('groups') + '</a><ul id="personal-groups">\n' + this.renderGroupsList() + '</ul></li>\n';
 	html += '<li id="status"><a>' + this.msg('status') + '</a><ul>\n';
 	html += '<li id="state-bg"><a>' + this.msg('bg') + '</a><ul><li><a id="state-bg-data"></a></li></li>\n'
-	html += '<li><a id="state-swf-data"></a></li></ul></li>\n'
+	html += '<li><a id="state-sock-data"></a></li></ul></li>\n'
 	html += '<li id="state-bm"><a>' + this.msg('bm') + '</a><ul><li><a id="state-bm-data"></a></li></ul></li>\n'
 	html += '<li id="state-ip"><a>' + this.msg('ip') + '</a><ul><li><a id="state-ip-data"></a></li></ul></li>\n'
 	html += '</ul>\n</ul>\n';
@@ -257,7 +265,7 @@ App.prototype.renderPersonal = function() {
 App.prototype.renderGroupsList = function() {
 	var html = '<li id="newgroup-link"><a href="/#/NewGroup">' + this.msg('newgroup') + '...</a></li>\n';
 	var groups = this.user.groups;
-	for( var i in this.user.groups ) {
+	for(var i in this.user.groups) {
 		var g = groups[i];
 		var link = '<a href="/' + i + '">' + g +'</a>';
 		html += '<li id="personal-groups-' + this.getId(g) + '">' + link + '</li>\n';
@@ -292,19 +300,19 @@ App.prototype.renderViewsMenu = function() {
 
 	// If no group is selected, add the new group node
 	if(this.group == '') {
-		for( var j = 0; j < this.views.length; j++ ) {
+		for(var j = 0; j < this.views.length; j++) {
 			if(this.views[j].constructor.name == 'NewGroup')
 				views.push(this.views[j].constructor.name);
 		}
 	}
 
 	// Render the views menu
-	for( var i = 0; i < views.length; i++ ) {
+	for(var i = 0; i < views.length; i++) {
 		var name = views[i];
 
 		// Get the view class matching the name if any
 		var vi = false;
-		for( var j = 0; j < this.views.length; j++ ) if(this.views[j].constructor.name == name) vi = this.views[j];
+		for(var j = 0; j < this.views.length; j++) if(this.views[j].constructor.name == name) vi = this.views[j];
 
 		// Add a menu item for this view (disabled if no class matched)
 		var c = ' class="disabled"';
@@ -430,24 +438,32 @@ App.prototype.swfData = function(data) {
 	if(data) {
 		console.info("Data received from SWF: " + data);
 		data = $.parseJSON(data);
-		for( var item in data ) this.setData(data[0], data[1], data[2], data[3]);
+		for(var item in data) this.setData(data[0], data[1], data[2], data[3]);
 	}
 };
 
 /**
  * Return the data for the passed key
  * - return the timestamp and zone info as well if 'all' set
- * TODO: don't use eval for this, make a path walking function like node.py
  */
 App.prototype.getData = function(key, all) {
-	var val = eval('this.data.' + key);
-	if(val === undefined) console.info('undefined value for ' + key);
+	var val = this.data;
+	for(var i in key.split('.')) {
+		if(i in val) val = val[i];
+		else {
+			console.warn('value "' + key + '" doesn\'t exist');
+			return all === true ? [undefined, 0, LOCAL] : undefined;
+		}
+	}
+	if(val === undefined) {
+		console.warn('undefined value for ' + key);
+		return;
+	}
 	return all === true ? val : val[0];
 };
 
 /**
  * Set the data for the passed key to the passed value
- * TODO: don't use eval for this, make a path walking function like node.py
  */
 App.prototype.setData = function(zone, key, val, ts) {
 
@@ -469,9 +485,19 @@ App.prototype.setData = function(zone, key, val, ts) {
 	// Trigger the data changed event
 	$.event.trigger({type: "bgDataChange-" + key.replace('.', '-'), args: {app:this, val:val}});
 
+	// Walk the path, creating elements if necessary
+	var elem = this.data;
+	var path = key.split('.');
+	var leaf = path.pop();
+	if(path.length > 0) {
+		for(var i in path) {
+			if(!i in elem) elem[i] = {};
+			elem = elem[i];
+		}
+	}
+
 	// Update the value with the timestamp and zone
-	val = [val, ts, zone];
-	eval('this.data.' + key + '=val');
+	val = elem[leaf] = [val, ts, zone];
 
 	// If the zone for the change is non-local, send it or queue for sending
 	var action = '';

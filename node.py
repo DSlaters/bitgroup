@@ -62,9 +62,9 @@ class Node:
 		# If the data should change, propagate/store/queue the change depending on the root element of the key
 		if changed:
 
-			# Update the local cache, and interface clients unconditionally
+			# Update the local cache, and interface clients unconditionally (if zone is STATE, send to interfaces in any group)
 			j[leaf] = [val, ts, zone]
-			app.server.pushInterfaceChange(self, key, val, ts, client)
+			app.server.pushInterfaceChange(None if zone is STATE else self, key, val, ts, client)
 
 			# Queue the change for periodic sending unless its specific to online peers
 			# - we include interface-only data because the interface may be Ajax-only,
@@ -74,8 +74,8 @@ class Node:
 			# Push the change to all peers unless it's specifically for interfaces only or its not in group context (a user change)
 			if not ( zone is INTERFACE or self.isUser ): app.server.pushPeerChange(self, key, val, ts, client)
 
-			# Update the stored data and queue for periodic sending only if it's not online peer info or application state data
-			if not ( zone is PEER or zone is INTERFACE ): self.save()
+			# Update the stored data only if the zone is DATA
+			if zone is DATA: self.save()
 
 		# Return state of change
 		return changed

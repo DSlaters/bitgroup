@@ -76,7 +76,7 @@ Overview.prototype.render = function(app) {
 			$(this).html('<table>' + rows + '</table>');
 		} else $(this).html(app.msg('nomessages'));
 	};
-	app.componentConnect(STATE + '.inbox', inbox);
+	app.componentConnect('inbox', inbox);
 
 
 	// TODO: Render a live table of members and their online information

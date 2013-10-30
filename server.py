@@ -40,10 +40,11 @@ class Server(asyncore.dispatcher):
 	"""
 	def pushInterfaceChange(self, group, key, val, ts, excl = -1):
 		change = [key, val, ts]
-		app.log("Broadcasting change to INTERFACE clients in group \"" + group.name + "\": " + str(change))
+		if group: app.log("Broadcasting change to INTERFACE clients in group \"" + group.name + "\": " + str(change))
+		else: app.log("Broadcasting STATE change to INTERFACE clients in all groups: " + str(change))
 		for k in app.server.clients.keys():
 			client = app.server.clients[k]
-			if client.role is INTERFACE and client.group is group and k != excl:
+			if client.role is INTERFACE and (client.group is group or group is None) and k != excl:
 				client.push(json.dumps(change) + '\0')
 
 	"""
@@ -369,10 +370,10 @@ class Connection(asynchat.async_chat, Client):
 		for g in app.groups: tmp['user']['groups'][g.prvaddr] = g.name
 
 		# Build the page content
-		content = "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n"
-		content += "<title>" + self.group.name + app.name + "</title>\n"
-		content += "<meta charset=\"UTF-8\" />\n"
-		content += "<meta name=\"generator\" content=\"" + app.title + "\" />\n"
+		content = "<!DOCTYPE html>\n<html lang=\"en\">\n\t<head>\n"
+		content += "\t\t<title>" + self.group.name + ' - ' + app.name + "</title>\n"
+		content += "\t\t<meta charset=\"UTF-8\" />\n"
+		content += "\t\t<meta name=\"generator\" content=\"" + app.title + "\" />\n"
 		content += self.addScript("window.tmp = " + json.dumps(tmp) + ";", True)
 		content += self.addScript("/resources/jquery-1.10.2.min.js")
 		content += self.addStyle("/resources/jquery-ui-1.10.3/themes/base/jquery-ui.css")
@@ -380,18 +381,18 @@ class Connection(asynchat.async_chat, Client):
 		content += self.addScript("/resources/jquery.observehashchange.min.js")
 		content += self.addScript("/resources/math.uuid.js")
 		content += self.addScript("/main.js")
-		content += "</head>\n<body>\n</body>\n</html>\n"
+		content += "\t</head>\n\t<body></body>\n</html>"
 		return str(content)
 
 	def addScript(self, js, inline = False):
-		html = "<script type=\"text/javascript\""
+		html = "\t\t<script type=\"text/javascript\""
 		if inline: html += ">" + js
 		else: html += " src=\"" + js + "\">"
 		html += "</script>\n"
 		return html
 
 	def addStyle(self, css):
-		return "<link rel=\"stylesheet\" href=\"" + css + "\" />\n"
+		return "\t\t<link rel=\"stylesheet\" href=\"" + css + "\" />\n"
 
 	"""
 	Return the paths for all extensions for this group
@@ -486,7 +487,7 @@ class Connection(asynchat.async_chat, Client):
 		self.role = INTERFACE
 		self.protocol = XMLSOCKET
 		self.client = client
-		app.log("XmlSocket identified for client \"" + client + "\" in group \"" + self.group.name + "\"")
+		app.log("XmlSocket connected for client \"" + client + "\" in group \"" + self.group.name + "\"")
 
 	"""
 	Changes data has been received on an XmlSocket
@@ -585,7 +586,7 @@ class Connection(asynchat.async_chat, Client):
 		self.role = INTERFACE
 		self.protocol = WEBSOCKET
 		self.client = client
-		app.log("WebSocket identified for client \"" + client + "\" in group \"" + self.group.name + "\"")
+		app.log("WebSocket connected for client \"" + client + "\" in group \"" + self.group.name + "\"")
 
 	"""
 	Data received fron a WebSocket connection
