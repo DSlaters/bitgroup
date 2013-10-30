@@ -13,9 +13,9 @@ class Node:
 	lastSend = None   # Last time this group's changes were broadcast to the members
 
 	"""
-	Get a property in this nodes data structure (with its timestamp if ts set)
+	Get a property in this nodes data structure (with timestamp and zone info if 'all' set)
 	"""
-	def getData(self, key, ts = False):
+	def getData(self, key, all = False):
 
 		# Load the data if the cache is uninitialised
 		if self.data == None: self.load()
@@ -26,7 +26,10 @@ class Node:
 			if type(val) == dict and i in val: val = val[i]
 			else: return None
 
-		return val if ts else val[0]
+		# Add DATA zone if no zone data
+		if len(val) == 2: val.append(DATA)
+
+		return val if all else val[0]
 
 	"""
 	Set a property in this nodes data structure
@@ -52,8 +55,7 @@ class Node:
 
 		# If the value already exists get the current value and timestamp and store only if more recent
 		if leaf in j:
-			(oldval, oldts) = j[leaf]
-			if ts > oldts: changed = json.dumps(oldval) != json.dumps(val)
+			if ts > j[leaf][1]: changed = json.dumps(j[leaf][0]) != json.dumps(val)
 			else: changed = False
 		else: changed = True
 
@@ -61,7 +63,7 @@ class Node:
 		if changed:
 
 			# Update the local cache, and interface clients unconditionally
-			j[leaf] = [val, ts]
+			j[leaf] = [val, ts, zone]
 			app.server.pushInterfaceChange(self, key, val, ts, client)
 
 			# Queue the change for periodic sending unless its specific to online peers

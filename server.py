@@ -242,26 +242,14 @@ class Connection(asynchat.async_chat, Client):
 			path = docroot + uri
 			base = os.path.basename(uri)
 
-			# Register the client if a Bitgroup header is included
-			match = re.search(r'X-Bitgroup-ID: (.+?)\s', head, re.S)
-			if match:
-				client = match.group(1)
-				clients = self.server.clients
-				if client in clients:
-					app.log("Warning client \"" + client + "\" is already registered")
-				else:
-					app.log("Client \"" + client + "\" is registered, waiting for XmlSocket or WebSocket connection")
-					clients[client] = Client()
-					clients[client].group = self.group
-					clients[client].role = INTERFACE
-
 			# Serve the main HTML document if its a root request
 			if uri == '/': content = self.httpDefaultDocument()
 
+			# If this is a client registration request, add it to the server's list of active clients
+			elif base == '_register': content = self.httpRegisterClient(head)
+
 			# If this is a new group creation request call the newgroup method and return the sanitised name
-			elif base == '_newgroup.json':
-				self.ctype = mimetypes.guess_type(base)[0]
-				content = json.dumps(app.newGroup(json.loads(data)['name']));
+			elif base == '_newgroup.json': content = self.httpNewGroup(data)
 
 			# Serve the requested file if it exists and isn't a directory
 			elif os.path.exists(path) and not os.path.isdir(path): content = self.httpGetFile(uri, path)
@@ -280,6 +268,39 @@ class Connection(asynchat.async_chat, Client):
 			self.push(str(header))
 			self.push(content)
 			self.close_when_done()
+
+	"""
+	Register a newly loaded interface client page
+	"""
+	def httpRegisterClient(self, head):
+		content = ''
+		match = re.search(r'X-Bitgroup-ID: (.+?)\s', head, re.S)
+		if match:
+			client = match.group(1)
+			clients = self.server.clients
+			if client in clients:
+				app.log("Warning client \"" + client + "\" is already registered")
+			else:
+
+				# Register client
+				app.log("Client \"" + client + "\" is registered, waiting for XmlSocket or WebSocket connection")
+				clients[client] = Client()
+				clients[client].group = self.group
+				clients[client].role = INTERFACE
+
+				# Return the group's data
+				self.ctype = mimetypes.guess_type('x.json')[0]
+				content = self.group.json()
+
+		else: app.log("Client registration attempted, but no identification header found")
+		return content
+
+	"""
+	Client has requested creation of a new group
+	"""
+	def httpNewGroup(self, data):
+		self.ctype = mimetypes.guess_type('x.json')[0]
+		return json.dumps(app.newGroup(json.loads(data)['name']));
 
 	"""
 	Check whether the HTTP request is authenticated
@@ -340,7 +361,8 @@ class Connection(asynchat.async_chat, Client):
 		tmp = {
 			'group': False if self.group.isUser else self.group.prvaddr,
 			'user': {'lang': app.user.lang, 'groups': {}},
-			'const': constants
+			'const': constants,
+			'ext': self.getExtensions()
 		}
 
 		# Get the addresses and names of the user's groups
@@ -358,7 +380,6 @@ class Connection(asynchat.async_chat, Client):
 		content += self.addScript("/resources/jquery.observehashchange.min.js")
 		content += self.addScript("/resources/math.uuid.js")
 		content += self.addScript("/main.js")
-		content += self.addExtensions()
 		content += "</head>\n<body>\n</body>\n</html>\n"
 		return str(content)
 
@@ -373,22 +394,22 @@ class Connection(asynchat.async_chat, Client):
 		return "<link rel=\"stylesheet\" href=\"" + css + "\" />\n"
 
 	"""
-	Return the script head elements for all extensions for this group
+	Return the paths for all extensions for this group
 	"""
-	def addExtensions(self):
-		content = ''
+	def getExtensions(self):
+		allexts = []
 
 		# Built in extensions
 		for js in glob.glob(app.docroot + '/includes/*.js'):
-			content += self.addScript("/includes/" + os.path.basename(js))
+			allexts.append("/includes/" + os.path.basename(js))
 
 		# This group's extensions
 		exts = self.group.getData('settings.extensions')
 		if exts:
 			for ext in exts:
-				content += self.addScript("/extensions/" + ext + '.js')
+				allexts.append("/extensions/" + ext + '.js')
 			
-		return content
+		return allexts
 
 	"""
 	Get a file from the specified URI and path info

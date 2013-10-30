@@ -16,8 +16,7 @@ function App() {
 
 	this.data = {};            // the current group's data
 	this.queue = {};           // queue of data updates to send to the background service in the form keypath : [val, timestamp]
-	this.syncTime = 1000;      // milliseconds between each sync request
-	this.syncLock = false;     // prevents syncs from occurring if another is still in progress
+	this.pollTime = 1000;      // milliseconds between each poll for things requiring regular checking
 	this.ws = false;           // WebSocket object
 	this.wsIdSent = false;     // this client's ID has been sent to the WebSocket
 	this.wsConnected = false;  // whether the WebSocket is available for receiving data
@@ -42,25 +41,48 @@ function App() {
 	// Run the app after the document is ready,
 	$(document).ready(function() {
 
-		// Load the i18n messages (this also registers the client ID since its the first request)
+		// Register this interface client with the daemon - this returns the group data structure
 		$.ajax({
-			url: '/i18n.json',
+			url: '/_register',
 			headers: { 'X-Bitgroup-ID': window.app.id },
 			dataType: "json",
 			context: window.app,
-			success: function(i18n) {
+			success: function(data) {
 
-				// Store the i18n messages
-				window.i18n = i18n;
+				// Store the data received
+				this.data = data;
 
-				// Run the application
-				this.run();
+				// Load the i18n messages
+				$.ajax({
+					url: '/i18n.json',
+					dataType: "json",
+					context: window.app,
+					success: function(i18n) {
 
-				// Regiester hash changes with our handler
-				$(window).hashchange(function() { window.app.locationChange.call(window.app) });
+						// Store the i18n messages
+						window.i18n = i18n;
+
+						// Load the extensions one by one, then run the app
+						this.curExt = -1;
+						var loadExt = function() {
+							var app = window.app;
+							if(++app.curExt < app.ext.length) {
+								console.info("Loading extension \"" + app.ext[app.curExt] + "\"");
+								$.ajax({
+									url: app.ext[app.curExt],
+									dataType: "script",
+									success: loadExt,
+								});
+							}
+
+							// The last extension has loaded, run the app
+							else app.run();
+						};
+						loadExt();
+					}
+				});
 			}
 		});
-		
 	});
 
 };
@@ -109,6 +131,9 @@ App.prototype.locationChange = function() {
  */
 App.prototype.run = function() {
 
+	// Register hash changes with our handler
+	$(window).hashchange(function() { window.app.locationChange.call(window.app) });
+
 	// Call the location change event to set the current node and view
 	this.locationChange();
 
@@ -123,11 +148,11 @@ App.prototype.run = function() {
 		if('WebSocket' in window && !app.wsConnected) app.wsConnect();
 
 		// If the SWF is available and we haven't sent our client ID to it yet, do it now
-		if(app.swfConnected && !app.swfIdSent) app.swfIdentify();
+		if(app.swfConnected && !app.swfIdSent) app.swfConnect();
 
 		// Allow other extensions to do something regularly too
 		$.event.trigger({type: "bgPoller"});
-	}, this.syncTime );
+	}, this.pollTime );
 };
 
 /**
@@ -384,7 +409,7 @@ App.prototype.swfGetObject = function() {
 /**
  * Send our ID and group to the SWF
  */
-App.prototype.swfIdentify = function() {
+App.prototype.swfConnect = function() {
 	this.swfGetObject().identify(this.id, window.location.port);
 	this.swfIdSent = true;
 }
@@ -424,14 +449,13 @@ App.prototype.setState = function(key, val) {
 
 /**
  * Return the data for the passed key
- * - return the timestamp to if ts set
+ * - return the timestamp and zone info as well if 'all' set
  * TODO: don't use eval for this, make a path walking function like node.py
  */
-App.prototype.getData = function(key, ts) {
-	if(key.substr(0,1) == '_') return this.state[key.substr(1)]; // if the key starts with an underscore, it's an application state value
+App.prototype.getData = function(key, all) {
 	var val = eval('this.data.' + key);
 	if(val === undefined) console.info('undefined value for ' + key);
-	return ts === true ? val : val[0];
+	return all === true ? val : val[0];
 };
 
 /**
@@ -458,8 +482,8 @@ App.prototype.setData = function(zone, key, val, ts) {
 	// Trigger the data changed event
 	$.event.trigger({type: "bgDataChange-" + key.replace('.', '-'), args: {app:this, val:val}});
 
-	// Update the value with the timestamp
-	val = [val, ts];
+	// Update the value with the timestamp and zone
+	val = [val, ts, zone];
 	eval('this.data.' + key + '=val');
 
 	// If the zone for the change is non-local, send it or queue for sending
