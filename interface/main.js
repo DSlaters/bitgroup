@@ -56,29 +56,28 @@ function App() {
 				$.ajax({
 					url: '/i18n.json',
 					dataType: "json",
-					context: window.app,
+					context: this,
 					success: function(i18n) {
 
 						// Store the i18n messages
 						window.i18n = i18n;
 
-						// Load the extensions one by one, then run the app
-						this.curExt = -1;
-						var loadExt = function() {
-							var app = window.app;
-							if(++app.curExt < app.ext.length) {
-								console.info("Loading extension \"" + app.ext[app.curExt] + "\"");
-								$.ajax({
-									url: app.ext[app.curExt],
-									dataType: "script",
-									success: loadExt,
-								});
-							}
-
-							// The last extension has loaded, run the app
-							else app.run();
-						};
-						loadExt();
+						// Load the extensions, then run the app after the last one has loaded
+						this.curExt = 0;
+						for(var i in this.ext) {
+							console.info("Loading extension \"" + this.ext[i] + "\"");
+							$.ajax({
+								url: this.ext[i],
+								dataType: "script",
+								context: this,
+								success: function() {
+									if(++this.curExt == this.ext.length) {
+										console.info("Last extension loaded, calling app.run()");
+										this.run();
+									}
+								}
+							});
+						}
 					}
 				});
 			}
@@ -205,16 +204,16 @@ App.prototype.renderPage = function() {
 		var bgElem = $('#state-bg-data')[0];
 		var bmElem = $('#state-bm-data')[0];
 		var ipElem = $('#state-ip-data')[0];
-		var swfElem = $('#state-swf-data')[0];
+		var swfElem = $('#state-sock-data')[0];
 		var fStatus = function(val) { $(this).html( val > 0 && val < 10 ? app.msg('con-status-'+val) : val ) };
 		bgElem.setValue = fStatus;
 		bmElem.setValue = fStatus;
 		ipElem.setValue = fStatus;
-		swfElem.setValue = function(val) { $(this).html(app.msg('swf-status-'+val)) };
-		this.componentConnect('_bg', bgElem);
-		this.componentConnect('_bm', bmElem);
-		this.componentConnect('_ip', ipElem);
-		this.componentConnect('_swf', swfElem);
+		swfElem.setValue = function(val) { $(this).html(app.msg('sock-status-' + val)) };
+		this.componentConnect(STATE + '.bg', bgElem);
+		this.componentConnect(STATE + '.bm', bmElem);
+		this.componentConnect(STATE + '.ip', ipElem);
+		this.componentConnect(STATE + '.sock', swfElem);
 
 		// Call the view's render method to populate the content area
 		this.view.render(this);
@@ -433,18 +432,6 @@ App.prototype.swfData = function(data) {
 		data = $.parseJSON(data);
 		for( var item in data ) this.setData(data[0], data[1], data[2], data[3]);
 	}
-};
-
-/**
- * Set the dynamic application state data returned from the server side on the last sync if it's changed
- * - this raises a normal change event so that components can connect to state values using a preceding underscore on the key
- */
-App.prototype.setState = function(key, val) {
-	if(val != this.state[key]) {
-		console.info('"' + key + '" state change to "' + val + '"');
-		this.state[key] = val;
-		$.event.trigger({type: "bgDataChange-_" + key, args: {app:this, val:val}});
-	}	
 };
 
 /**

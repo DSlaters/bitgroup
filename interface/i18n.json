@@ -27,8 +27,8 @@
 		"con-status-2": "Connected",
 		"con-status-3": "Error",
 		"con-status-4": "Unknown",
-		"swf-status-1": "Ajax only",
-		"swf-status-2": "Ajax + SWF",
+		"sock-status-100": "XmlSocket",
+		"sock-status-101": "WebSocket",
 
 		"group": "group",
 		"newgroup": "New group",
