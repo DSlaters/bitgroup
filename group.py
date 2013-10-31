@@ -17,7 +17,7 @@ class Group(Node, object):
 	Instantiate a new group instance, return the existing instance if the passed group already has one
 	"""
 	def __new__(self, group, passwd = None):
-		if re.match('BM-', group) and passwd == None:
+		if re.match('BM-', group) and passwd is None:
 			for g in app.groups:
 				if g.prvaddr == group: return g
 		return object.__new__(self, group, passwd)
@@ -39,9 +39,6 @@ class Group(Node, object):
 
 		# Instantiating by name, create a new group
 		else:
-			if not passwd:
-				app.log("Invalid Group instantiation, \"" + param + "\" and no passwd")
-				return None
 			if not app.bmConnected():
 				app.log("Not creating group \"" + param + "\", Bitmessage not connected")
 				return None
@@ -49,7 +46,7 @@ class Group(Node, object):
 			self.name = param
 
 			# Make a new random password - encrypting with openssl in case uuid's not very random
-			self.passwd = app.encrypt(str(uuid.uuid4()),str(uuid.uuid4())).encode('base64').strip().lower()
+			self.passwd = hashlib.sha256(app.encrypt(str(uuid.uuid4()),str(uuid.uuid4()))).hexdigest();
 		
 			# Now create two address from the passphrase
 			addrs = json.loads(app.api.createDeterministicAddresses(self.passwd, 2))
@@ -57,15 +54,16 @@ class Group(Node, object):
 			self.prvaddr = addrs['addresses'][1];
 
 			# Subscribe to both of the addresses
-			app.api.subscribe(self.addr, app.msg('private-addr', self.name))
-			app.api.subscribe(self.addr, app.msg('public-addr', self.name))
+			app.api.addSubscription(self.addr, app.msg('private-addr', self.name))
+			app.api.addSubscription(self.addr, app.msg('public-addr', self.name))
 
 			# Update the config file with the private address and password (all thats needed to be a member)
+			app.log(self.passwd + ' = ' + self.prvaddr)
 			app.updateConfig('groups', self.passwd, self.prvaddr)
 
 			# Initialise the group's data from the template
 			global template
-			for k in template: self.setData(k, template[k])
+			for k in template: self.setData(DATA, k, template[k])
 			self.setData(DATA, 'settings.name', self.name)
 			self.setData(DATA, 'settings.addr', self.addr)
 

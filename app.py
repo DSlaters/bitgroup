@@ -87,9 +87,7 @@ class App:
 		self.loadGroups()
 
 		# Set up a simple HTTP server to handle requests from any interface on our port
-		iport = config.getint('interface', 'port')
-		if self.dev: iport += self.dev
-		self.server = Server('127.0.0.1', iport)
+		self.server = Server('127.0.0.1', self.config.getint('interface', 'port'))
 
 		# Call the regular interval timer
 		hw_thread = threading.Thread(target = self.interval)
@@ -243,7 +241,7 @@ class App:
 		# TODO: Sanitise the name
 
 		# Create a new group instance
-		group = Group(self, name)
+		group = Group(name)
 		
 		# If a Bitmessage address was created successfully, create the group's bitmessage addresses and add to the config
 		if re.match('BM-', group.addr):

@@ -1,5 +1,6 @@
 #!/usr/bin/python2.7
-import os, sys, json, time, glob, re
+import os, sys, shutil, ConfigParser
+import json, time, glob, re, hashlib
 from subprocess import Popen
 
 class fakeBitmessage:
@@ -20,11 +21,26 @@ class fakeBitmessage:
 
 		# Use the original nickname as the base name for all the dev users
 		self.name = app.config.get('user', 'nickname')
+		port = app.config.getint('interface', 'port') + app.dev
 
 		# Change the data path to the program dir/.dev/nickname
 		self.datapath = os.path.dirname(__file__) + '/.dev'
 		if not os.path.exists(self.datapath): os.mkdir(self.datapath)
 		app.datapath = self.datapath + '/' + app.user.addr
+		if not os.path.exists(app.datapath): os.mkdir(app.datapath)
+
+		# Use a copy of the config file instead of the main one
+		configfile = app.datapath + '/config'
+		if not os.path.exists(configfile): shutil.copyfile(app.configfile, configfile)
+		config = ConfigParser.SafeConfigParser()
+		config.read(configfile)
+		config.remove_section('groups')
+		config.add_section('groups')
+		app.configfile = configfile
+		app.config = config
+		app.updateConfig('interface', 'port', str(port))
+		app.updateConfig('user', 'nickname', app.user.name)
+		app.updateConfig('user', 'bmaddr', app.user.addr)
 
 		# Define the lock file for this group of dev users and delete if exists (and we-re the first instance)
 		self.mlock = self.datapath + '/.lock.' + self.name

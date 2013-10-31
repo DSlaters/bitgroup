@@ -301,7 +301,9 @@ class Connection(asynchat.async_chat, Client):
 	"""
 	def httpNewGroup(self, data):
 		self.ctype = mimetypes.guess_type('x.json')[0]
-		return json.dumps(app.newGroup(json.loads(data)['name']));
+		data = json.loads(data);
+		app.log("Creating new group \"" + data['name'] + "\"");
+		return json.dumps(app.newGroup(data['name']));
 
 	"""
 	Check whether the HTTP request is authenticated

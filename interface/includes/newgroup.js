@@ -33,7 +33,7 @@ NewGroup.prototype.render = function() {
 		$.ajax({
 			type: 'POST',
 			url: '/_newgroup.json',
-			data: JSON.stringify({name:$('#groupname').val()}), 
+			data: $.toJSON({'name':$('#groupname').val()}), 
 			contentType: "application/json; charset=utf-8",
 			dataType: 'json',
 			success: function(data) {
