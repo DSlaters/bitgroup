@@ -189,8 +189,6 @@ template = {
 	'settings.tags': [],
 	'settings.skin': 'default',
 
-	'members': [],
-
 	'Contact.type': 'Node',
 	'Contact.views': ['Properties'],
 	'Contact.template': True,

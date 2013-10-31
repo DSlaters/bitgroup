@@ -1,5 +1,4 @@
-import os
-import json
+import os, json, string
 from message import *
 
 class Node:
@@ -35,23 +34,27 @@ class Node:
 	Set a property in this nodes data structure
 	"""
 	def setData(self, zone, key, val, ts = None, client = ''):
-		if ts == None: ts = app.timestamp()
+		if ts is None: ts = app.timestamp()
 		path = key.split('.')
 		leaf = path.pop()
 
 		# Load the data if the cache is uninitialised
-		if self.data == None: self.load()
+		if self.data is None: self.load()
 
 		# Split key path and walk data path to set value, create non-existent items
 		j = self.data
 		for i in path:
-			if type(j) == dict and i in j: j = j[i]
+			if type(j) is dict and i in j: j = j[i]
 			else:
-				if not type(j) == dict:
+				if not type(j) is dict:
 					app.log("Failed to set " + key + " as a value already exists at path element '" + i + "'")
 					return None
 				j[i] = {}
 				j = j[i]
+
+		if not type(j) is dict:
+			app.log("Failed to set " + key + " as a value already exists at path element '" + i + "'")
+			return None
 
 		# If the value already exists get the current value and timestamp and store only if more recent
 		if leaf in j:

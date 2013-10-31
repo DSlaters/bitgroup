@@ -38,7 +38,7 @@ class App:
 
 	server       = None    # Singleton instance of the server for communicating with interface clients and peers
 	user         = None    # Singleton instance of the user
-	groups       = []      # Instances of groups the user belongs to
+	groups       = {}      # Instances of groups the user belongs to
 	maxage       = 600000  # Expiry time of queue items in milliseconds
 	i18n         = {}      # i18n interface messages loaded from interface/i18n.json
 	stateAge     = 0       # Last time the dynamic application state data was updated
@@ -119,12 +119,12 @@ class App:
 				self.ip = self.getExternalIP()
 				if self.ip:
 					for g in app.groups:
-						Presence(g).send()
+						Presence(app.groups[g]).send()
 			
 			# TODO: Send outgoing queued changes messages every 10 minutes (or 10 seconds if in dev mode)
 			if app.dev or now - ts > 595000:
 				for g in app.groups:
-					g.sendChanges()
+					app.groups[g].sendChanges()
 
 			time.sleep(10)
 
