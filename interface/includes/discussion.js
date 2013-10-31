@@ -10,9 +10,9 @@ function Discussion() {
 /**
  * Render the content into the #content div
  */
-Discussion.prototype.render = function(app) {
+Discussion.prototype.render = function() {
 };
 
 // Create a singleton instance of our new view in the app's available views list
-window.app.views.push( new Discussion() );
+app.views.push( new Discussion() );
 

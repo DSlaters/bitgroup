@@ -358,10 +358,29 @@ App.prototype.viewChange = function() {
 App.prototype.wsConnect = function() {
 	if(this.ws) return;
 	this.ws = new WebSocket('ws://localhost:' + window.location.port + '/' + this.id);
-	this.ws.onopen = function(e) { app.wsConnected = true; console.log('WebSocket opened'); };
+	this.ws.onopen = this.wsOpen;
 	this.ws.onclose = this.wsClose;
 	this.ws.onmessage = this.wsData;
-	this.ws.onerror = function(e) { console.log('WebSocket Error: ' + $.getJSON(e)); };
+	this.ws.onerror = function(e) { console.log('WebSocket Error: ' + $.toJSON(e)); };
+};
+
+/**
+ * The WbeSocket has successfully opened
+ */
+App.prototype.wsOpen = function(e) {
+	console.log('WebSocket opened');
+	app.wsConnected = true;
+	app.setData(LOCAL, 'bg', CONNECTED);
+};
+
+/**
+ * Close the WebSocket connection
+ */
+App.prototype.wsClose = function() {
+	console.log('WebSocket closed');
+	app.wsConnected = false;
+	app.setData(LOCAL, 'bg', NOTCONNECTED);
+	app.ws = false;
 };
 
 /**
@@ -369,23 +388,14 @@ App.prototype.wsConnect = function() {
  */
 App.prototype.wsSend = function(changes) {
 	console.info("Sending changes through WebSocket");
-	this.ws.send($.getJSON(changes));
+	this.ws.send($.toJSON(changes));
 }
 
 /**
  * Receive data from a WebSocket connection
  */
 App.prototype.wsData = function(e) {
-	app.log($.getJSON(e));
-};
-
-/**
- * Close the WebSocket connection
- */
-App.prototype.wsClose = function() {
-	app.wsConnected = false;
-	app.ws = false;
-	console.log('WebSocket closed');
+	app.log($.toJSON(e));
 };
 
 /**
@@ -426,7 +436,7 @@ App.prototype.swfConnect = function() {
  */
 App.prototype.swfSend = function(changes) {
 	console.info("Sending changes through XmlSocket" );
-	this.swfGetObject().send($.getJSON(changes));
+	this.swfGetObject().send($.toJSON(changes));
 };
 
 /**
@@ -434,7 +444,7 @@ App.prototype.swfSend = function(changes) {
  */
 App.prototype.swfData = function(data) {
 	this.swfConnected = true;
-	this.setState('swf', CONNECTED);
+	this.setData(LOCAL, 'bg', CONNECTED);
 	if(data) {
 		console.info("Data received from SWF: " + data);
 		data = $.parseJSON(data);
@@ -448,8 +458,9 @@ App.prototype.swfData = function(data) {
  */
 App.prototype.getData = function(key, all) {
 	var val = this.data;
-	for(var i in key.split('.')) {
-		if(i in val) val = val[i];
+	var path = key.split('.');
+	for(var i in path) {
+		if(path[i] in val) val = val[path[i]];
 		else {
 			console.warn('value "' + key + '" doesn\'t exist');
 			return all === true ? [undefined, 0, LOCAL] : undefined;
@@ -473,7 +484,7 @@ App.prototype.setData = function(zone, key, val, ts) {
 	oldval = oldval[0]
 
 	// Bail now if the value hasn't changed
-	if($.getJSON(oldval) == $.getJSON(val)) return false;
+	if($.toJSON(oldval) == $.toJSON(val)) return false;
 
 	// Bail if the new data is older than the current data
 	if(ts === undefined) ts = this.timestamp();
@@ -491,8 +502,8 @@ App.prototype.setData = function(zone, key, val, ts) {
 	var leaf = path.pop();
 	if(path.length > 0) {
 		for(var i in path) {
-			if(!i in elem) elem[i] = {};
-			elem = elem[i];
+			if(!path[i] in elem) elem[path[i]] = {};
+			elem = elem[path[i]];
 		}
 	}
 
@@ -518,8 +529,10 @@ App.prototype.setData = function(zone, key, val, ts) {
 		}
 	}
 
-	var action = send ? (app.swfConnected ? ' - sent' : ' - queued') : '';
+	// Log the change
+	var zone = LOCAL ? '' : (app.swfConnected ? ' - sent' : ' - queued');
 	console.info(key + ' changed from "' + oldval + '" to "' + val[0] + '" (@' + ts + ')' + action);
+
 	return true;
 };
 
@@ -758,6 +771,25 @@ App.prototype.componentConnect = function(key, element) {
 		});
 	}
 };
+
+/**
+ * Add $.toJSON
+ */
+(function($){ 
+	$.toJSON = function (vContent) {
+		if(vContent instanceof Object) {
+			var sOutput = "";
+			if(vContent.constructor === Array) {
+				for(var nId = 0; nId < vContent.length; sOutput += $.toJSON(vContent[nId]) + ",", nId++);
+				return "[" + sOutput.substr(0, sOutput.length - 1) + "]";
+			}
+			if(vContent.toString !== Object.prototype.toString) { return "\"" + vContent.toString().replace(/"/g, "\\$&") + "\""; }
+			for(var sProp in vContent) { sOutput += "\"" + sProp.replace(/"/g, "\\$&") + "\":" + $.toJSON(vContent[sProp]) + ","; }
+			return "{" + sOutput.substr(0, sOutput.length - 1) + "}";
+		}
+		return typeof vContent === "string" ? "\"" + vContent.replace(/"/g, "\\$&") + "\"" : String(vContent);
+	};
+})(jQuery);
 
 /**
  * Add ucfirst method to strings

@@ -10,32 +10,22 @@ function Overview() {
 /**
  * Render the content into the #content div
  */
-Overview.prototype.render = function(app) {
+Overview.prototype.render = function() {
 	var content = '';
 	var data = false;
 
-	// A group is selected
-	if(app.group) {
-
-		// A node in the group is selected
-		if(app.node) {
-			if(app.node in app.data) {
-				content += '<h3>' + app.msg('node').ucfirst() + ' "' + app.node + '" [' + app.group + ']</h3>\n';
-				data = app.data[app.node];
-			} else content += '<h3>' + app.msg('node-notfound', app.node) + '</h3>\n';
-		}
-
-		// No node is selected
-		else {
-			content += '<h3>' + app.msg('group').ucfirst() + ' "' + app.user.groups[app.group] + '"</h3>\n';
-			data = app.data;
-		}
+	// A node in the group is selected
+	if(app.node) {
+		if(app.node in app.data) {
+			content += '<h3>' + app.msg('node').ucfirst() + ' "' + app.node + '" [' + app.group + ']</h3>\n';
+			data = app.data[app.node];
+		} else content += '<h3>' + app.msg('node-notfound', app.node) + '</h3>\n';
 	}
 
-	// No group is selected
+	// No node is selected
 	else {
-		content += '<h3>' + app.msg('user-info') + '</h3>\n'
-		data = app.user;
+		content += '<h3>' + app.msg('group').ucfirst() + ' "' + app.user.groups[app.group] + '"</h3>\n';
+		data = app.data;
 	}
 
 	// Render the data
@@ -84,5 +74,5 @@ Overview.prototype.render = function(app) {
 };
 
 // Create a singleton instance of our new view in the app's available views list
-window.app.views.push( new Overview() );
+app.views.push( new Overview() );
 

@@ -10,7 +10,7 @@ function NewGroup() {
 /**
  * Render the content into the #content div
  */
-NewGroup.prototype.render = function(app) {
+NewGroup.prototype.render = function() {
 
 	// render the group crreation form
 	var info = app.notify(app.msg('newgroup-info'),'info');
@@ -58,7 +58,7 @@ NewGroup.prototype.render = function(app) {
 
 	// If the Bitgroup or Bitmessage daemon are both running, render the form
 	var showHide = function() {
-		if(app.state.bm == 'Connected' && app.state.bg == 'Connected') {
+		if(app.getData('bm') == CONNECTED && app.getData('bg') == CONNECTED) {
 			$('#content').show();
 			$('.noservice').hide();
 		} else {
@@ -78,5 +78,5 @@ NewGroup.prototype.render = function(app) {
 };
 
 // Create a singleton instance of our new view in the app's available views list
-window.app.views.push( new NewGroup() );
+app.views.push( new NewGroup() );
 
