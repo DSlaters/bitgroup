@@ -284,7 +284,7 @@ class Connection(asynchat.async_chat, Client):
 			else:
 
 				# Register client
-				app.log("Client \"" + client + "\" is registered, waiting for XmlSocket or WebSocket connection")
+				app.log("Client \"" + client + "\" is registered to \"" + self.group.name + "\", waiting for XmlSocket or WebSocket connection")
 				clients[client] = Client()
 				clients[client].group = self.group
 				clients[client].role = INTERFACE

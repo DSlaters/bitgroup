@@ -43,39 +43,37 @@ function App() {
 
 		// Register this interface client with the daemon - this returns the group data structure
 		$.ajax({
-			url: '/_register',
-			headers: { 'X-Bitgroup-ID': window.app.id },
+			url: (app.group ? '/' + app.group : '') + '/_register',
+			headers: { 'X-Bitgroup-ID': app.id },
 			dataType: "json",
-			context: window.app,
 			success: function(data) {
 
 				// Store the data received
-				this.data = data;
+				console.log('data loading: ' + $.toJSON(data));
+				app.data = data;
 
 				// Load the i18n messages
 				$.ajax({
 					url: '/i18n.json',
 					dataType: "json",
-					context: this,
 					success: function(i18n) {
 
 						// Store the i18n messages
 						window.i18n = i18n;
 
 						// Load the extensions, then run the app after the last one has loaded (or failed to load)
-						this.curExt = 0;
+						app.curExt = 0;
 						var runAppIfLast = function() {
-							var app = window.app;
 							if(++app.curExt == app.ext.length) {
 								console.info("No more extensions, calling app.run()");
 								app.run();
 							}
 						};
-						for(var i in this.ext) {
+						for(var i in app.ext) {
 							$.ajax({
-								url: this.ext[i],
+								url: app.ext[i],
 								dataType: "script",
-								context: this.ext[i],
+								context: app.ext[i],
 								success: function() {
 									console.info("Extension \"" + this + "\" loaded");
 									runAppIfLast();
