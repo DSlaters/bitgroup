@@ -19,7 +19,7 @@ class Group(Node, object):
 	def __new__(self, group, passwd = None):
 		if re.match('BM-', group) and passwd is None:
 			for g in app.groups:
-				if g.prvaddr == group: return g
+				if app.groups[g].prvaddr == group: return app.groups[g]
 		return object.__new__(self, group, passwd)
 
 	"""
@@ -58,7 +58,6 @@ class Group(Node, object):
 			app.api.addSubscription(self.addr, app.msg('public-addr', self.name))
 
 			# Update the config file with the private address and password (all thats needed to be a member)
-			app.log(self.passwd + ' = ' + self.prvaddr)
 			app.updateConfig('groups', self.passwd, self.prvaddr)
 
 			# Initialise the group's data from the template

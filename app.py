@@ -147,7 +147,7 @@ class App:
 			self.log("initialising group: " + prvaddr)
 			group = Group(prvaddr, passwd)
 			if group.name:
-				self.groups.append(group)
+				self.groups[prvaddr] = group
 				self.log("    \"" + group.name + "\" initialised successfully")
 			else: self.log("    initialisation failed")
 				
