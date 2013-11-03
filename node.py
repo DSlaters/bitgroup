@@ -12,6 +12,16 @@ class Node:
 	lastSend = None   # Last time this group's changes were broadcast to the members
 
 	"""
+	TODO: Get a list of keys in the data within the given path and zone
+	"""
+	def getKeys(self, path = None, zone = None):
+		
+		# Load the data if the cache is uninitialised
+		if self.data == None: self.load()
+
+
+
+	"""
 	Get a property in this nodes data structure (with timestamp and zone info if 'all' set)
 	"""
 	def getData(self, key, all = False):
@@ -126,7 +136,16 @@ class Node:
 	"""
 	def json(self):
 		if self.data == None: self.load()
-		return json.dumps(self.data)
+		data = self.data
+
+		# We need to include the state data if this is not the user (TODO: use self.keys when done)
+		if not self.isUser:
+			for k in app.user.data:
+				i = app.user.data[k]
+				if len(i) == 3 and i[2] == STATE:
+					data[k] = i
+
+		return json.dumps(data)
 
 	"""
 	Return a list of changes since a specified time and, (if a client is specified) that did not originate from that client
