@@ -45,7 +45,10 @@ class Server(asyncore.dispatcher):
 		for k in app.server.clients.keys():
 			client = app.server.clients[k]
 			if client.role is INTERFACE and (client.group is group or group is None) and k != excl:
-				client.push(json.dumps(change) + '\0')
+				data = json.dumps([change])
+				if client.proto is WEBSOCKET: client.wsSend(data)
+				elif client.proto is XMLSOCKET: client.swfSend(data)
+				else: app.log("Unknown INTERFACE protocol")
 
 	"""
 	Push a change to peer connections
@@ -117,6 +120,7 @@ class Connection(asynchat.async_chat, Client):
 	"""
 	server = None  # Gives the connection handler access to the server properties such as the client data array
 	client = None  # Client ID for persistent connections
+	proto  = None  # XMLSOCKET ot WEBSOCKET for persistent connections
 	sock   = None
 	data   = ""    # Data accumulates here until a complete message has arrived
 
@@ -149,12 +153,19 @@ class Connection(asynchat.async_chat, Client):
 	def collect_incoming_data(self, data):
 		self.data += data
 
+		# Check if it's data on an already established WebSocket connection
+		if self.proto is WEBSOCKET:
+			self.wsData(self.data)
+			self.data = ""
+			return
+
 		# Check if the data is a WebSocket connection request
 		match = re.match('GET /(.+?) HTTP/1.1.+Sec-WebSocket-Key: (.+?)\s', self.data, re.S)
 		if match:
 			client = match.group(1)
 			key = match.group(2)
 			self.wsAcceptConnection(client, group, key)
+			self.data = ""
 			return
 
 		# If the data starts with < and contains a zero byte, then it's a message from on an interface XmlSocket
@@ -207,6 +218,9 @@ class Connection(asynchat.async_chat, Client):
 
 			# If we have a complete HTTP message, process it
 			if msg: self.httpProcessMessage(msg)
+			return
+
+		app.log("Unintelligable message: " + data)
 
 	"""
 	Process a completed HTTP message (including header and digest authentication) from a JavaScript client
@@ -487,7 +501,7 @@ class Connection(asynchat.async_chat, Client):
 		self.group = clients[client].group
 		clients[client] = self
 		self.role = INTERFACE
-		self.protocol = XMLSOCKET
+		self.proto = XMLSOCKET
 		self.client = client
 		app.log("XmlSocket connected for client \"" + client + "\" in group \"" + self.group.name + "\"")
 
@@ -497,6 +511,12 @@ class Connection(asynchat.async_chat, Client):
 	def swfData(self, data):
 		app.log("Changes received from XmlSocket \"" + self.client + "\"")
 		for item in data: self.group.setData(item[0], item[1], item[2], item[3], k)
+
+	"""
+	Send changes to an XmlSocket
+	"""
+	def swfSend(seld, data):
+		self.push(data + '\0')
 
 	"""
 	TODO: Process a completed JSON message from a peer
@@ -586,14 +606,58 @@ class Connection(asynchat.async_chat, Client):
 		self.group = clients[client].group
 		clients[client] = self
 		self.role = INTERFACE
-		self.protocol = WEBSOCKET
+		self.proto = WEBSOCKET
 		self.client = client
 		app.log("WebSocket connected for client \"" + client + "\" in group \"" + self.group.name + "\"")
 
 	"""
-	Data received fron a WebSocket connection
+	Data received from a WebSocket connection
 	"""
 	def wsData(self, data):
-		data = json.loads(data);
-		for item in data: self.group.setData(item[0], item[1], item[2], item[3], k)
 		app.log("Changes received from WebSocket \"" + self.client + "\"")
+
+		# Decode the data
+		byteArray = [ord(character) for character in data]
+		datalength = byteArray[1] & 127
+		indexFirstMask = 2 
+		if datalength == 126: indexFirstMask = 4
+		elif datalength == 127: indexFirstMask = 10
+		masks = byteArray[indexFirstMask:indexFirstMask + 4]
+		decoded = ''
+		i = indexFirstMask + 4
+		j = 0
+		while i < len(byteArray):
+			decoded += chr(byteArray[i] ^ masks[j % 4])
+			i += 1
+			j += 1
+		app.log("WebSocket message decoded: " + decoded)
+
+		# Process the message
+		data = json.loads(decoded);
+		for item in data: self.group.setData(item[0], item[1], item[2], item[3])
+
+	"""
+	Send changes to a WebSocket connection
+	"""
+	def wsSend(self, bytesRaw):
+		bytesFormatted = []
+		bytesFormatted.append(struct.pack('B', 129))
+		if len(bytesRaw) <= 125:
+			bytesFormatted.append(struct.pack('B', len(bytesRaw)))
+		elif len(bytesRaw) >= 126 and len(bytesRaw) <= 65535:
+			bytesFormatted.append(struct.pack('B', 126));
+			bytesFormatted.append(struct.pack('B', ( len(bytesRaw) >> 8 ) & 255));
+			bytesFormatted.append(struct.pack('B', ( len(bytesRaw)      ) & 255));
+		else:
+			bytesFormatted.append(struct.pack('B', 127));
+			bytesFormatted.append(struct.pack('B', ( len(bytesRaw) >> 56 ) & 255));
+			bytesFormatted.append(struct.pack('B', ( len(bytesRaw) >> 48 ) & 255));
+			bytesFormatted.append(struct.pack('B', (len( bytesRaw) >> 40 ) & 255));
+			bytesFormatted.append(struct.pack('B', (len( bytesRaw) >> 32 ) & 255));
+			bytesFormatted.append(struct.pack('B', (len( bytesRaw) >> 24 ) & 255));
+			bytesFormatted.append(struct.pack('B', (len( bytesRaw) >> 16 ) & 255));
+			bytesFormatted.append(struct.pack('B', ( len(bytesRaw) >>  8 ) & 255));
+			bytesFormatted.append(struct.pack('B', ( len(bytesRaw)       ) & 255));
+		for i in range(len(bytesRaw)):
+			bytesFormatted.append(struct.pack('B', ord(bytesRaw[i])))
+		self.push(b''.join(bytesFormatted));

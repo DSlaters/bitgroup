@@ -356,6 +356,7 @@ App.prototype.viewChange = function() {
 App.prototype.wsConnect = function() {
 	if(this.ws) return;
 	this.ws = new WebSocket('ws://localhost:' + window.location.port + '/' + this.id);
+	//this.ws.BinaryType = 'byteArray';
 	this.ws.onopen = this.wsOpen;
 	this.ws.onclose = this.wsClose;
 	this.ws.onmessage = this.wsData;
@@ -393,7 +394,7 @@ App.prototype.wsSend = function(changes) {
  * Receive data from a WebSocket connection
  */
 App.prototype.wsData = function(e) {
-	app.log($.toJSON(e));
+	console.info("Changes received via WebSocket: " + $.toJSON(e));
 };
 
 /**
@@ -512,12 +513,12 @@ App.prototype.setData = function(zone, key, val, ts) {
 	var action = '';
 	if(zone != LOCAL) {
 		if(app.wsConnected) {
-			this.wsSend([zone, key, val[0], val[1]]);
+			this.wsSend([[zone, key, val[0], val[1]]]);
 			action = ' - WebSocket';
 		}
 
 		else if(app.swfConnected) {
-			this.swfSend([zone, key, val[0], val[1]]);
+			this.swfSend([[zone, key, val[0], val[1]]]);
 			action = ' - XmlSocket';
 		}
 
