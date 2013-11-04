@@ -614,8 +614,7 @@ class Connection(asynchat.async_chat, Client):
 	Data received from a WebSocket connection
 	"""
 	def wsData(self, data):
-		app.log("Changes received from WebSocket \"" + self.client + "\"")
-
+	
 		# Decode the data
 		byteArray = [ord(character) for character in data]
 		datalength = byteArray[1] & 127
@@ -630,9 +629,14 @@ class Connection(asynchat.async_chat, Client):
 			decoded += chr(byteArray[i] ^ masks[j % 4])
 			i += 1
 			j += 1
-		app.log("WebSocket message decoded: " + decoded)
+
+		# TODO: Needs fixing - when clients refresh, the connection sends an 8 byte message that decodes to 2,233
+		if len(decoded) < 3:
+			app.log("WebSocket message from \"" + self.client + "\" ignored: too short")
+			return
 
 		# Process the message
+		app.log("Changes received over WebSocket from client \"" + self.client + "\": " + decoded)
 		data = json.loads(decoded);
 		for item in data: self.group.setData(item[0], item[1], item[2], item[3])
 
