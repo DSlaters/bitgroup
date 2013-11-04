@@ -38,14 +38,13 @@ class Server(asyncore.dispatcher):
 	"""
 	Push a change to interface connections
 	"""
-	def pushInterfaceChange(self, group, zone, key, val, ts, excl = -1):
-		change = [zone, key, val, ts]
-		if group: app.log("Broadcasting change to INTERFACE clients in group \"" + group.name + "\": " + str(change))
-		else: app.log("Broadcasting STATE change to INTERFACE clients in all groups: " + str(change))
+	def pushInterfaceChanges(self, group, changes, excl = -1):
+		if group: app.log("Broadcasting changes to INTERFACE clients in group \"" + group.name + "\"")
+		else: app.log("Broadcasting STATE changes to INTERFACE clients in all groups")
 		for k in app.server.clients.keys():
 			client = app.server.clients[k]
 			if client.role is INTERFACE and (client.group is group or group is None) and k != excl:
-				data = json.dumps([change])
+				data = json.dumps(changes)
 				if client.proto is WEBSOCKET: client.wsSend(data)
 				elif client.proto is XMLSOCKET: client.swfSend(data)
 				else: app.log("Unknown INTERFACE protocol")
@@ -53,13 +52,12 @@ class Server(asyncore.dispatcher):
 	"""
 	Push a change to peer connections
 	"""
-	def pushPeerChange(self, group, key, val, ts, excl = -1):
-		change = [key, val, ts]
-		app.log("Broadcasting change to PEER clients in group \"" + group.name + "\": " + str(change))
+	def pushPeerChanges(self, group, changes, excl = -1):
+		app.log("Broadcasting changes to PEER clients in group \"" + group.name + "\"")
 		for k in app.server.clients.keys():
 			client = app.server.clients[k]
 			if client.role is PEER and client.group is group and k != excl:
-				client.peerSendMessage(CHANGES, [change])
+				client.peerSendMessage(CHANGES, changes)
 
 	"""
 	TODO: OBSOLETE - this should be handled by the normal changes propagation
@@ -510,7 +508,7 @@ class Connection(asynchat.async_chat, Client):
 	"""
 	def swfData(self, data):
 		app.log("Changes received from XmlSocket \"" + self.client + "\"")
-		for item in data: self.group.setData(item[0], item[1], item[2], item[3], k)
+		for item in data: self.group.setData(item[0], item[1], item[2], item[3], self.client)
 
 	"""
 	Send changes to an XmlSocket
@@ -638,7 +636,7 @@ class Connection(asynchat.async_chat, Client):
 		# Process the message
 		app.log("Changes received over WebSocket from client \"" + self.client + "\": " + decoded)
 		data = json.loads(decoded);
-		for item in data: self.group.setData(item[0], item[1], item[2], item[3])
+		for item in data: self.group.setData(item[0], item[1], item[2], item[3], self.client)
 
 	"""
 	Send changes to a WebSocket connection
