@@ -113,7 +113,9 @@ class Message(object):
 				msg = messages['inboxMessages'][msgID]
 				msg['receivedTime'] = int(time.time())
 				app.api.trashMessage(msg['msgid'])
-				mailbox.append(Message(msg))
+				msg = Message(msg)
+				if msg: mailbox.append(msg)
+				else: app.log('Message is invalid, ignoring')
 		else: app.log("Not getting messages, Bitmessage not running")
 		return mailbox
 

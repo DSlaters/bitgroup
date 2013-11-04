@@ -84,9 +84,7 @@ class fakeBitmessage:
 			if not 'inboxMessages' in messages[toAddr]: messages[toAddr]['inboxMessages'] = {}
 			msgID = len(messages[toAddr])
 			messages[toAddr]['inboxMessages'][msgID] = message
-		h = open(self.mfile, "w")
-		h.write(json.dumps(messages));
-		h.close()
+		self.saveMessages(messages)
 		self.lock(False)
 
 	"""
@@ -134,6 +132,14 @@ class fakeBitmessage:
 		return messages
 
 	"""
+	Save the user's messages to the shared dev user's mail file
+	"""
+	def saveMessages(self, messages):
+		h = open(self.mfile, "w")
+		h.write(json.dumps(messages));
+		h.close()
+
+	"""
 	The following methods are all replicas of the Bitmessage API methods
 	"""
 	def addSubscription(self, addr, label = None):
@@ -176,5 +182,6 @@ class fakeBitmessage:
 			if messages[app.user.addr]['inboxMessages'][msgID]['msgid'] == msgRef:
 				del messages[app.user.addr]['inboxMessages'][msgID]
 				app.log("Message \"" + msgRef + "\" deleted")
+				self.saveMessages(messages)
 		self.lock(False)
 		
