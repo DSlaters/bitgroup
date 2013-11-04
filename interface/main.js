@@ -394,7 +394,13 @@ App.prototype.wsSend = function(changes) {
  * Receive data from a WebSocket connection
  */
 App.prototype.wsData = function(e) {
-	console.info("Changes received via WebSocket: " + $.toJSON(e));
+	app.setData(LOCAL, 'bg', CONNECTED);
+	data = $.parseJSON(e.data);
+	console.info("Changes received over WebSocket: " + e.data);
+	for(var i in data) {
+		i = data[i];
+		app.setData(i[0], i[1], i[2], i[3]);
+	}
 };
 
 /**
@@ -445,9 +451,12 @@ App.prototype.swfData = function(data) {
 	this.swfConnected = true;
 	this.setData(LOCAL, 'bg', CONNECTED);
 	if(data) {
-		console.info("Data received from SWF: " + data);
+		console.info("Changes received over XmlSocket: " + data);
 		data = $.parseJSON(data);
-		for(var item in data) this.setData(data[0], data[1], data[2], data[3]);
+		for(var i in data) {
+			i = data[i];
+			app.setData(i[0], i[1], i[2], i[3]);
+		}
 	}
 };
 
@@ -483,7 +492,10 @@ App.prototype.setData = function(zone, key, val, ts) {
 	oldval = oldval[0]
 
 	// Bail now if the value hasn't changed
-	if($.toJSON(oldval) == $.toJSON(val)) return false;
+	if($.toJSON(oldval) == $.toJSON(val)) {
+		console.info('The local version of ' + key + ' hasn\'t changed');
+		return false;
+	}
 
 	// Bail if the new data is older than the current data
 	if(ts === undefined) ts = this.timestamp();
@@ -514,23 +526,22 @@ App.prototype.setData = function(zone, key, val, ts) {
 	if(zone != LOCAL) {
 		if(app.wsConnected) {
 			this.wsSend([[zone, key, val[0], val[1]]]);
-			action = ' - WebSocket';
+			action = ',WebSocket';
 		}
 
 		else if(app.swfConnected) {
 			this.swfSend([[zone, key, val[0], val[1]]]);
-			action = ' - XmlSocket';
+			action = ',XmlSocket';
 		}
 
 		else {
 			this.queue[key] = [zone, val[0], val[1]];
-			action = ' - Queued';
+			action = ',Queued';
 		}
 	}
 
 	// Log the change
-	var zone = LOCAL ? '' : (app.swfConnected ? ' - sent' : ' - queued');
-	console.info(key + ' changed from "' + oldval + '" to "' + val[0] + '" (@' + ts + ')' + action);
+	console.info(key + ' changed from "' + oldval + '" to "' + val[0] + '" (@' + ts + action + ')');
 
 	return true;
 };

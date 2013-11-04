@@ -38,8 +38,8 @@ class Server(asyncore.dispatcher):
 	"""
 	Push a change to interface connections
 	"""
-	def pushInterfaceChange(self, group, key, val, ts, excl = -1):
-		change = [key, val, ts]
+	def pushInterfaceChange(self, group, zone, key, val, ts, excl = -1):
+		change = [zone, key, val, ts]
 		if group: app.log("Broadcasting change to INTERFACE clients in group \"" + group.name + "\": " + str(change))
 		else: app.log("Broadcasting STATE change to INTERFACE clients in all groups: " + str(change))
 		for k in app.server.clients.keys():

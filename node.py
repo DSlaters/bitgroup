@@ -77,7 +77,7 @@ class Node:
 
 			# Update the local cache, and interface clients unconditionally (if zone is STATE, send to interfaces in any group)
 			j[leaf] = [val, ts, zone]
-			app.server.pushInterfaceChange(None if zone is STATE else self, key, val, ts, client)
+			app.server.pushInterfaceChange(None if zone is STATE else self, zone, key, val, ts, client)
 
 			# Queue the change for periodic sending unless its specific to online peers
 			# - we include interface-only data because the interface may be Ajax-only,
