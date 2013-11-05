@@ -89,7 +89,6 @@ function App() {
 			}
 		});
 	});
-
 };
 
 /**
@@ -296,13 +295,10 @@ App.prototype.renderViewsMenu = function() {
 	if(this.node && this.node in this.data && 'views' in this.data[this.node])
 		views = views.concat(this.data[this.node].views[0]);
 
-	// If no group is selected, add the new group node
-	if(this.group == '') {
-		for(var j = 0; j < this.views.length; j++) {
-			if(this.views[j].constructor.name == 'NewGroup')
-				views.push(this.views[j].constructor.name);
-		}
-	}
+	// Allow extensions to modify the views
+	var args = { views: views };
+	$.event.trigger({type: "bgRenderViews", args: args});
+	views = args.views;
 
 	// Render the views menu
 	for(var i = 0; i < views.length; i++) {

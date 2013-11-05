@@ -24,7 +24,8 @@ Overview.prototype.render = function() {
 
 	// No node is selected
 	else {
-		content += '<h3>' + app.msg('group').ucfirst() + ' "' + app.user.groups[app.group] + '"</h3>\n';
+		var heading = app.group ? app.msg('group').ucfirst() + ' "' + app.user.groups[app.group] + '"' : app.user.name;
+		content += '<h3>' + heading + '</h3>\n';
 		data = app.data;
 	}
 

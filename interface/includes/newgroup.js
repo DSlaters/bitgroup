@@ -3,8 +3,15 @@
  */
 function NewGroup() {
 
-	// do any initialisation of the view here such as loading dependencies etc
-
+	// Add the NewGroup view to the menu if no group is selected
+	$(document).on( "bgRenderViews", function(event) {
+		if(app.group == false) {
+			for(var j = 0; j < app.views.length; j++) {
+				if(app.views[j].constructor.name == 'NewGroup')
+					event.args.views.push(app.views[j].constructor.name);
+			}
+		}
+	});
 }
 
 /**

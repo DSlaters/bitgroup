@@ -375,7 +375,7 @@ class Connection(asynchat.async_chat, Client):
 	def httpDefaultDocument(self):
 		tmp = {
 			'group': False if self.group.isUser else self.group.prvaddr,
-			'user': {'lang': app.user.lang, 'groups': {}},
+			'user': {'lang': app.user.lang, 'groups': {}, 'name': app.user.name},
 			'const': constants,
 			'ext': self.getExtensions()
 		}
