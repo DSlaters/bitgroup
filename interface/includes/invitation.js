@@ -13,7 +13,10 @@ function Invitation() {
  * Render the content into the #content div
  */
 Invitation.prototype.render = function() {
-	$('#content').html('todo...');
+	var info = app.notify(app.msg('invitation-info', app.group.name), 'info');
+	var form = '<div class="form"><p><label for="recipient">' + app.msg('invitation-recipient').ucfirst() + '</label></p><p><input type="text" id="recipient" />'
+		+ '<input type="button" id="invitation" value="' + app.msg('invite').ucfirst() + '" /></p></div>';
+	$('#content').html(info + form);
 };
 
 // Create a singleton instance of our new view in the app's available views list

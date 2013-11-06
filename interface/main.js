@@ -276,7 +276,7 @@ App.prototype.renderGroupsList = function() {
 App.prototype.pageTitle = function() {
 	$('#page-title a').html(this.group ? this.user.groups[this.group] : this.msg('user-page'));
 	var view = this.view.constructor.name;
-	var msg = 'title-' + view.toLowerCase();
+	var msg = view.toLowerCase() + '-title';
 	$('#sub-title').html(this.msgExists(msg) ? this.msg(msg, this.node) : this.node);
 };
 

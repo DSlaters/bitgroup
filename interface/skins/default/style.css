@@ -174,8 +174,9 @@ div.form {
 	clear: both;
 }
 div.form input { margin-right: 5px; }
+div.form p { text-align: center; margin-bottom: 10px; }
 div.form label { font-weight: bold; }
-
+=
 table {
     border-collapse: collapse;
 }

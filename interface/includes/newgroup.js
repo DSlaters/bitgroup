@@ -16,7 +16,7 @@ NewGroup.prototype.render = function() {
 
 	// render the group crreation form
 	var info = app.notify(app.msg('newgroup-info'),'info');
-	var form = '<div class="form"><label for="groupname">Name: </label><input type="text" id="groupname" />'
+	var form = '<div class="form"><label for="groupname">' + app.msg('name').ucfirst() + ': </label><input type="text" id="groupname" />'
 		+ '<input type="button" id="creategroup" value="' + app.msg('creategroup') + '" /></div>';
 	$('#content').html(info + form);
 
@@ -42,7 +42,7 @@ NewGroup.prototype.render = function() {
 				if('name' in data) {
 
 					// Notify that the new group has been successfully created
-					$('#notify').html(noservice + app.notify(app.msg('groupcreated',data.name, data.addr, '/' + encodeURIComponent(data.prvaddr)),'success groupcreated'));
+					$('#notify').html(noservice + app.notify(app.msg('newgroup-created',data.name, data.addr, '/' + encodeURIComponent(data.prvaddr)),'success groupcreated'));
 
 					// Add the new group to the groups menu
 					app.user.groups[data.prvaddr] = data.name;
