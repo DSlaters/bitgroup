@@ -39,6 +39,9 @@ body {
 	margin: 0;
 	background: #f4f4f4;
 }
+table {
+	border-collapse: collapse;
+}
 
 /*
  * Personal top bar
@@ -176,19 +179,48 @@ div.form {
 div.form input { margin-right: 5px; }
 div.form p { text-align: center; margin-bottom: 10px; }
 div.form label { font-weight: bold; }
-=
-table {
-    border-collapse: collapse;
-}
+
+
 td {
-    background-color: #FFFFFF;
+	background-color: #FFFFFF;
 }
 th {
-    background-color: #F3F3F3;
-    text-align: left;
+	background-color: #F3F3F3;
+	text-align: left;
 }
 table, td, th {
-    border: 1px solid #AAAAAA;
-    padding: 2px 10px;
+	border: 1px solid #AAAAAA;
+	padding: 2px 10px;
 }
 
+/*
+ * Tables
+ */
+#content table {
+	font-size: 12px;
+	font-family: "Lucida Sans Unicode","Lucida Grande",Sans-Serif;
+	border: 2px solid white;
+	background-color: white;
+}
+#content .table-wrapper {
+	display: inline-block;
+	border: 3px solid #ddd;
+}
+#content th {
+	background: url(img/tbl-th.png) repeat-x scroll 0 0 #B9C9FE;
+	color: #039;
+	font-size: 13px;
+	font-weight: normal;
+	padding: 8px;
+	border: 2px solid white;
+}
+#content td {
+	background: url(img/tbl-tr.png) repeat-x scroll 0 0 #E8EDFF;
+	color: #669;
+	padding: 8px;
+	border: 2px solid white;
+}
+#content tr:hover td {
+    background: url(img/tbl-tr-hvr.png) repeat-x scroll 0 0 #D0DAFD;
+    color: #339;
+}

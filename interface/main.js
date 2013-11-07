@@ -223,6 +223,9 @@ App.prototype.renderPage = function() {
 
 		// Call the view's render method to populate the content area
 		this.view.render(this);
+
+		// Add an event here so extensions can modify the completed page
+		$.event.trigger({type: "bgPageRendered"});
 	};
 
 	// Load and run the skin script

@@ -13,3 +13,9 @@ page.html( '<div id="header"><div></div></div>'
 
 // Make the personal links into a menu bar
 $("#personal ul").menu({position: {at: "left bottom"}});
+
+// Surround tables in divs
+$(document).on( "bgPageRendered", function(event) {
+	$("#content table").wrap('<span class="table-wrapper"></span>');
+});
+
