@@ -24,6 +24,7 @@
 		"authfail": "The username or password supplied were incorrect.",
 		"private-addr": "$1 Bitgroup private address",
 		"public-addr": "$1 Bitgroup public address",
+		"noservice": "Both the <i>Bitgroup</i> and <i>Bitmessage</i> daemons must be running to perform this operation.",
 		
 		"status": "Status",
 		"con-status-1": "Not connected",
@@ -48,13 +49,13 @@
 		"view-invitation": "Invite",
 
 		"newgroup-title": "Create a new group",
-		"newgroup-noservice": "Both the <i>Bitgroup</i> and <i>Bitmessage</i> daemons must be running to create a new group.",
 		"newgroup-info": "First enter a name for your new group, then the group's private and public Bitmessage addresses will be created and you will be redirected to the new group's home page to begin adding content and inviting members and subscribers.",
 		"newgroup-created": "<b>Group \"$1\" has been successfully created with public address <i>$2</i>!</b><br />You can now begin creating content for your group and inviting new members and subscribers.<br />Click <a href=\"$3\">here</a> to access your new group!",
 
 		"invitation-title": "Invite another Bitgroup user to join the group",
 		"invitation-info": "Note that the recipient must already be running Bitgroup, if they're not then you must first send a message to them requesting that they install Bitgroup.",
 		"invitation-recipient": "Enter the recipient's Bitmessage address",
+		"invitation-sent": "Your invitation has been sent",
 
 		"node": "node",
 		"node-notfound": "Node \"$1\" not found",

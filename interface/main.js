@@ -135,6 +135,9 @@ App.prototype.locationChange = function() {
  */
 App.prototype.run = function() {
 
+	// Some post-setup variables
+	this.noservice = app.notify(app.msg('noservice'),'error noservice');
+
 	// Register hash changes with our handler
 	$(window).hashchange(function() { window.app.locationChange.call(window.app) });
 
@@ -778,6 +781,19 @@ App.prototype.componentConnect = function(key, element) {
 			var key = element.dataSource;
 			app.setData(DATA, key, val);
 		});
+	}
+};
+
+/**
+ * If the Bitgroup or Bitmessage daemon are both running, show the content, else show the 'noservice' notification
+ */
+App.prototype.needService = function() {
+	if(this.getData('bm') == CONNECTED && this.getData('bg') == CONNECTED) {
+		$('#content').show();
+		$('.noservice').hide();
+	} else {
+		$('#content').hide();
+		$('.noservice').show();
 	}
 };
 
