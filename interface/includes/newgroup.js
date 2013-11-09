@@ -32,7 +32,10 @@ NewGroup.prototype.render = function() {
 		$.ajax({
 			type: 'POST',
 			url: '/_newgroup.json',
-			data: $.toJSON({'name':$('#groupname').val()}), 
+			data: $.toJSON({
+				'id': app.id,
+				'name': $('#groupname').val()
+			}), 
 			contentType: "application/json; charset=utf-8",
 			dataType: 'json',
 			success: function(data) {

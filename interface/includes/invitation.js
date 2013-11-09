@@ -32,7 +32,10 @@ Invitation.prototype.render = function() {
 		$.ajax({
 			type: 'POST',
 			url: '/_invite.json',
-			data: $.toJSON({'recipient':$('#recipient').val()}), 
+			data: $.toJSON({
+				'id': app.id,
+				'recipient':$('#recipient').val()
+			}),
 			contentType: "application/json; charset=utf-8",
 			dataType: 'json',
 			success: function(data) {

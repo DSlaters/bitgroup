@@ -108,19 +108,20 @@ class Client:
 	role   = None  # Whether this is a local interface or remote peer (for persistent connections)
 	group  = None  # The group this connection is associated with (for persistent connections)
 
-	status = None  # HTTP status code returned to client
-	ctype  = None  # HTTP content type returned to client
-	clen   = None  # HTTP content length returned to client
-
 class Connection(asynchat.async_chat, Client):
 	"""
 	Handles incoming data requests for a single connection
 	"""
-	server = None  # Gives the connection handler access to the server properties such as the client data array
-	client = None  # Client ID for persistent connections
-	proto  = None  # XMLSOCKET ot WEBSOCKET for persistent connections
-	sock   = None
-	data   = ""    # Data accumulates here until a complete message has arrived
+	server  = None        # Gives the connection handler access to the server properties such as the client data array
+	client  = None        # Client ID for persistent connections
+	proto   = None        # XMLSOCKET ot WEBSOCKET for persistent connections
+	sock    = None        # The socket object for this connection
+	data    = ""          # Data accumulates here until a complete message has arrived
+
+	status  = '200 OK'    # HTTP status code returned to client
+	content = ''          # HTTP content returned to client
+	clen    = 0           # HTTP content length returned to client
+	ctype   = 'text/html' # HTTP content type returned to client
 
 	"""
 	Set up the connection handler (we use no terminator as we're detecting and removing completed messages manually)
@@ -232,9 +233,6 @@ class Connection(asynchat.async_chat, Client):
 			head = match.group(5)
 			data = match.group(6)
 			docroot = app.docroot
-			self.status = "200 OK"
-			self.ctype = "text/html"
-			self.clen = 0
 
 			# Check if the request is authorised and return auth request if not
 			if not self.httpAuthenticate(head, method): return self.httpSendAuthRequest()
@@ -256,22 +254,22 @@ class Connection(asynchat.async_chat, Client):
 			base = os.path.basename(uri)
 
 			# Serve the main HTML document if its a root request
-			if uri == '/': content = self.httpDefaultDocument()
+			if uri == '/': self.httpDefaultDocument()
 
 			# If this is a client registration request, add it to the server's list of active clients
-			elif base == '_register': content = self.httpRegisterClient(head)
+			elif base == '_register': self.httpRegisterClient(head)
 
 			# If this is a new group creation request call the newgroup method and return the sanitised name
-			elif base == '_newgroup.json': content = self.httpNewGroup(data)
+			elif base == '_newgroup.json': self.httpNewGroup(data)
 
 			# Serve the requested file if it exists and isn't a directory
-			elif os.path.exists(path) and not os.path.isdir(path): content = self.httpGetFile(uri, path)
+			elif os.path.exists(path) and not os.path.isdir(path): self.httpGetFile(uri, path)
 
 			# Return a 404 for everything else
-			else: content = self.httpNotFound(uri)
+			else: self.httpNotFound(uri)
 
 			# Build the HTTP headers and send the content
-			if self.clen == 0: self.clen = len(content)
+			if self.clen == 0: self.clen = len(self.content)
 			header = "HTTP/1.1 " + self.status + "\r\n"
 			header += "Date: " + time.strftime("%a, %d %b %Y %H:%M:%S %Z") + "\r\n"
 			header += "Server: " + app.title + "\r\n"
@@ -279,14 +277,13 @@ class Connection(asynchat.async_chat, Client):
 			header += "Connection: keep-alive\r\n"
 			header += "Content-Length: " + str(self.clen) + "\r\n\r\n"
 			self.push(str(header))
-			self.push(content)
+			self.push(self.content)
 			self.close_when_done()
 
 	"""
 	Register a newly loaded interface client page
 	"""
 	def httpRegisterClient(self, head):
-		content = ''
 		match = re.search(r'X-Bitgroup-ID: (.+?)\s', head, re.S)
 		if match:
 			client = match.group(1)
@@ -303,10 +300,9 @@ class Connection(asynchat.async_chat, Client):
 
 				# Return the group's data
 				self.ctype = mimetypes.guess_type('x.json')[0]
-				content = self.group.json()
+				self.content = self.group.json()
 
 		else: app.log("Client registration attempted, but no identification header found")
-		return content
 
 	"""
 	Client has requested creation of a new group
@@ -315,7 +311,7 @@ class Connection(asynchat.async_chat, Client):
 		self.ctype = mimetypes.guess_type('x.json')[0]
 		data = json.loads(data);
 		app.log("Creating new group \"" + data['name'] + "\"");
-		return json.dumps(app.newGroup(data['name']));
+		self.content = json.dumps(app.newGroup(data['name']));
 
 	"""
 	Check whether the HTTP request is authenticated
@@ -396,7 +392,7 @@ class Connection(asynchat.async_chat, Client):
 		content += self.addScript("/resources/math.uuid.js")
 		content += self.addScript("/main.js")
 		content += "\t</head>\n\t<body></body>\n</html>"
-		return str(content)
+		self.content = str(content)
 
 	def addScript(self, js, inline = False):
 		html = "\t\t<script type=\"text/javascript\""
@@ -433,9 +429,8 @@ class Connection(asynchat.async_chat, Client):
 		self.ctype = mimetypes.guess_type(uri)[0]
 		self.clen = os.path.getsize(path)
 		fh = open(path, "rb")
-		content = fh.read()
+		self.content = fh.read()
 		fh.close()
-		return content
 
 	"""
 	Return a 404 Not Found document
@@ -447,7 +442,7 @@ class Connection(asynchat.async_chat, Client):
 		content += "<body><h1>Not Found</h1>\n"
 		content += "<p>The requested URL " + uri + " was not found on this server.</p>\n"
 		content += "</body></html>"
-		return str(content)
+		self.content = str(content)
 
 	"""
 	Process a completed message from an interface XmlSocket
