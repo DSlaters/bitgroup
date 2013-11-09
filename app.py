@@ -257,6 +257,17 @@ class App:
 		return data
 
 	"""
+	Send a group invitation to a Bitmessage address
+	TODO: need proper reporting on sent status
+	"""
+	def SendInvitation(self, group, addr):
+		msg = Invitation(group, addr)
+		if msg:
+			msg.send()
+			return {'success': True}
+		return {'err': 'Invitation message could not be created'}
+
+	"""
 	Encrypt the passed data using a password
 	"""
 	def encrypt(self, data, passwd):

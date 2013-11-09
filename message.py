@@ -94,6 +94,7 @@ class Message(object):
 				app.log('Broadcasting ' + cls + ' message to '+ self.fromAddr)
 				app.api.sendBroadcast(self.fromAddr, subject, body)
 		else: app.log("Not sending " + (cls) + " message to " + self.group.name + ", Bitmessage not running")
+
 	"""
 	Reply to the messge
 	"""

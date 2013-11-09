@@ -262,6 +262,9 @@ class Connection(asynchat.async_chat, Client):
 			# If this is a new group creation request call the newgroup method and return the sanitised name
 			elif base == '_newgroup.json': self.httpNewGroup(data)
 
+			# If this is a group invitation, send an Invitation message and return success or error
+			elif base == '_invitation.json': self.httpSendInvitation(data)
+
 			# Serve the requested file if it exists and isn't a directory
 			elif os.path.exists(path) and not os.path.isdir(path): self.httpGetFile(uri, path)
 
@@ -308,10 +311,33 @@ class Connection(asynchat.async_chat, Client):
 	Client has requested creation of a new group
 	"""
 	def httpNewGroup(self, data):
-		self.ctype = mimetypes.guess_type('x.json')[0]
 		data = json.loads(data);
-		app.log("Creating new group \"" + data['name'] + "\"");
-		self.content = json.dumps(app.newGroup(data['name']));
+		if self.httpValidate(data):
+			self.ctype = mimetypes.guess_type('x.json')[0]
+			app.log("Creating new group \"" + data['name'] + "\"")
+			self.content = json.dumps(app.newGroup(data['name']))
+
+	"""
+	Client has requested to send a group invitation
+	"""
+	def httpSendInvitation(self, data):
+		data = json.loads(data);
+		if self.httpValidate(data):
+			self.ctype = mimetypes.guess_type('x.json')[0]
+			app.log("Creating new group \"" + data['name'] + "\"")
+			self.content = json.dumps(app.sendInvitation(self.server.clients[data['id']].group, data['recipient']))
+
+	"""
+	Check whether an Ajax request has an ID and it's registered
+	"""
+	def httpValidate(self, data):
+		if not 'id' in data:
+			app.log("Ajax request invalid: data does not contain an ID")
+			return False
+		if not data['id'] in self.server.clients:
+			app.log("Ajax request invalid: ID \"" + data['id'] + "\" is not registered")
+			return False
+		return True
 
 	"""
 	Check whether the HTTP request is authenticated
