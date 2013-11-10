@@ -224,7 +224,7 @@ App.prototype.renderPage = function() {
 		this.componentConnect('sock', sockElem);
 
 		// If the node doesn't exist, report error
-		if(!this.node in this.data || !this.getData(this.node + '.type'))
+		if(this.node && (!this.node in this.data || !this.getData(this.node + '.type')))
 			$("#notify").html(this.notify(app.msg('err-nosuchnode', this.node), 'error'));
 
 		// Call the view's render method to populate the content area
