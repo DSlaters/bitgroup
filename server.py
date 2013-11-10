@@ -256,9 +256,6 @@ class Connection(asynchat.async_chat, Client):
 			# Serve the main HTML document if its a root request
 			if uri == '/': self.httpDefaultDocument()
 
-			# Serve the favicon
-			elif uri == '/favicon.ico': self.httpGetFile(uri, docroot + uri)
-
 			# If this is a client registration request, add it to the server's list of active clients
 			elif base == '_register': self.httpRegisterClient(head)
 
@@ -413,6 +410,7 @@ class Connection(asynchat.async_chat, Client):
 		content += "\t\t<title>" + self.group.name + ' - ' + app.name + "</title>\n"
 		content += "\t\t<meta charset=\"UTF-8\" />\n"
 		content += "\t\t<meta name=\"generator\" content=\"" + app.title + "\" />\n"
+		content += "\t\t<link rel=\"shortcut icon\" href=\"/resources/favicon.ico\" />\n"
 		content += self.addScript("window.tmp = " + json.dumps(tmp) + ";", True)
 		content += self.addScript("/resources/jquery-1.10.2.min.js")
 		content += self.addStyle("/resources/jquery-ui-1.10.3/themes/base/jquery-ui.css")
