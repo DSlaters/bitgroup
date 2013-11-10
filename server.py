@@ -256,6 +256,9 @@ class Connection(asynchat.async_chat, Client):
 			# Serve the main HTML document if its a root request
 			if uri == '/': self.httpDefaultDocument()
 
+			# Serve the favicon
+			if uri == '/favicon.ico': self.httpGetFile(uri, docroot + uri)
+
 			# If this is a client registration request, add it to the server's list of active clients
 			elif base == '_register': self.httpRegisterClient(head)
 
