@@ -126,8 +126,7 @@ App.prototype.locationChange = function() {
 	if(oldnode != this.node) this.nodeChange();
 	else if(oldview != this.view) this.viewChange();
 
-	// TODO: view may want the additional URI elements
-	
+	// TODO: view may want the additional URI elements	
 };
 
 /**
@@ -223,6 +222,10 @@ App.prototype.renderPage = function() {
 		this.componentConnect('bm', bmElem);
 		this.componentConnect('ip', ipElem);
 		this.componentConnect('sock', sockElem);
+
+		// If the node doesn't exist, report error
+		if(!this.node in this.data || !this.getData(this.node + '.type'))
+			$("#notify").html(this.notify(app.msg('err-nosuchnode', this.node), 'error'));
 
 		// Call the view's render method to populate the content area
 		this.view.render(this);
@@ -788,11 +791,11 @@ App.prototype.componentConnect = function(key, element) {
  * If the Bitgroup or Bitmessage daemon are both running, show the content, else show the 'noservice' notification
  */
 App.prototype.needService = function() {
-	if(this.getData('bm') == CONNECTED && this.getData('bg') == CONNECTED) {
-		$('#content').show();
+	if(app.getData('bm') == CONNECTED && app.getData('bg') == CONNECTED) {
+		$('.needservice').show();
 		$('.noservice').hide();
 	} else {
-		$('#content').hide();
+		$('.needservice').hide();
 		$('.noservice').show();
 	}
 };

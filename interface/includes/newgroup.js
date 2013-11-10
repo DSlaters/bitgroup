@@ -18,7 +18,7 @@ NewGroup.prototype.render = function() {
 	var info = app.notify(app.msg('newgroup-info'),'info');
 	var form = '<div class="form"><label for="groupname">' + app.msg('name').ucfirst() + ': </label><input type="text" id="groupname" />'
 		+ '<input type="button" id="creategroup" value="' + app.msg('creategroup') + '" /></div>';
-	$('#content').html(info + form);
+	$('#content').html('<div class="needservice">' + info + form + '</div>');
 	$('#notify').html(app.noservice);
 
 	// Define the method to handle the form submission

@@ -18,7 +18,7 @@ Invitation.prototype.render = function() {
 	var info = app.notify(app.msg('invitation-info', app.group.name), 'info');
 	var form = '<div class="form"><p><label for="recipient">' + app.msg('invitation-recipient').ucfirst() + '</label></p><p><input type="text" id="recipient" />'
 		+ '<input type="button" id="invitation" value="' + app.msg('invite').ucfirst() + '" /></p></div>';
-	$('#content').html(info + form);
+	$('#content').html('<div class="needservice">' + info + form + '</div>');
 	$('#notify').html(app.noservice);
 
 	// Define the method to handle the form submission

@@ -19,7 +19,7 @@ Overview.prototype.render = function() {
 		if(app.node in app.data) {
 			content += '<h3>' + app.msg('node').ucfirst() + ' "' + app.node + '" [' + app.group + ']</h3>\n';
 			data = app.data[app.node];
-		} else content += '<h3>' + app.msg('node-notfound', app.node) + '</h3>\n';
+		} else content += '<h3>' + app.msg('err-nosuchnode', app.node) + '</h3>\n';
 	}
 
 	// No node is selected

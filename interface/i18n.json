@@ -5,6 +5,7 @@
 		"ip": "IP address",
 		"user": "user",
 		"name": "name",
+		"node": "node",
 		"recipient": "recipient",
 		"invite": "invite",
 		"user-page": "User profile",
@@ -57,10 +58,9 @@
 		"invitation-recipient": "Enter the recipient's Bitmessage address",
 		"invitation-sent": "Your invitation has been sent",
 
-		"node": "node",
-		"node-notfound": "Node \"$1\" not found",
 		
 		"err-nosuchcomponent": "No such component type: \"$1\".",
+		"err-nosuchnode": "The node \"$1\" was not found in this group.",
 		"err-connection": "An error occurred connecting to the Bitgroup daemon.",
 		"err-groupexists": "A group called \"$1\" already exists."
 	}
