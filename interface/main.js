@@ -352,6 +352,7 @@ App.prototype.viewChange = function() {
 
 		view.render(this);
 		this.pageTitle();
+		$.event.trigger({type: "bgPageRendered"});
 	}
 };
 
