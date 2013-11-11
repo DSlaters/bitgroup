@@ -136,6 +136,7 @@ class App:
 		h = open(self.configfile, 'wb')
 		self.config.write(h)
 		h.close()
+		app.log(key + ' = ' + val)
 
 	"""
 	Load all the groups found in the config file

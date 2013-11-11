@@ -29,13 +29,17 @@ class fakeBitmessage:
 		app.datapath = self.datapath + '/' + app.user.addr
 		if not os.path.exists(app.datapath): os.mkdir(app.datapath)
 
-		# Use a copy of the config file instead of the main one
+		# Use a copy of the config file instead of the main one if it needs to be created
 		configfile = app.datapath + '/config'
-		if not os.path.exists(configfile): shutil.copyfile(app.configfile, configfile)
-		config = ConfigParser.SafeConfigParser()
-		config.read(configfile)
-		config.remove_section('groups')
-		config.add_section('groups')
+		if not os.path.exists(configfile):
+			shutil.copyfile(app.configfile, configfile)
+			config = ConfigParser.SafeConfigParser()
+			config.read(configfile)
+			config.remove_section('groups')
+			config.add_section('groups')
+		else:
+			config = ConfigParser.SafeConfigParser()
+			config.read(configfile)
 		app.configfile = configfile
 		app.config = config
 		app.updateConfig('interface', 'port', str(port))
