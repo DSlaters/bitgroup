@@ -403,7 +403,7 @@ class Connection(asynchat.async_chat, Client):
 		}
 
 		# Get the addresses and names of the user's groups
-		for g in app.groups: tmp['user']['groups'][app.groups[g].prvaddr] = app.groups[g].name
+		for g in app.groups: tmp['user']['groups'][g] = app.groups[g].name
 
 		# Build the page content
 		content = "<!DOCTYPE html>\n<html lang=\"en\">\n\t<head>\n"

@@ -17,9 +17,7 @@ class Group(Node, object):
 	Instantiate a new group instance, return the existing instance if the passed group already has one
 	"""
 	def __new__(self, group, passwd = None):
-		if re.match('BM-', group) and passwd is None:
-			for g in app.groups:
-				if app.groups[g].prvaddr == group: return app.groups[g]
+		if re.match('BM-', group) and passwd is None and group in app.groups: return app.groups[group]
 		return object.__new__(self, group, passwd)
 
 	"""

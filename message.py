@@ -109,14 +109,16 @@ class Message(object):
 		mailbox = []
 		if app.bmConnected():
 			messages = json.loads(app.api.getAllInboxMessages())
-			app.log('Retrieving ' + str(len(messages['inboxMessages'])) + ' messages')
-			for msgID in messages['inboxMessages']:
-				msg = messages['inboxMessages'][msgID]
-				msg['receivedTime'] = int(time.time())
-				app.api.trashMessage(msg['msgid'])
-				msg = Message(msg)
-				if msg: mailbox.append(msg)
-				else: app.log('Message is invalid, ignoring')
+			l = len(messages['inboxMessages']);
+			if l > 0:
+				app.log('Retrieving ' + str(l) + ' messages')
+				for msgID in messages['inboxMessages']:
+					msg = messages['inboxMessages'][msgID]
+					msg['receivedTime'] = int(time.time())
+					app.api.trashMessage(msg['msgid'])
+					msg = Message(msg)
+					if msg: mailbox.append(msg)
+					else: app.log('Message is invalid, ignoring')
 		else: app.log("Not getting messages, Bitmessage not running")
 		return mailbox
 
@@ -159,13 +161,11 @@ class BitgroupMessage(Message):
 			Message.__init__(self, param)
 
 			# Set the message's group instance from the From address (i.e. the address it's broadcasting "to")
-			for g in app.groups:
-				if g.prvaddr == self.fromAddr:
-					self.group = group.Group(self.fromAddr)
+			if self.fromAddr in app.groups: self.group = app.groups[self.fromAddr]
 
 			# Bail if we don't have an instance for this group
 			# - this could only happen if we're subscribed to a group's private address that we're not a member of
-			if self.group is None:
+			else:
 				app.log("Message received for a group we're not a member of!")
 				# TODO: should unsubscribe from this group's private address
 				self.invalid = True
