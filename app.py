@@ -182,7 +182,7 @@ class App:
 			# - these are in app.inbox, not app.state, but are sent in Server.pushState
 			if state is CONNECTED:
 				for msg in Message.getMessages():
-					if not msg.uid in self.inbox:
+					if self.user.getData('inbox.' + msg.uid) is None:
 						data = {
 							'type':    msg.__class__.__name__,
 							'group':   None,
