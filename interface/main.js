@@ -753,10 +753,10 @@ App.prototype.componentRender = function(type, data, atts) {
 /**
  * Connect an interface component to a data source
  */
-App.prototype.componentConnect = function(key, element) {
+App.prototype.componentConnect = function(key, element, type) {
 	element = $(element)[0];
 	var val = this.getData(key);
-	var type = this.componentType(element);
+	if(type === undefined) type = this.componentType(element);
 
 	// Set the source for the element's value
 	element.dataSource = key;
