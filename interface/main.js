@@ -639,9 +639,16 @@ App.prototype.timestamp = function() {
 App.prototype.componentType = function(element) {
 	element = $(element)[0];
 	var type = false;
-	if($(element).attr('type') == 'checkbox') type = 'checkbox';
+
+	// First see if any extensions know what it is
+	var args = {
+		element: element,
+		type: false
+	};
+	$.event.trigger({type: "bgComponentIdentifyType", args: args});
+	if(args.type) type = args.type;
+	else if($(element).attr('type') == 'checkbox') type = 'checkbox';
 	else if(element.tagName == 'SELECT') type = 'select';
-	else if($(element).hasClass('checklist')) type = 'checklist';
 	else if($(element).attr('value') !== undefined || element.tagName == 'textarea') type = 'input';
 	else if(element.tagName == 'DIV') type = 'div';
 	else if(element.tagName == 'SPAN') type = 'span';
@@ -655,7 +662,14 @@ App.prototype.componentType = function(element) {
 App.prototype.componentIsInput = function(element, type) {
 	if('getValue' in element) return true;
 	if(type === undefined) type = this.componentType(element);
-	return type == 'input' || type == 'checkbox' || type == 'select' || type == 'checklist' || type == 'textarea';
+	if(type == 'input' || type == 'checkbox' || type == 'select' || type == 'checklist' || type == 'textarea') return true;
+	if(type == 'div' || type == 'span' || type == 'a') return false;
+	var args = {
+		type: type,
+		input: false
+	};
+	$.event.trigger({type: "bgComponentIsInput", args: args});
+	return args.input;
 };
 
 /**
@@ -672,9 +686,15 @@ App.prototype.componentSet = function(element, val, type) {
 			if(typeof val != 'object') val = [val];
 			$('option',element).each(function() { this.selected = val.indexOf($(this).text()) >= 0 });
 		}
-		else if(type == 'checklist') {
-			if(typeof val != 'object') val = [val];
-			$('input',element).each(function() { this.checked = val.indexOf($(this).next().text()) >= 0 });
+
+		// Type unknown - See if any extensions know how to set the value for this type
+		else {
+			var args = {
+				type: type,
+				element: element,
+				val: val,
+			};
+			$.event.trigger({type: "bgComponentSetValue", args: args});
 		}
 	}
 };
@@ -697,9 +717,16 @@ App.prototype.componentGet = function(element, type) {
 				$('option',element).each(function() { if($(this).is(':selected')) val.push($(this).text()) });
 			}
 		}
-		else if(type == 'checklist') {
-			val = [];
-			$('input',element).each(function() { if($(this).is(':checked')) val.push($(this).next().text()); });
+
+		// Type unknown - See if any extensions know how to get the value for this type
+		else {
+			var args = {
+				type: type,
+				element: element,
+				val: false,
+			};
+			$.event.trigger({type: "bgComponentGetValue", args: args});
+			if(args.val) val = args.val;
 		}
 	}
 	return val;
@@ -732,20 +759,28 @@ App.prototype.componentRender = function(type, data, atts) {
 		html += '</select>';
 	}
 
-	// Checklist
-	else if(type == 'checklist') {
-		html = '<div' + attstr + ' class="checklist">';
-		for(i = 0; i < data.length; i++) html += '<input type="checkbox" /><span>' + data[i] + '</span><br />';
-		html += '</div>';
-	}
-
 	// Textarea
 	else if(type == 'textarea') {
 		html = '<textarea' + attstr + '>' + data + '</textarea>';
 	}
 
 	// Unknown type
-	else html = '<div' + attstr + '>' + app.msg( 'err-nosuchcomponent', type) + '</div>';
+	else {
+
+		// See if any extensions can render it
+		var args = {
+			type: type,
+			data: data,
+			atts: atts,
+			attstr: attstr,
+			html: false
+		};
+		$.event.trigger({type: "bgComponentRender", args: args});
+
+		// If the HTML has been set, then an extension has handled this component type
+		if(args.html) html = args.html;
+		else html = '<div' + attstr + '>' + app.msg( 'err-nosuchcomponent', type) + '</div>';
+	}
 
 	return html;
 };
