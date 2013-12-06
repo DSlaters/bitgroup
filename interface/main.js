@@ -634,29 +634,6 @@ App.prototype.timestamp = function() {
 };
 
 /**
- * Detect the general type of an interface component based on its DOM attributes
- */
-App.prototype.componentType = function(element) {
-	element = $(element)[0];
-	var type = false;
-
-	// First see if any extensions know what it is
-	var args = {
-		element: element,
-		type: false
-	};
-	$.event.trigger({type: "bgComponentIdentifyType", args: args});
-	if(args.type) type = args.type;
-	else if($(element).attr('type') == 'checkbox') type = 'checkbox';
-	else if(element.tagName == 'SELECT') type = 'select';
-	else if($(element).attr('value') !== undefined || element.tagName == 'textarea') type = 'input';
-	else if(element.tagName == 'DIV') type = 'div';
-	else if(element.tagName == 'SPAN') type = 'span';
-	else if(element.tagName == 'A') type = 'a';
-	return type;
-};
-
-/**
  * Return whether the passed component type allows user input
  */
 App.prototype.componentIsInput = function(element, type) {
@@ -739,6 +716,7 @@ App.prototype.componentRender = function(type, data, atts) {
 	if(data === undefined) data = '';
 	if(atts === undefined) atts = {};
 	if(!('id' in atts)) atts.id = Math.uuid(5);
+	if('class' in atts) atts.class += ' bgType:' + type; else atts.class = 'bgType:' + type;
 	html = '';
 	attstr = '';
 	for(k in atts) attstr += ' ' + k + '="' + atts[k] + '"';
@@ -788,10 +766,15 @@ App.prototype.componentRender = function(type, data, atts) {
 /**
  * Connect an interface component to a data source
  */
-App.prototype.componentConnect = function(key, element, type) {
+App.prototype.componentConnect = function(key, element) {
 	element = $(element)[0];
 	var val = this.getData(key);
-	if(type === undefined) type = this.componentType(element);
+
+	// Get the type from the bgType:x class
+	var type;
+	var re = /bgType:(\w+)/;
+	var m = re.exec($(element).attr("class").toString());
+	if(m) type = m[1] else return false;
 
 	// Set the source for the element's value
 	element.dataSource = key;
