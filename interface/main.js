@@ -716,7 +716,8 @@ App.prototype.componentRender = function(type, data, atts) {
 	if(data === undefined) data = '';
 	if(atts === undefined) atts = {};
 	if(!('id' in atts)) atts.id = Math.uuid(5);
-	if('class' in atts) atts.class += ' bgType:' + type; else atts.class = 'bgType:' + type;
+	var c = 'bgComponent:' + type;
+	if('class' in atts) atts.class += ' ' + c; else atts.class = c;
 	html = '';
 	attstr = '';
 	for(k in atts) attstr += ' ' + k + '="' + atts[k] + '"';
@@ -772,9 +773,9 @@ App.prototype.componentConnect = function(key, element) {
 
 	// Get the type from the bgType:x class
 	var type;
-	var re = /bgType:(\w+)/;
+	var re = /bgComponent:(\w+)/;
 	var m = re.exec($(element).attr("class").toString());
-	if(m) type = m[1] else return false;
+	if(m) type = m[1]; else return false;
 
 	// Set the source for the element's value
 	element.dataSource = key;
