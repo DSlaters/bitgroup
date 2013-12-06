@@ -772,10 +772,10 @@ App.prototype.componentConnect = function(key, element) {
 	var val = this.getData(key);
 
 	// Get the type from the bgType:x class
-	var type;
+	var type = false;
 	var re = /bgComponent:(\w+)/;
 	var m = re.exec($(element).attr("class").toString());
-	if(m) type = m[1]; else return false;
+	if(m) type = m[1];
 
 	// Set the source for the element's value
 	element.dataSource = key;
