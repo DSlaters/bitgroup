@@ -20,7 +20,7 @@ Properties.prototype.render = function(app) {
 		+ output + '</td></tr></table>'
 	);
 	app.componentConnect('settings.extensions', $('#content select'));
-	app.componentConnect('settings.extensions', $('#content .checklist'));
+	app.componentConnect('settings.extensions', $('#content .bgComponent-checklist'));
 	app.componentConnect('x.y.z', $('#content #otest'));
 };
 
