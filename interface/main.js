@@ -634,6 +634,20 @@ App.prototype.timestamp = function() {
 };
 
 /**
+ * Get the type from the bgType:x class
+ */
+App.prototype.componentType = function(element) {
+	var type = false;
+	if($(element).is("[class]")) {
+		var re = /bgComponent-(\w+)/;
+		var m = re.exec($(element).attr('class').toString());
+		if(m) type = m[1];
+	}
+	return type;
+};
+
+
+/**
  * Return whether the passed component type allows user input
  */
 App.prototype.componentIsInput = function(element, type) {
@@ -770,14 +784,7 @@ App.prototype.componentRender = function(type, data, atts) {
 App.prototype.componentConnect = function(key, element) {
 	element = $(element)[0];
 	var val = this.getData(key);
-
-	// Get the type from the bgType:x class
-	var type = false;
-	if($(element).is("[class]")) {
-		var re = /bgComponent-(\w+)/;
-		var m = re.exec($(element).attr('class').toString());
-		if(m) type = m[1];
-	}
+	var type = this.componentType(element);
 
 	// Set the source for the element's value
 	element.dataSource = key;
