@@ -19,9 +19,9 @@ Properties.prototype.render = function(app) {
 		+ input2 + '</td><td valign=top><h3>Output test</h3>'
 		+ output + '</td></tr></table>'
 	);
-	app.componentConnect('settings.extensions', $('#content select'));
-	app.componentConnect('settings.extensions', $('#content .bgComponent-checklist'));
-	app.componentConnect('x.y.z', $('#content #otest'));
+	app.componentConnect($('#content select'), 'settings.extensions');
+	app.componentConnect($('#content .bgComponent-checklist'), 'settings.extensions');
+	app.componentConnect($('#content #otest'), 'x.y.z');
 };
 
 window.app.views.push( new Properties() );

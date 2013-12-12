@@ -218,10 +218,10 @@ App.prototype.renderPage = function() {
 		bmElem.setValue = fStatus;
 		ipElem.setValue = fStatus;
 		sockElem.setValue = function(val) { $(this).html(app.msg('sock-status-' + val)) };
-		this.componentConnect('bg', bgElem);
-		this.componentConnect('bm', bmElem);
-		this.componentConnect('ip', ipElem);
-		this.componentConnect('sock', sockElem);
+		this.componentConnect(bgElem, 'bg');
+		this.componentConnect(bmElem, 'bm');
+		this.componentConnect(ipElem, 'ip');
+		this.componentConnect(sockElem, 'sock');
 
 		// If the node doesn't exist, report error
 		if(this.node && (!this.node in this.data || !this.getData(this.node + '.type')))
@@ -781,7 +781,7 @@ App.prototype.componentRender = function(type, data, atts) {
 /**
  * Connect an interface component to a data source
  */
-App.prototype.componentConnect = function(key, element) {
+App.prototype.componentConnect = function(element, key) {
 	element = $(element)[0];
 	var val = this.getData(key);
 	var type = this.componentType(element);
